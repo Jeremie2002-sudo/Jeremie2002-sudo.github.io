@@ -1,0 +1,597 @@
+<title>David Jeremie Anand — Applied AI &amp; Agentic Systems</title>
+<meta name="description" content="Applied AI and agentic systems engineer. Two years turning tangled operations into measurable results, now building AI systems backed by tests and evaluation.">
+
+<style>
+  /* Instrument slate + brass. Neutrals carry a blue bias so they read
+     as chosen rather than inherited mid-grey. */
+  :root {
+    --ground:  #EDF0F2;
+    --ink:     #16212B;
+    --muted:   #5F707D;
+    --faint:   #9EAEB8;
+    --rule:    #CFD8DE;
+    --accent:  #8F6318;
+    --trace:   #226760;
+
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Consolas, "Liberation Mono", monospace;
+    --serif: "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    --measure: 64ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #121A21;
+      --ink:    #DFE7EC;
+      --muted:  #8DA0AD;
+      --faint:  #556672;
+      --rule:   #26343F;
+      --accent: #D9A855;
+      --trace:  #55B3A4;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #121A21;
+    --ink:    #DFE7EC;
+    --muted:  #8DA0AD;
+    --faint:  #556672;
+    --rule:   #26343F;
+    --accent: #D9A855;
+    --trace:  #55B3A4;
+  }
+  :root[data-theme="light"] {
+    --ground: #EDF0F2;
+    --ink:    #16212B;
+    --muted:  #5F707D;
+    --faint:  #9EAEB8;
+    --rule:   #CFD8DE;
+    --accent: #8F6318;
+    --trace:  #226760;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.66;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 0 clamp(22px, 6vw, 40px) 100px;
+  }
+
+  a { color: inherit; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  section { padding-top: clamp(56px, 8vw, 88px); }
+
+  h2.label { margin-bottom: 26px; }
+
+  /* === Masthead ==================================================== */
+
+  header { padding-top: clamp(84px, 14vw, 150px); }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(34px, 8vw, 76px);
+    line-height: 1;
+    letter-spacing: -0.05em;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+
+  .role {
+    font-family: var(--mono);
+    font-size: clamp(11px, 1.6vw, 13px);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 22px;
+  }
+
+  .lede {
+    max-width: var(--measure);
+    font-size: clamp(17px, 2.1vw, 20px);
+    line-height: 1.58;
+    margin-top: 34px;
+  }
+  .lede strong {
+    font-weight: 600;
+    background: linear-gradient(transparent 64%, color-mix(in srgb, var(--accent) 30%, transparent) 64%);
+  }
+
+  .contact {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    margin-top: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    color: var(--muted);
+  }
+  .contact a {
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 2px;
+    transition: color .16s ease, border-color .16s ease;
+  }
+  .contact a:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* === Instrument readouts — the one loud moment =================== */
+
+  .readouts {
+    margin-top: clamp(56px, 9vw, 92px);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: clamp(28px, 4vw, 44px);
+  }
+
+  .readout { display: flex; flex-direction: column; gap: 10px; }
+
+  .readout-value {
+    font-family: var(--mono);
+    font-size: clamp(38px, 6.5vw, 62px);
+    font-weight: 600;
+    line-height: 0.9;
+    letter-spacing: -0.055em;
+    font-variant-numeric: tabular-nums;
+  }
+  .readout-value sub {
+    font-size: 0.36em;
+    vertical-align: baseline;
+    color: var(--accent);
+    letter-spacing: 0;
+  }
+
+  .scale { display: block; width: 100%; height: 14px; overflow: visible; }
+  .scale .axis   { stroke: var(--rule);   stroke-width: 1; }
+  .scale .tick   { stroke: var(--rule);   stroke-width: 1; }
+  .scale .fill   { stroke: var(--accent); stroke-width: 2; }
+  .scale .needle { stroke: var(--ink);    stroke-width: 1.5; }
+
+  .readout .label { line-height: 1.6; letter-spacing: 0.13em; color: var(--muted); }
+
+  .footnote {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    margin-top: 30px;
+    letter-spacing: 0.04em;
+  }
+
+  /* === Entries ===================================================== */
+
+  .entry { padding-block: 22px; border-top: 1px solid var(--rule); }
+
+  .entry-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 2px 20px;
+  }
+  .entry-org {
+    font-family: var(--mono);
+    font-size: clamp(15px, 2vw, 17.5px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .when {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .entry-sub {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0 20px;
+    color: var(--muted);
+    font-size: 15.5px;
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  ul { list-style: none; margin-top: 15px; display: grid; gap: 9px; }
+  ul li { position: relative; padding-left: 19px; max-width: var(--measure); }
+  ul li::before {
+    content: "";
+    position: absolute;
+    left: 1px;
+    top: 0.75em;
+    width: 8px;
+    height: 1px;
+    background: var(--accent);
+  }
+  ul b { font-weight: 600; }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.07em;
+    color: var(--trace);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .tag + .tag { margin-left: 10px; }
+
+  /* === Projects ==================================================== */
+
+  .project { padding-block: 26px; border-top: 1px solid var(--rule); }
+
+  .project-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 16px;
+  }
+  .project-name {
+    font-family: var(--mono);
+    font-size: clamp(16px, 2.2vw, 19.5px);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+  .project-name span { color: var(--faint); font-weight: 400; }
+
+  .repo {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--trace);
+    transition: color .16s ease;
+  }
+  .repo::after { content: " \2197"; }
+  .repo:hover { color: var(--accent); }
+
+  .stack {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--faint);
+    margin-left: auto;
+  }
+
+  /* === Matrix ====================================================== */
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
+    gap: 6px 28px;
+    padding: 17px 0;
+    border-top: 1px solid var(--rule);
+    align-items: start;
+  }
+  .row dt { color: var(--accent); padding-top: 4px; letter-spacing: 0.14em; }
+  .row dd { font-size: 16px; }
+
+  .certs { display: flex; flex-wrap: wrap; gap: 4px 18px; font-family: var(--mono); font-size: 12px; }
+  .certs a { color: var(--trace); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color .16s ease, color .16s ease; }
+  .certs a:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* === Footer ====================================================== */
+
+  footer {
+    margin-top: clamp(64px, 9vw, 100px);
+    padding-top: 26px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 24px;
+  }
+  footer a { color: var(--trace); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+
+  @media (max-width: 620px) {
+    .stack { margin-left: 0; flex-basis: 100%; }
+    .row { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="page">
+
+  <header>
+    <h1>David Jeremie <em>Anand</em></h1>
+    <p class="role">Applied AI &nbsp;/&nbsp; Agentic Systems &nbsp;/&nbsp; Data and Workflow Solutions</p>
+
+    <p class="lede">
+      Engineering and operations professional building towards applied AI. Two years at
+      Genpact turning tangled workflows into <strong>measurable results</strong> — and now
+      bringing the same rigour to self-directed AI projects in agentic RAG, multi-agent
+      reasoning and LLM evaluation, each backed by tests and CI. Currently pursuing a PGP in
+      Applied AI and Agentic Systems at Masters&rsquo; Union.
+    </p>
+
+    <p class="contact">
+      <a href="mailto:jerryanand10@gmail.com">jerryanand10@gmail.com</a>
+      <a href="https://www.linkedin.com/in/david-jeremie-anand/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://github.com/Jeremie2002-sudo" target="_blank" rel="noopener">GitHub</a>
+      <span>New Delhi, India</span>
+    </p>
+
+    <div class="readouts">
+      <div class="readout">
+        <div class="readout-value">18<sub>%</sub></div>
+        <svg class="scale" viewBox="0 0 100 14" preserveAspectRatio="none" aria-hidden="true">
+          <line class="axis" x1="0" y1="10" x2="100" y2="10"/>
+          <line class="tick" x1="0"   y1="6" x2="0"   y2="10"/>
+          <line class="tick" x1="33"  y1="8" x2="33"  y2="10"/>
+          <line class="tick" x1="66"  y1="8" x2="66"  y2="10"/>
+          <line class="tick" x1="100" y1="6" x2="100" y2="10"/>
+          <line class="fill" x1="0" y1="10" x2="58" y2="10"/>
+          <line class="needle" x1="58" y1="2" x2="58" y2="13"/>
+        </svg>
+        <div class="label">Faster<br>turnaround</div>
+      </div>
+
+      <div class="readout">
+        <div class="readout-value">30<sub>%</sub></div>
+        <svg class="scale" viewBox="0 0 100 14" preserveAspectRatio="none" aria-hidden="true">
+          <line class="axis" x1="0" y1="10" x2="100" y2="10"/>
+          <line class="tick" x1="0"   y1="6" x2="0"   y2="10"/>
+          <line class="tick" x1="33"  y1="8" x2="33"  y2="10"/>
+          <line class="tick" x1="66"  y1="8" x2="66"  y2="10"/>
+          <line class="tick" x1="100" y1="6" x2="100" y2="10"/>
+          <line class="fill" x1="0" y1="10" x2="84" y2="10"/>
+          <line class="needle" x1="84" y1="2" x2="84" y2="13"/>
+        </svg>
+        <div class="label">Fewer<br>defects</div>
+      </div>
+
+      <div class="readout">
+        <div class="readout-value">22<sub>%</sub></div>
+        <svg class="scale" viewBox="0 0 100 14" preserveAspectRatio="none" aria-hidden="true">
+          <line class="axis" x1="0" y1="10" x2="100" y2="10"/>
+          <line class="tick" x1="0"   y1="6" x2="0"   y2="10"/>
+          <line class="tick" x1="33"  y1="8" x2="33"  y2="10"/>
+          <line class="tick" x1="66"  y1="8" x2="66"  y2="10"/>
+          <line class="tick" x1="100" y1="6" x2="100" y2="10"/>
+          <line class="fill" x1="0" y1="10" x2="69" y2="10"/>
+          <line class="needle" x1="69" y1="2" x2="69" y2="13"/>
+        </svg>
+        <div class="label">Productivity<br>uplift</div>
+      </div>
+
+      <div class="readout">
+        <div class="readout-value">25<sub>%</sub></div>
+        <svg class="scale" viewBox="0 0 100 14" preserveAspectRatio="none" aria-hidden="true">
+          <line class="axis" x1="0" y1="10" x2="100" y2="10"/>
+          <line class="tick" x1="0"   y1="6" x2="0"   y2="10"/>
+          <line class="tick" x1="33"  y1="8" x2="33"  y2="10"/>
+          <line class="tick" x1="66"  y1="8" x2="66"  y2="10"/>
+          <line class="tick" x1="100" y1="6" x2="100" y2="10"/>
+          <line class="fill" x1="0" y1="10" x2="74" y2="10"/>
+          <line class="needle" x1="74" y1="2" x2="74" y2="13"/>
+        </svg>
+        <div class="label">Less reporting<br>effort</div>
+      </div>
+    </div>
+
+    <p class="footnote">Measured at Genpact, Aug 2024 &ndash; Aug 2026.</p>
+  </header>
+
+  <section>
+    <h2 class="label">Experience</h2>
+
+    <article class="entry">
+      <div class="entry-head">
+        <h3 class="entry-org">Genpact</h3>
+        <span class="when">Aug 2024 &ndash; Aug 2026</span>
+      </div>
+      <div class="entry-sub">
+        <span>Associate and Subject Matter Expert &mdash; Operations</span>
+        <span>New Delhi</span>
+      </div>
+      <ul>
+        <li>Analysed high-volume workflows and drove process redesign, contributing to an <b>18% reduction in turnaround time</b> and higher throughput.</li>
+        <li>Ran structured root-cause analysis of recurring defects and SLA deviations, contributing to a <b>30% reduction in operational defects</b>.</li>
+        <li>Automated management reports and dashboards in Excel and Power BI, cutting recurring reporting effort by <b>25%</b>.</li>
+        <li>Partnered with Risk, Compliance and Quality stakeholders on controls and workflow improvements, contributing to a <b>22% productivity uplift</b>.</li>
+        <li>Documented process gaps, tracked issues through Buganizer, validated corrective actions, and maintained minimal SLA breaches.</li>
+      </ul>
+    </article>
+  </section>
+
+  <section>
+    <h2 class="label">Projects</h2>
+
+    <article class="project">
+      <div class="project-head">
+        <h3 class="project-name">Synapse <span>/</span> Agentic RAG Document Assistant</h3>
+        <a class="repo" href="https://github.com/Jeremie2002-sudo/synapse" target="_blank" rel="noopener">Repo</a>
+        <span class="stack">Python &middot; FastAPI &middot; FAISS &middot; Ollama/Groq</span>
+      </div>
+      <ul>
+        <li>Built a hybrid retrieval pipeline — BM25 and FAISS fused via Reciprocal Rank Fusion with LLM listwise reranking — feeding a four-stage agent pipeline (planner, retriever, synthesizer, critic) that grounds answers in evidence and self-critiques unsupported claims.</li>
+        <li>Added an observability UI and an automated eval harness for retrieval and faithfulness scoring, plus a pluggable model backend. <span class="tag">31-test CI</span><span class="tag">Deployed on Render</span></li>
+      </ul>
+    </article>
+
+    <article class="project">
+      <div class="project-head">
+        <h3 class="project-name">Ledgr <span>/</span> AI-Powered Finance Manager</h3>
+        <a class="repo" href="https://github.com/Jeremie2002-sudo/ai-finance-manager" target="_blank" rel="noopener">Repo</a>
+        <span class="stack">Python &middot; Flask &middot; SQLite &middot; Docker</span>
+      </div>
+      <ul>
+        <li>Built a full-stack finance tracker with dashboards, budget tracking and CSV import/export, plus AI transaction categorisation using concurrent LLM calls with a keyword fallback that works fully offline.</li>
+        <li>Designed a tool-calling assistant that queries real transaction data instead of relying on LLM arithmetic, with a pluggable OpenAI/Ollama backend. <span class="tag">58-test CI</span><span class="tag">Dockerised</span></li>
+      </ul>
+    </article>
+
+    <article class="project">
+      <div class="project-head">
+        <h3 class="project-name">PromptDrift <span>/</span> LLM Prompt Regression Testing</h3>
+        <a class="repo" href="https://github.com/Jeremie2002-sudo/promptdrift" target="_blank" rel="noopener">Repo</a>
+        <span class="stack">Python &middot; asyncio &middot; pytest &middot; GitHub Actions</span>
+      </div>
+      <ul>
+        <li>Built a CLI that snapshots prompt behaviour into a committed baseline and fails CI when a change degrades it, sampling every case repeatedly so genuine regressions are separated from model non-determinism.</li>
+        <li>Tiered assertions run deterministic checks before paid LLM-as-judge calls, cutting evaluation cost. <span class="tag">157-test CI</span><span class="tag">Python 3.10&ndash;3.13</span></li>
+      </ul>
+    </article>
+
+    <article class="project">
+      <div class="project-head">
+        <h3 class="project-name">Wireless Temperature Detection <span>/</span> HackRF One</h3>
+        <span class="stack">RF and Wireless Systems &middot; SDR</span>
+      </div>
+      <ul>
+        <li>Built an RF prototype using HackRF One to acquire, analyse and interpret remotely transmitted temperature signals and identify anomalies.</li>
+        <li>Implemented the end-to-end SDR chain — capture, filtering, demodulation, decoding — and validated decoded readings against a reference sensor.</li>
+      </ul>
+    </article>
+  </section>
+
+  <section>
+    <h2 class="label">Internships</h2>
+
+    <article class="entry">
+      <div class="entry-head">
+        <h3 class="entry-org">Defence Research and Development Organisation</h3>
+        <span class="when">Jul &ndash; Sep 2022</span>
+      </div>
+      <div class="entry-sub"><span>Research and Development Intern</span><span>India</span></div>
+      <ul><li>Supported development, validation and signal analysis of an embedded wireless sensing prototype, improving reliability and reducing errors.</li></ul>
+    </article>
+
+    <article class="entry">
+      <div class="entry-head">
+        <h3 class="entry-org">Bhagwan Parshuram Institute of Technology, GGSIPU</h3>
+        <span class="when">Jul &ndash; Aug 2023</span>
+      </div>
+      <div class="entry-sub"><span>Data Analytics Intern</span><span>New Delhi</span></div>
+      <ul><li>Analysed institutional datasets in Python and Excel and built KPI dashboards and automated reports, cutting repetitive manual effort by <b>25%</b>.</li></ul>
+    </article>
+
+    <article class="entry">
+      <div class="entry-head">
+        <h3 class="entry-org">AGIXURY</h3>
+        <span class="when">Sep &ndash; Oct 2020</span>
+      </div>
+      <div class="entry-sub"><span>Web Development Intern</span><span>Remote</span></div>
+      <ul><li>Developed responsive web interfaces from business requirements and improved usability across desktop and mobile layouts.</li></ul>
+    </article>
+  </section>
+
+  <section>
+    <h2 class="label">Education</h2>
+
+    <article class="entry">
+      <div class="entry-head">
+        <h3 class="entry-org">Masters&rsquo; Union</h3>
+        <span class="when">Aug 2026 &ndash; Present</span>
+      </div>
+      <div class="entry-sub"><span>PGP in Applied AI and Agentic Systems</span><span>Gurugram</span></div>
+    </article>
+
+    <article class="entry">
+      <div class="entry-head">
+        <h3 class="entry-org">Bhagwan Parshuram Institute of Technology, GGSIPU</h3>
+        <span class="when">2020 &ndash; 2024</span>
+      </div>
+      <div class="entry-sub"><span>B.Tech, Electronics and Communication Engineering</span><span>CGPA 8.53 / 10</span></div>
+    </article>
+
+    <article class="entry">
+      <div class="entry-head">
+        <h3 class="entry-org">Faith Academy Senior Secondary School, CBSE</h3>
+        <span class="when">2018 &ndash; 2020</span>
+      </div>
+      <div class="entry-sub"><span>Class XII 92.8% &middot; Class X 94.2%</span><span>New Delhi</span></div>
+    </article>
+  </section>
+
+  <section>
+    <h2 class="label">Skills</h2>
+    <dl>
+      <div class="row">
+        <dt class="label">Programming</dt>
+        <dd>Python, SQL, FastAPI, Flask, data analysis, data cleaning, exploratory data analysis</dd>
+      </div>
+      <div class="row">
+        <dt class="label">Applied AI</dt>
+        <dd>Machine learning, generative AI, agentic AI, large language models, prompt engineering, Retrieval-Augmented Generation</dd>
+      </div>
+      <div class="row">
+        <dt class="label">Systems &amp; Cloud</dt>
+        <dd>Vector databases (FAISS), LLMOps, GenAIOps, Microsoft Azure AI, Snowflake, model APIs, data engineering foundations</dd>
+      </div>
+      <div class="row">
+        <dt class="label">Tooling</dt>
+        <dd>Power BI, Tableau, Advanced Excel, Git, GitHub Actions, Docker, pytest</dd>
+      </div>
+      <div class="row">
+        <dt class="label">Delivery</dt>
+        <dd>Root-cause analysis, stakeholder communication, process improvement, workflow optimisation</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section>
+    <h2 class="label">Certifications</h2>
+    <dl>
+      <div class="row">
+        <dt class="label">Professional</dt>
+        <dd class="certs">
+          <a href="https://www.linkedin.com/learning/certificates/2cff73983b6d54052ae8fdce0e37fd80249fed71bc398690adf33bb431346a54" target="_blank" rel="noopener">Snowflake Generative AI</a>
+          <a href="https://www.linkedin.com/learning/certificates/bd49765b3e87990b655e2e0cdc764fc2bdc0a341834f9fb9e817f1dc3989aef4" target="_blank" rel="noopener">Microsoft Azure AI Essentials</a>
+          <a href="https://www.linkedin.com/learning/certificates/4b583d8c7685402eb8f8341a6d3efa8bb82aea8afd6be332fd69b3088f1273a2" target="_blank" rel="noopener">Astronomer Data Engineering</a>
+        </dd>
+      </div>
+      <div class="row">
+        <dt class="label">AI Engineering</dt>
+        <dd class="certs">
+          <a href="https://www.linkedin.com/learning/certificates/cb143ba70b073c9919680246e221ca7e58662cd77d518f5b04007282ad603f2f" target="_blank" rel="noopener">Become an AI Engineer</a>
+          <a href="https://www.linkedin.com/learning/certificates/14745a6f2bc7090f9b35186208284daba872c1fea92ac8400d711b3a093dc778" target="_blank" rel="noopener">GenAIOps Foundations</a>
+          <a href="https://www.linkedin.com/learning/certificates/1729b1e05e9b11c9e10c2bae0ad4d189bb180fabf1e99bc3b549cee8b18a37a4" target="_blank" rel="noopener">Generative AI in Cloud Computing</a>
+        </dd>
+      </div>
+      <div class="row">
+        <dt class="label">LLMs &amp; RAG</dt>
+        <dd class="certs">
+          <a href="https://www.linkedin.com/learning/certificates/900d9c0c50342ee31be20bbd2720036cfde4f2a6ca93d1f4d78e7a698b5aef3a" target="_blank" rel="noopener">Fine-Tuning for LLMs</a>
+          <a href="https://www.linkedin.com/learning/certificates/8eaa40845bbe2d6d4674d210d1a8e54fa1ceb8262e1a3fddb2b9ca01ba0ad6bc" target="_blank" rel="noopener">Advanced LLMs with RAG</a>
+          <a href="https://www.linkedin.com/learning/certificates/dcaac0850342ca31e3f0c918df924968f0d77c8c3925b837871e454d79c4f5a9" target="_blank" rel="noopener">Vector Databases and RAG</a>
+          <a href="https://www.linkedin.com/learning/certificates/0d5209983d1c201890d2909f761763febafc701fb5d46bf255a0ea6a6b893562" target="_blank" rel="noopener">AI Ecosystem for Developers</a>
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <footer>
+    <span>David Jeremie Anand &middot; New Delhi, India</span>
+    <span>
+      <a href="mailto:jerryanand10@gmail.com">Email</a> &middot;
+      <a href="https://www.linkedin.com/in/david-jeremie-anand/" target="_blank" rel="noopener">LinkedIn</a> &middot;
+      <a href="https://github.com/Jeremie2002-sudo" target="_blank" rel="noopener">GitHub</a>
+    </span>
+  </footer>
+
+</div>
