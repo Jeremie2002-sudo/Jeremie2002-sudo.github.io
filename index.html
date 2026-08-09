@@ -1,597 +1,874 @@
 <title>David Jeremie Anand — Applied AI &amp; Agentic Systems</title>
 <meta name="description" content="Applied AI and agentic systems engineer. Two years turning tangled operations into measurable results, now building AI systems backed by tests and evaluation.">
+<meta name="theme-color" content="#06080D">
 
 <style>
-  /* Instrument slate + brass. Neutrals carry a blue bias so they read
-     as chosen rather than inherited mid-grey. */
+  /* ------------------------------------------------------------------
+     A spectrogram waterfall is the hero, so this page commits to a dark
+     world rather than offering two. The magma colormap only reads on a
+     near-black ground; a light variant would be a different design, not
+     a recolour of this one.
+     ------------------------------------------------------------------ */
   :root {
-    --ground:  #EDF0F2;
-    --ink:     #16212B;
-    --muted:   #5F707D;
-    --faint:   #9EAEB8;
-    --rule:    #CFD8DE;
-    --accent:  #8F6318;
-    --trace:   #226760;
+    --void:    #06080D;
+    --deep:    #0A0E16;
+    --raised:  #111726;
+    --ink:     #EEF2F8;
+    --soft:    #9BA9BE;
+    --dim:     #5C6980;
+    --line:    #1B2333;
 
-    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Consolas, "Liberation Mono", monospace;
+    --ember:   #FFB454;   /* warm end of the spectral ramp */
+    --flare:   #FF7847;
+    --plasma:  #C8438C;
+    --cool:    #5C6BC0;
+
+    --display: system-ui, -apple-system, "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --serif: "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
-    --measure: 64ch;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+
+    --measure: 62ch;
+    --edge: clamp(20px, 5vw, 64px);
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --ground: #121A21;
-      --ink:    #DFE7EC;
-      --muted:  #8DA0AD;
-      --faint:  #556672;
-      --rule:   #26343F;
-      --accent: #D9A855;
-      --trace:  #55B3A4;
-    }
-  }
-  :root[data-theme="dark"] {
-    --ground: #121A21;
-    --ink:    #DFE7EC;
-    --muted:  #8DA0AD;
-    --faint:  #556672;
-    --rule:   #26343F;
-    --accent: #D9A855;
-    --trace:  #55B3A4;
-  }
-  :root[data-theme="light"] {
-    --ground: #EDF0F2;
-    --ink:    #16212B;
-    --muted:  #5F707D;
-    --faint:  #9EAEB8;
-    --rule:   #CFD8DE;
-    --accent: #8F6318;
-    --trace:  #226760;
-  }
+  html { scroll-behavior: smooth; background: var(--void); }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
   body {
-    background: var(--ground);
+    background: var(--void);
     color: var(--ink);
     font-family: var(--serif);
-    font-size: 17px;
+    font-size: 17.5px;
     line-height: 1.66;
     -webkit-font-smoothing: antialiased;
-  }
-
-  .page {
-    max-width: 940px;
-    margin: 0 auto;
-    padding: 0 clamp(22px, 6vw, 40px) 100px;
+    overflow-x: hidden;
   }
 
   a { color: inherit; }
-  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--ember); outline-offset: 4px; border-radius: 2px; }
 
-  .label {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--faint);
-  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: var(--edge); }
 
-  section { padding-top: clamp(56px, 8vw, 88px); }
-
-  h2.label { margin-bottom: 26px; }
-
-  /* === Masthead ==================================================== */
-
-  header { padding-top: clamp(84px, 14vw, 150px); }
-
-  h1 {
-    font-family: var(--mono);
-    font-size: clamp(34px, 8vw, 76px);
-    line-height: 1;
-    letter-spacing: -0.05em;
-    font-weight: 600;
-    text-wrap: balance;
-  }
-  h1 em { font-style: normal; color: var(--accent); }
-
-  .role {
-    font-family: var(--mono);
-    font-size: clamp(11px, 1.6vw, 13px);
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-top: 22px;
-  }
-
-  .lede {
-    max-width: var(--measure);
-    font-size: clamp(17px, 2.1vw, 20px);
-    line-height: 1.58;
-    margin-top: 34px;
-  }
-  .lede strong {
-    font-weight: 600;
-    background: linear-gradient(transparent 64%, color-mix(in srgb, var(--accent) 30%, transparent) 64%);
-  }
-
-  .contact {
-    font-family: var(--mono);
-    font-size: 12.5px;
-    letter-spacing: 0.04em;
-    margin-top: 30px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 20px;
-    color: var(--muted);
-  }
-  .contact a {
-    text-decoration: none;
-    border-bottom: 1px solid var(--rule);
-    padding-bottom: 2px;
-    transition: color .16s ease, border-color .16s ease;
-  }
-  .contact a:hover { color: var(--accent); border-color: var(--accent); }
-
-  /* === Instrument readouts — the one loud moment =================== */
-
-  .readouts {
-    margin-top: clamp(56px, 9vw, 92px);
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: clamp(28px, 4vw, 44px);
-  }
-
-  .readout { display: flex; flex-direction: column; gap: 10px; }
-
-  .readout-value {
-    font-family: var(--mono);
-    font-size: clamp(38px, 6.5vw, 62px);
-    font-weight: 600;
-    line-height: 0.9;
-    letter-spacing: -0.055em;
-    font-variant-numeric: tabular-nums;
-  }
-  .readout-value sub {
-    font-size: 0.36em;
-    vertical-align: baseline;
-    color: var(--accent);
-    letter-spacing: 0;
-  }
-
-  .scale { display: block; width: 100%; height: 14px; overflow: visible; }
-  .scale .axis   { stroke: var(--rule);   stroke-width: 1; }
-  .scale .tick   { stroke: var(--rule);   stroke-width: 1; }
-  .scale .fill   { stroke: var(--accent); stroke-width: 2; }
-  .scale .needle { stroke: var(--ink);    stroke-width: 1.5; }
-
-  .readout .label { line-height: 1.6; letter-spacing: 0.13em; color: var(--muted); }
-
-  .footnote {
+  .eyebrow {
     font-family: var(--mono);
     font-size: 11px;
-    color: var(--faint);
-    margin-top: 30px;
-    letter-spacing: 0.04em;
-  }
-
-  /* === Entries ===================================================== */
-
-  .entry { padding-block: 22px; border-top: 1px solid var(--rule); }
-
-  .entry-head {
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--dim);
     display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 2px 20px;
+    align-items: center;
+    gap: 14px;
   }
-  .entry-org {
-    font-family: var(--mono);
-    font-size: clamp(15px, 2vw, 17.5px);
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }
-  .when {
-    font-family: var(--mono);
-    font-size: 11.5px;
-    letter-spacing: 0.06em;
-    color: var(--faint);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-  .entry-sub {
+  .eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  /* === HERO ========================================================= */
+
+  .hero {
+    position: relative;
+    min-height: 100svh;
     display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 0 20px;
-    color: var(--muted);
-    font-size: 15.5px;
-    font-style: italic;
-    margin-top: 2px;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding-bottom: clamp(48px, 8vh, 96px);
+    overflow: hidden;
+    isolation: isolate;
   }
 
-  ul { list-style: none; margin-top: 15px; display: grid; gap: 9px; }
-  ul li { position: relative; padding-left: 19px; max-width: var(--measure); }
-  ul li::before {
+  /* The waterfall itself. Rendered tiny and scaled up — a real
+     spectrogram is low-resolution data, and the smoothing is what gives
+     it that soft bloom. */
+  #waterfall {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    opacity: 0;
+    transform: scale(1.04);
+    transition: opacity 2.2s ease, transform 2.4s cubic-bezier(.16,.8,.3,1);
+  }
+  .lit #waterfall { opacity: 0.62; transform: none; }
+
+  /* Vignette + floor gradient so type always has ground to sit on. */
+  .hero::after {
     content: "";
     position: absolute;
-    left: 1px;
-    top: 0.75em;
-    width: 8px;
-    height: 1px;
-    background: var(--accent);
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(120% 80% at 50% 0%, transparent 20%, #06080DCC 78%, var(--void) 100%),
+      linear-gradient(to top, var(--void) 4%, #06080DE6 24%, transparent 62%);
+    pointer-events: none;
   }
-  ul b { font-weight: 600; }
 
-  .tag {
+  /* Warm light that tracks the pointer. Subtle enough to feel like
+     atmosphere rather than a gimmick. */
+  #glow {
+    position: absolute;
+    width: 46vmax; height: 46vmax;
+    left: 0; top: 0;
+    margin: -23vmax 0 0 -23vmax;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(circle, #FFB45414 0%, #FF784708 40%, transparent 70%);
+    opacity: 0;
+    transition: opacity 1.6s ease .6s;
+    will-change: transform;
+  }
+  .lit #glow { opacity: 1; }
+
+  .hero-inner { position: relative; }
+
+  .hero .eyebrow { margin-bottom: clamp(20px, 3vh, 34px); }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(46px, 11.5vw, 154px);
+    line-height: 0.86;
+    letter-spacing: -0.05em;
+    text-wrap: balance;
+    margin-bottom: clamp(22px, 3.4vh, 40px);
+  }
+  h1 .ln { display: block; overflow: hidden; }
+  h1 .ln > span {
+    display: block;
+    transform: translateY(105%);
+    transition: transform 1.15s cubic-bezier(.16,.86,.24,1);
+  }
+  .lit h1 .ln:nth-child(1) > span { transform: none; transition-delay: .12s; }
+  .lit h1 .ln:nth-child(2) > span { transform: none; transition-delay: .22s; }
+
+  h1 .accent {
+    background: linear-gradient(100deg, var(--ember) 0%, var(--flare) 42%, var(--plasma) 92%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .tagline {
     font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.07em;
-    color: var(--trace);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-  .tag + .tag { margin-left: 10px; }
-
-  /* === Projects ==================================================== */
-
-  .project { padding-block: 26px; border-top: 1px solid var(--rule); }
-
-  .project-head {
+    font-size: clamp(11px, 1.5vw, 13.5px);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--soft);
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: 4px 16px;
+    gap: 8px 18px;
+    max-width: 760px;
   }
-  .project-name {
-    font-family: var(--mono);
-    font-size: clamp(16px, 2.2vw, 19.5px);
-    font-weight: 600;
-    letter-spacing: -0.025em;
-  }
-  .project-name span { color: var(--faint); font-weight: 400; }
+  .tagline i { font-style: normal; color: var(--ember); }
 
-  .repo {
+  .fade { opacity: 0; transform: translateY(14px); transition: opacity 1s ease, transform 1s cubic-bezier(.16,.86,.24,1); }
+  .lit .fade { opacity: 1; transform: none; }
+  .lit .tagline { transition-delay: .52s; }
+  .lit .scroll-cue { transition-delay: .8s; }
+
+  .scroll-cue {
+    position: absolute;
+    right: 0; bottom: -6px;
     font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.1em;
+    font-size: 10px;
+    letter-spacing: 0.24em;
     text-transform: uppercase;
-    text-decoration: none;
-    color: var(--trace);
-    transition: color .16s ease;
+    color: var(--dim);
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
-  .repo::after { content: " \2197"; }
-  .repo:hover { color: var(--accent); }
+  .scroll-cue span { display: block; width: 40px; height: 1px; background: linear-gradient(90deg, transparent, var(--ember)); animation: sweep 2.6s ease-in-out infinite; }
+  @keyframes sweep { 0%,100% { transform: scaleX(.35); opacity:.4 } 50% { transform: scaleX(1); opacity:1 } }
 
-  .stack {
+  /* === REVEALS ====================================================== */
+
+  .rise { opacity: 0; transform: translateY(26px); transition: opacity .9s ease, transform .9s cubic-bezier(.16,.86,.24,1); }
+  .rise.seen { opacity: 1; transform: none; }
+  .rise.d1 { transition-delay: .08s } .rise.d2 { transition-delay: .16s } .rise.d3 { transition-delay: .24s }
+
+  section { padding-block: clamp(84px, 13vh, 168px); }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(30px, 5.2vw, 60px);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    margin: 26px 0 clamp(32px, 5vh, 62px);
+    text-wrap: balance;
+  }
+
+  .lede { max-width: var(--measure); font-size: clamp(18px, 2.1vw, 21px); line-height: 1.62; color: var(--soft); }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  /* === METRICS ====================================================== */
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: clamp(26px, 4vw, 56px);
+    margin-top: clamp(40px, 6vh, 72px);
+  }
+  .metric { border-top: 1px solid var(--line); padding-top: 20px; }
+  .metric b {
+    display: block;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(46px, 7vw, 84px);
+    line-height: 0.92;
+    letter-spacing: -0.055em;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(160deg, var(--ink) 30%, var(--ember) 130%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .metric .bar { height: 2px; margin: 16px 0 14px; background: var(--line); position: relative; overflow: hidden; }
+  .metric .bar i {
+    position: absolute; inset: 0;
+    transform-origin: left;
+    transform: scaleX(0);
+    background: linear-gradient(90deg, var(--plasma), var(--flare) 55%, var(--ember));
+    transition: transform 1.5s cubic-bezier(.16,.86,.24,1);
+  }
+  .metric.seen .bar i { transform: scaleX(var(--fill)); }
+  .metric span {
     font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.05em;
-    color: var(--faint);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--dim);
+    line-height: 1.7;
+    display: block;
+  }
+
+  /* === WORK ========================================================= */
+
+  .work { display: grid; gap: 1px; background: var(--line); border-block: 1px solid var(--line); }
+
+  .piece {
+    position: relative;
+    background: var(--void);
+    padding: clamp(30px, 4.6vw, 54px) clamp(20px, 3vw, 40px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    transition: background .5s ease;
+    overflow: hidden;
+  }
+  .piece::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(80% 140% at 8% 0%, #FFB4540E, transparent 62%);
+    opacity: 0;
+    transition: opacity .5s ease;
+    pointer-events: none;
+  }
+  .piece:hover { background: var(--deep); }
+  .piece:hover::before { opacity: 1; }
+
+  .piece-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 20px; }
+
+  .piece h3 {
+    font-family: var(--display);
+    font-weight: 650;
+    font-size: clamp(21px, 3.1vw, 34px);
+    letter-spacing: -0.032em;
+    line-height: 1.08;
+  }
+  .piece h3 em { font-style: normal; color: var(--dim); font-weight: 400; }
+
+  .piece .stack {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--dim);
     margin-left: auto;
   }
 
-  /* === Matrix ====================================================== */
+  .piece p { max-width: var(--measure); color: var(--soft); }
+  .piece p + p { margin-top: 10px; }
+  .piece p b { color: var(--ink); font-weight: 600; }
 
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .chip {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    padding: 5px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .chip.hot { border-color: #FFB45438; color: var(--ember); }
+
+  .visit {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--ember);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    align-self: start;
+  }
+  .visit i { font-style: normal; transition: transform .35s cubic-bezier(.16,.86,.24,1); }
+  .visit:hover i { transform: translate(4px, -4px); }
+
+  /* === TIMELINE ===================================================== */
+
+  .rows { border-top: 1px solid var(--line); }
   .row {
     display: grid;
-    grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
-    gap: 6px 28px;
-    padding: 17px 0;
-    border-top: 1px solid var(--rule);
-    align-items: start;
+    grid-template-columns: minmax(90px, 150px) minmax(0, 1fr);
+    gap: 6px 32px;
+    padding: 26px 0;
+    border-bottom: 1px solid var(--line);
+    transition: border-color .4s ease;
   }
-  .row dt { color: var(--accent); padding-top: 4px; letter-spacing: 0.14em; }
-  .row dd { font-size: 16px; }
+  .row:hover { border-bottom-color: #FFB45433; }
+  .row dt { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--dim); padding-top: 7px; font-variant-numeric: tabular-nums; }
+  .row h4 { font-family: var(--display); font-weight: 600; font-size: clamp(16px, 2.1vw, 20px); letter-spacing: -0.02em; }
+  .row .meta { color: var(--dim); font-size: 15px; font-style: italic; margin-top: 2px; }
+  .row p { color: var(--soft); margin-top: 10px; max-width: var(--measure); font-size: 16.5px; }
 
-  .certs { display: flex; flex-wrap: wrap; gap: 4px 18px; font-family: var(--mono); font-size: 12px; }
-  .certs a { color: var(--trace); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color .16s ease, color .16s ease; }
-  .certs a:hover { color: var(--accent); border-color: var(--accent); }
+  ul.pts { list-style: none; margin-top: 14px; display: grid; gap: 10px; }
+  ul.pts li { position: relative; padding-left: 22px; max-width: var(--measure); color: var(--soft); }
+  ul.pts li::before {
+    content: ""; position: absolute; left: 0; top: .72em;
+    width: 10px; height: 1px;
+    background: linear-gradient(90deg, var(--ember), transparent);
+  }
+  ul.pts b { color: var(--ink); font-weight: 600; }
 
-  /* === Footer ====================================================== */
+  /* === SKILLS ======================================================= */
+
+  .skills { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .skill { background: var(--void); padding: 24px clamp(18px, 2.4vw, 30px); display: grid; grid-template-columns: minmax(120px, 190px) minmax(0, 1fr); gap: 8px 30px; transition: background .4s ease; }
+  .skill:hover { background: var(--deep); }
+  .skill dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ember); padding-top: 5px; }
+  .skill dd { color: var(--soft); font-size: 16.5px; }
+
+  /* === CONTACT ====================================================== */
+
+  .contact { text-align: left; }
+  .contact h2 { margin-bottom: 28px; }
+  .links { display: flex; flex-wrap: wrap; gap: 12px 14px; margin-top: 34px; }
+  .links a {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    padding: 13px 22px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--ink);
+    transition: border-color .35s ease, color .35s ease, transform .35s cubic-bezier(.16,.86,.24,1), background .35s ease;
+  }
+  .links a:hover { border-color: #FFB45459; color: var(--ember); transform: translateY(-2px); background: #FFB4540A; }
 
   footer {
-    margin-top: clamp(64px, 9vw, 100px);
-    padding-top: 26px;
-    border-top: 1px solid var(--rule);
+    border-top: 1px solid var(--line);
+    padding-block: 34px 56px;
     font-family: var(--mono);
-    font-size: 11.5px;
-    letter-spacing: 0.06em;
-    color: var(--faint);
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 8px 24px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--dim);
+    display: flex; flex-wrap: wrap;
+    justify-content: space-between; gap: 10px 24px;
   }
-  footer a { color: var(--trace); text-decoration: none; }
-  footer a:hover { color: var(--accent); }
 
-  @media (max-width: 620px) {
-    .stack { margin-left: 0; flex-basis: 100%; }
-    .row { grid-template-columns: minmax(0, 1fr); }
+  @media (max-width: 680px) {
+    .piece .stack { margin-left: 0; flex-basis: 100%; }
+    .row, .skill { grid-template-columns: minmax(0, 1fr); }
+    .scroll-cue { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; animation: none !important; }
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+    h1 .ln > span { transform: none !important; }
+    .fade, .rise { opacity: 1 !important; transform: none !important; }
+    .metric .bar i { transform: scaleX(var(--fill)) !important; }
+    #waterfall { opacity: .42 !important; transform: none !important; }
+    #glow { display: none; }
   }
 </style>
 
-<div class="page">
+<header class="hero" id="top">
+  <canvas id="waterfall" aria-hidden="true"></canvas>
+  <div id="glow" aria-hidden="true"></div>
 
-  <header>
-    <h1>David Jeremie <em>Anand</em></h1>
-    <p class="role">Applied AI &nbsp;/&nbsp; Agentic Systems &nbsp;/&nbsp; Data and Workflow Solutions</p>
+  <div class="wrap hero-inner">
+    <p class="eyebrow fade">New Delhi, India</p>
 
-    <p class="lede">
-      Engineering and operations professional building towards applied AI. Two years at
-      Genpact turning tangled workflows into <strong>measurable results</strong> — and now
-      bringing the same rigour to self-directed AI projects in agentic RAG, multi-agent
-      reasoning and LLM evaluation, each backed by tests and CI. Currently pursuing a PGP in
-      Applied AI and Agentic Systems at Masters&rsquo; Union.
+    <h1>
+      <span class="ln"><span>David Jeremie</span></span>
+      <span class="ln"><span class="accent">Anand</span></span>
+    </h1>
+
+    <p class="tagline fade">
+      <span>Applied AI</span> <i>/</i>
+      <span>Agentic Systems</span> <i>/</i>
+      <span>Data and Workflow Solutions</span>
     </p>
 
-    <p class="contact">
-      <a href="mailto:jerryanand10@gmail.com">jerryanand10@gmail.com</a>
-      <a href="https://www.linkedin.com/in/david-jeremie-anand/" target="_blank" rel="noopener">LinkedIn</a>
-      <a href="https://github.com/Jeremie2002-sudo" target="_blank" rel="noopener">GitHub</a>
-      <span>New Delhi, India</span>
+    <p class="scroll-cue fade"><span></span> Scroll</p>
+  </div>
+</header>
+
+<main>
+
+  <section class="wrap" id="about">
+    <p class="eyebrow rise">The short version</p>
+    <h2 class="rise d1">I make vague systems measurable.</h2>
+    <p class="lede rise d2">
+      Two years at Genpact turning tangled operations into numbers you could act on — then
+      bringing the same discipline to AI, where almost nobody measures anything. I build
+      <strong>agentic RAG, multi-agent reasoning and LLM evaluation</strong>, each backed by
+      tests and CI, and currently reading for a PGP in Applied AI and Agentic Systems at
+      Masters&rsquo; Union.
     </p>
 
-    <div class="readouts">
-      <div class="readout">
-        <div class="readout-value">18<sub>%</sub></div>
-        <svg class="scale" viewBox="0 0 100 14" preserveAspectRatio="none" aria-hidden="true">
-          <line class="axis" x1="0" y1="10" x2="100" y2="10"/>
-          <line class="tick" x1="0"   y1="6" x2="0"   y2="10"/>
-          <line class="tick" x1="33"  y1="8" x2="33"  y2="10"/>
-          <line class="tick" x1="66"  y1="8" x2="66"  y2="10"/>
-          <line class="tick" x1="100" y1="6" x2="100" y2="10"/>
-          <line class="fill" x1="0" y1="10" x2="58" y2="10"/>
-          <line class="needle" x1="58" y1="2" x2="58" y2="13"/>
-        </svg>
-        <div class="label">Faster<br>turnaround</div>
+    <div class="metrics">
+      <div class="metric rise" style="--fill:.58">
+        <b data-to="18">0</b><span class="pct">%</span>
+        <div class="bar"><i></i></div>
+        <span>Faster turnaround</span>
       </div>
-
-      <div class="readout">
-        <div class="readout-value">30<sub>%</sub></div>
-        <svg class="scale" viewBox="0 0 100 14" preserveAspectRatio="none" aria-hidden="true">
-          <line class="axis" x1="0" y1="10" x2="100" y2="10"/>
-          <line class="tick" x1="0"   y1="6" x2="0"   y2="10"/>
-          <line class="tick" x1="33"  y1="8" x2="33"  y2="10"/>
-          <line class="tick" x1="66"  y1="8" x2="66"  y2="10"/>
-          <line class="tick" x1="100" y1="6" x2="100" y2="10"/>
-          <line class="fill" x1="0" y1="10" x2="84" y2="10"/>
-          <line class="needle" x1="84" y1="2" x2="84" y2="13"/>
-        </svg>
-        <div class="label">Fewer<br>defects</div>
+      <div class="metric rise d1" style="--fill:.84">
+        <b data-to="30">0</b>
+        <div class="bar"><i></i></div>
+        <span>Fewer defects</span>
       </div>
-
-      <div class="readout">
-        <div class="readout-value">22<sub>%</sub></div>
-        <svg class="scale" viewBox="0 0 100 14" preserveAspectRatio="none" aria-hidden="true">
-          <line class="axis" x1="0" y1="10" x2="100" y2="10"/>
-          <line class="tick" x1="0"   y1="6" x2="0"   y2="10"/>
-          <line class="tick" x1="33"  y1="8" x2="33"  y2="10"/>
-          <line class="tick" x1="66"  y1="8" x2="66"  y2="10"/>
-          <line class="tick" x1="100" y1="6" x2="100" y2="10"/>
-          <line class="fill" x1="0" y1="10" x2="69" y2="10"/>
-          <line class="needle" x1="69" y1="2" x2="69" y2="13"/>
-        </svg>
-        <div class="label">Productivity<br>uplift</div>
+      <div class="metric rise d2" style="--fill:.69">
+        <b data-to="22">0</b>
+        <div class="bar"><i></i></div>
+        <span>Productivity uplift</span>
       </div>
-
-      <div class="readout">
-        <div class="readout-value">25<sub>%</sub></div>
-        <svg class="scale" viewBox="0 0 100 14" preserveAspectRatio="none" aria-hidden="true">
-          <line class="axis" x1="0" y1="10" x2="100" y2="10"/>
-          <line class="tick" x1="0"   y1="6" x2="0"   y2="10"/>
-          <line class="tick" x1="33"  y1="8" x2="33"  y2="10"/>
-          <line class="tick" x1="66"  y1="8" x2="66"  y2="10"/>
-          <line class="tick" x1="100" y1="6" x2="100" y2="10"/>
-          <line class="fill" x1="0" y1="10" x2="74" y2="10"/>
-          <line class="needle" x1="74" y1="2" x2="74" y2="13"/>
-        </svg>
-        <div class="label">Less reporting<br>effort</div>
+      <div class="metric rise d3" style="--fill:.74">
+        <b data-to="25">0</b>
+        <div class="bar"><i></i></div>
+        <span>Less reporting effort</span>
       </div>
     </div>
-
-    <p class="footnote">Measured at Genpact, Aug 2024 &ndash; Aug 2026.</p>
-  </header>
-
-  <section>
-    <h2 class="label">Experience</h2>
-
-    <article class="entry">
-      <div class="entry-head">
-        <h3 class="entry-org">Genpact</h3>
-        <span class="when">Aug 2024 &ndash; Aug 2026</span>
-      </div>
-      <div class="entry-sub">
-        <span>Associate and Subject Matter Expert &mdash; Operations</span>
-        <span>New Delhi</span>
-      </div>
-      <ul>
-        <li>Analysed high-volume workflows and drove process redesign, contributing to an <b>18% reduction in turnaround time</b> and higher throughput.</li>
-        <li>Ran structured root-cause analysis of recurring defects and SLA deviations, contributing to a <b>30% reduction in operational defects</b>.</li>
-        <li>Automated management reports and dashboards in Excel and Power BI, cutting recurring reporting effort by <b>25%</b>.</li>
-        <li>Partnered with Risk, Compliance and Quality stakeholders on controls and workflow improvements, contributing to a <b>22% productivity uplift</b>.</li>
-        <li>Documented process gaps, tracked issues through Buganizer, validated corrective actions, and maintained minimal SLA breaches.</li>
-      </ul>
-    </article>
   </section>
 
-  <section>
-    <h2 class="label">Projects</h2>
+  <section id="work">
+    <div class="wrap">
+      <p class="eyebrow rise">Selected work</p>
+      <h2 class="rise d1">Things I built, and why they exist.</h2>
+    </div>
 
-    <article class="project">
-      <div class="project-head">
-        <h3 class="project-name">Synapse <span>/</span> Agentic RAG Document Assistant</h3>
-        <a class="repo" href="https://github.com/Jeremie2002-sudo/synapse" target="_blank" rel="noopener">Repo</a>
-        <span class="stack">Python &middot; FastAPI &middot; FAISS &middot; Ollama/Groq</span>
-      </div>
-      <ul>
-        <li>Built a hybrid retrieval pipeline — BM25 and FAISS fused via Reciprocal Rank Fusion with LLM listwise reranking — feeding a four-stage agent pipeline (planner, retriever, synthesizer, critic) that grounds answers in evidence and self-critiques unsupported claims.</li>
-        <li>Added an observability UI and an automated eval harness for retrieval and faithfulness scoring, plus a pluggable model backend. <span class="tag">31-test CI</span><span class="tag">Deployed on Render</span></li>
-      </ul>
-    </article>
+    <div class="work">
 
-    <article class="project">
-      <div class="project-head">
-        <h3 class="project-name">Ledgr <span>/</span> AI-Powered Finance Manager</h3>
-        <a class="repo" href="https://github.com/Jeremie2002-sudo/ai-finance-manager" target="_blank" rel="noopener">Repo</a>
-        <span class="stack">Python &middot; Flask &middot; SQLite &middot; Docker</span>
-      </div>
-      <ul>
-        <li>Built a full-stack finance tracker with dashboards, budget tracking and CSV import/export, plus AI transaction categorisation using concurrent LLM calls with a keyword fallback that works fully offline.</li>
-        <li>Designed a tool-calling assistant that queries real transaction data instead of relying on LLM arithmetic, with a pluggable OpenAI/Ollama backend. <span class="tag">58-test CI</span><span class="tag">Dockerised</span></li>
-      </ul>
-    </article>
+      <article class="piece rise">
+        <div class="wrap" style="padding-inline:0">
+          <div class="piece-top">
+            <h3>PromptDrift <em>— prompt regression testing</em></h3>
+            <span class="stack">Python · asyncio · pytest · Actions</span>
+          </div>
+          <p style="margin-top:16px">
+            You tweak a prompt to fix one bad case, it works, you ship it — and three other
+            cases broke silently. PromptDrift snapshots prompt behaviour into a committed
+            baseline and fails CI when a change makes things worse.
+          </p>
+          <p>
+            It refuses to answer <b>&ldquo;is this prompt good?&rdquo;</b>, which is
+            unanswerable, and answers <b>&ldquo;is it worse than yesterday?&rdquo;</b>, which
+            blocks a merge. Cheap deterministic checks run first and short-circuit the paid
+            LLM-as-judge calls.
+          </p>
+          <div class="chips">
+            <span class="chip hot">157-test CI</span>
+            <span class="chip">Python 3.10–3.13</span>
+            <span class="chip">Runs offline</span>
+          </div>
+          <a class="visit" href="https://github.com/Jeremie2002-sudo/promptdrift" target="_blank" rel="noopener">View repository <i>&#8599;</i></a>
+        </div>
+      </article>
 
-    <article class="project">
-      <div class="project-head">
-        <h3 class="project-name">PromptDrift <span>/</span> LLM Prompt Regression Testing</h3>
-        <a class="repo" href="https://github.com/Jeremie2002-sudo/promptdrift" target="_blank" rel="noopener">Repo</a>
-        <span class="stack">Python &middot; asyncio &middot; pytest &middot; GitHub Actions</span>
-      </div>
-      <ul>
-        <li>Built a CLI that snapshots prompt behaviour into a committed baseline and fails CI when a change degrades it, sampling every case repeatedly so genuine regressions are separated from model non-determinism.</li>
-        <li>Tiered assertions run deterministic checks before paid LLM-as-judge calls, cutting evaluation cost. <span class="tag">157-test CI</span><span class="tag">Python 3.10&ndash;3.13</span></li>
-      </ul>
-    </article>
+      <article class="piece rise">
+        <div class="wrap" style="padding-inline:0">
+          <div class="piece-top">
+            <h3>Synapse <em>— agentic RAG assistant</em></h3>
+            <span class="stack">Python · FastAPI · FAISS · Ollama/Groq</span>
+          </div>
+          <p style="margin-top:16px">
+            A hybrid retrieval pipeline — BM25 and FAISS fused through Reciprocal Rank Fusion
+            with LLM listwise reranking — feeding a four-stage agent loop of planner,
+            retriever, synthesizer and critic.
+          </p>
+          <p>
+            The critic is the interesting part: it grounds every answer in retrieved evidence
+            and flags its own unsupported claims. Shipped with an observability UI and an
+            automated eval harness scoring retrieval and faithfulness.
+          </p>
+          <div class="chips">
+            <span class="chip hot">31-test CI</span>
+            <span class="chip">Deployed on Render</span>
+            <span class="chip">Eval harness</span>
+          </div>
+          <a class="visit" href="https://github.com/Jeremie2002-sudo/synapse" target="_blank" rel="noopener">View repository <i>&#8599;</i></a>
+        </div>
+      </article>
 
-    <article class="project">
-      <div class="project-head">
-        <h3 class="project-name">Wireless Temperature Detection <span>/</span> HackRF One</h3>
-        <span class="stack">RF and Wireless Systems &middot; SDR</span>
-      </div>
-      <ul>
-        <li>Built an RF prototype using HackRF One to acquire, analyse and interpret remotely transmitted temperature signals and identify anomalies.</li>
-        <li>Implemented the end-to-end SDR chain — capture, filtering, demodulation, decoding — and validated decoded readings against a reference sensor.</li>
-      </ul>
-    </article>
+      <article class="piece rise">
+        <div class="wrap" style="padding-inline:0">
+          <div class="piece-top">
+            <h3>Ledgr <em>— AI finance manager</em></h3>
+            <span class="stack">Python · Flask · SQLite · Docker</span>
+          </div>
+          <p style="margin-top:16px">
+            A full-stack finance tracker with dashboards, budgets and CSV import/export, plus
+            AI transaction categorisation using concurrent LLM calls with a keyword fallback
+            that keeps working with no network at all.
+          </p>
+          <p>
+            Its assistant calls tools to query real transaction data rather than trusting an
+            LLM to do arithmetic — the difference between a demo and something you would let
+            near your own money.
+          </p>
+          <div class="chips">
+            <span class="chip hot">58-test CI</span>
+            <span class="chip">Dockerised</span>
+            <span class="chip">Tool-calling</span>
+          </div>
+          <a class="visit" href="https://github.com/Jeremie2002-sudo/ai-finance-manager" target="_blank" rel="noopener">View repository <i>&#8599;</i></a>
+        </div>
+      </article>
+
+      <article class="piece rise">
+        <div class="wrap" style="padding-inline:0">
+          <div class="piece-top">
+            <h3>Wireless Temperature Detection <em>— HackRF One</em></h3>
+            <span class="stack">SDR · RF and wireless systems</span>
+          </div>
+          <p style="margin-top:16px">
+            An RF prototype that captures remotely transmitted temperature signals off the air
+            and decodes them — the full software-defined radio chain of capture, filtering,
+            demodulation and decoding, validated against a reference sensor.
+          </p>
+          <p style="color:var(--dim);font-size:15.5px">
+            The waterfall behind this page&rsquo;s title is a nod to this one.
+          </p>
+          <div class="chips">
+            <span class="chip">Signal analysis</span>
+            <span class="chip">Anomaly detection</span>
+          </div>
+        </div>
+      </article>
+
+    </div>
   </section>
 
-  <section>
-    <h2 class="label">Internships</h2>
+  <section class="wrap" id="experience">
+    <p class="eyebrow rise">Experience</p>
+    <h2 class="rise d1">Two years inside the machine.</h2>
 
-    <article class="entry">
-      <div class="entry-head">
-        <h3 class="entry-org">Defence Research and Development Organisation</h3>
-        <span class="when">Jul &ndash; Sep 2022</span>
-      </div>
-      <div class="entry-sub"><span>Research and Development Intern</span><span>India</span></div>
-      <ul><li>Supported development, validation and signal analysis of an embedded wireless sensing prototype, improving reliability and reducing errors.</li></ul>
-    </article>
-
-    <article class="entry">
-      <div class="entry-head">
-        <h3 class="entry-org">Bhagwan Parshuram Institute of Technology, GGSIPU</h3>
-        <span class="when">Jul &ndash; Aug 2023</span>
-      </div>
-      <div class="entry-sub"><span>Data Analytics Intern</span><span>New Delhi</span></div>
-      <ul><li>Analysed institutional datasets in Python and Excel and built KPI dashboards and automated reports, cutting repetitive manual effort by <b>25%</b>.</li></ul>
-    </article>
-
-    <article class="entry">
-      <div class="entry-head">
-        <h3 class="entry-org">AGIXURY</h3>
-        <span class="when">Sep &ndash; Oct 2020</span>
-      </div>
-      <div class="entry-sub"><span>Web Development Intern</span><span>Remote</span></div>
-      <ul><li>Developed responsive web interfaces from business requirements and improved usability across desktop and mobile layouts.</li></ul>
-    </article>
-  </section>
-
-  <section>
-    <h2 class="label">Education</h2>
-
-    <article class="entry">
-      <div class="entry-head">
-        <h3 class="entry-org">Masters&rsquo; Union</h3>
-        <span class="when">Aug 2026 &ndash; Present</span>
-      </div>
-      <div class="entry-sub"><span>PGP in Applied AI and Agentic Systems</span><span>Gurugram</span></div>
-    </article>
-
-    <article class="entry">
-      <div class="entry-head">
-        <h3 class="entry-org">Bhagwan Parshuram Institute of Technology, GGSIPU</h3>
-        <span class="when">2020 &ndash; 2024</span>
-      </div>
-      <div class="entry-sub"><span>B.Tech, Electronics and Communication Engineering</span><span>CGPA 8.53 / 10</span></div>
-    </article>
-
-    <article class="entry">
-      <div class="entry-head">
-        <h3 class="entry-org">Faith Academy Senior Secondary School, CBSE</h3>
-        <span class="when">2018 &ndash; 2020</span>
-      </div>
-      <div class="entry-sub"><span>Class XII 92.8% &middot; Class X 94.2%</span><span>New Delhi</span></div>
-    </article>
-  </section>
-
-  <section>
-    <h2 class="label">Skills</h2>
-    <dl>
-      <div class="row">
-        <dt class="label">Programming</dt>
-        <dd>Python, SQL, FastAPI, Flask, data analysis, data cleaning, exploratory data analysis</dd>
-      </div>
-      <div class="row">
-        <dt class="label">Applied AI</dt>
-        <dd>Machine learning, generative AI, agentic AI, large language models, prompt engineering, Retrieval-Augmented Generation</dd>
-      </div>
-      <div class="row">
-        <dt class="label">Systems &amp; Cloud</dt>
-        <dd>Vector databases (FAISS), LLMOps, GenAIOps, Microsoft Azure AI, Snowflake, model APIs, data engineering foundations</dd>
-      </div>
-      <div class="row">
-        <dt class="label">Tooling</dt>
-        <dd>Power BI, Tableau, Advanced Excel, Git, GitHub Actions, Docker, pytest</dd>
-      </div>
-      <div class="row">
-        <dt class="label">Delivery</dt>
-        <dd>Root-cause analysis, stakeholder communication, process improvement, workflow optimisation</dd>
-      </div>
-    </dl>
-  </section>
-
-  <section>
-    <h2 class="label">Certifications</h2>
-    <dl>
-      <div class="row">
-        <dt class="label">Professional</dt>
-        <dd class="certs">
-          <a href="https://www.linkedin.com/learning/certificates/2cff73983b6d54052ae8fdce0e37fd80249fed71bc398690adf33bb431346a54" target="_blank" rel="noopener">Snowflake Generative AI</a>
-          <a href="https://www.linkedin.com/learning/certificates/bd49765b3e87990b655e2e0cdc764fc2bdc0a341834f9fb9e817f1dc3989aef4" target="_blank" rel="noopener">Microsoft Azure AI Essentials</a>
-          <a href="https://www.linkedin.com/learning/certificates/4b583d8c7685402eb8f8341a6d3efa8bb82aea8afd6be332fd69b3088f1273a2" target="_blank" rel="noopener">Astronomer Data Engineering</a>
-        </dd>
-      </div>
-      <div class="row">
-        <dt class="label">AI Engineering</dt>
-        <dd class="certs">
-          <a href="https://www.linkedin.com/learning/certificates/cb143ba70b073c9919680246e221ca7e58662cd77d518f5b04007282ad603f2f" target="_blank" rel="noopener">Become an AI Engineer</a>
-          <a href="https://www.linkedin.com/learning/certificates/14745a6f2bc7090f9b35186208284daba872c1fea92ac8400d711b3a093dc778" target="_blank" rel="noopener">GenAIOps Foundations</a>
-          <a href="https://www.linkedin.com/learning/certificates/1729b1e05e9b11c9e10c2bae0ad4d189bb180fabf1e99bc3b549cee8b18a37a4" target="_blank" rel="noopener">Generative AI in Cloud Computing</a>
-        </dd>
-      </div>
-      <div class="row">
-        <dt class="label">LLMs &amp; RAG</dt>
-        <dd class="certs">
-          <a href="https://www.linkedin.com/learning/certificates/900d9c0c50342ee31be20bbd2720036cfde4f2a6ca93d1f4d78e7a698b5aef3a" target="_blank" rel="noopener">Fine-Tuning for LLMs</a>
-          <a href="https://www.linkedin.com/learning/certificates/8eaa40845bbe2d6d4674d210d1a8e54fa1ceb8262e1a3fddb2b9ca01ba0ad6bc" target="_blank" rel="noopener">Advanced LLMs with RAG</a>
-          <a href="https://www.linkedin.com/learning/certificates/dcaac0850342ca31e3f0c918df924968f0d77c8c3925b837871e454d79c4f5a9" target="_blank" rel="noopener">Vector Databases and RAG</a>
-          <a href="https://www.linkedin.com/learning/certificates/0d5209983d1c201890d2909f761763febafc701fb5d46bf255a0ea6a6b893562" target="_blank" rel="noopener">AI Ecosystem for Developers</a>
+    <dl class="rows">
+      <div class="row rise">
+        <dt>2024 — 2026</dt>
+        <dd>
+          <h4>Genpact</h4>
+          <div class="meta">Associate and Subject Matter Expert — Operations · New Delhi</div>
+          <ul class="pts">
+            <li>Analysed high-volume workflows and drove process redesign, contributing to an <b>18% reduction in turnaround time</b>.</li>
+            <li>Ran structured root-cause analysis of recurring defects and SLA deviations, contributing to a <b>30% reduction in operational defects</b>.</li>
+            <li>Automated management reporting in Excel and Power BI, cutting recurring effort by <b>25%</b>.</li>
+            <li>Partnered with Risk, Compliance and Quality on controls and workflow improvements, contributing to a <b>22% productivity uplift</b>.</li>
+            <li>Documented process gaps, tracked issues through Buganizer and validated corrective actions.</li>
+          </ul>
         </dd>
       </div>
     </dl>
   </section>
 
-  <footer>
-    <span>David Jeremie Anand &middot; New Delhi, India</span>
-    <span>
-      <a href="mailto:jerryanand10@gmail.com">Email</a> &middot;
-      <a href="https://www.linkedin.com/in/david-jeremie-anand/" target="_blank" rel="noopener">LinkedIn</a> &middot;
-      <a href="https://github.com/Jeremie2002-sudo" target="_blank" rel="noopener">GitHub</a>
-    </span>
-  </footer>
+  <section class="wrap" id="background">
+    <p class="eyebrow rise">Before that</p>
+    <h2 class="rise d1">Internships and education.</h2>
 
-</div>
+    <dl class="rows">
+      <div class="row rise">
+        <dt>2022</dt>
+        <dd>
+          <h4>Defence Research and Development Organisation</h4>
+          <div class="meta">Research and Development Intern</div>
+          <p>Supported development, validation and signal analysis of an embedded wireless sensing prototype.</p>
+        </dd>
+      </div>
+      <div class="row rise">
+        <dt>2023</dt>
+        <dd>
+          <h4>Bhagwan Parshuram Institute of Technology, GGSIPU</h4>
+          <div class="meta">Data Analytics Intern</div>
+          <p>Analysed institutional datasets in Python and Excel, building KPI dashboards and automated reports that cut repetitive manual effort by <b>25%</b>.</p>
+        </dd>
+      </div>
+      <div class="row rise">
+        <dt>2020</dt>
+        <dd>
+          <h4>AGIXURY</h4>
+          <div class="meta">Web Development Intern · Remote</div>
+          <p>Built responsive interfaces from business requirements and improved usability across desktop and mobile.</p>
+        </dd>
+      </div>
+      <div class="row rise">
+        <dt>2026 —</dt>
+        <dd>
+          <h4>Masters&rsquo; Union</h4>
+          <div class="meta">PGP in Applied AI and Agentic Systems · Gurugram</div>
+        </dd>
+      </div>
+      <div class="row rise">
+        <dt>2020 — 2024</dt>
+        <dd>
+          <h4>B.Tech, Electronics and Communication Engineering</h4>
+          <div class="meta">Bhagwan Parshuram Institute of Technology, GGSIPU · CGPA 8.53 / 10</div>
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="wrap" id="skills">
+    <p class="eyebrow rise">Toolkit</p>
+    <h2 class="rise d1">What I reach for.</h2>
+
+    <dl class="skills rise d1">
+      <div class="skill"><dt>Programming</dt><dd>Python, SQL, FastAPI, Flask, data analysis and cleaning, exploratory analysis</dd></div>
+      <div class="skill"><dt>Applied AI</dt><dd>Machine learning, generative AI, agentic AI, large language models, prompt engineering, Retrieval-Augmented Generation</dd></div>
+      <div class="skill"><dt>Systems &amp; cloud</dt><dd>Vector databases (FAISS), LLMOps, GenAIOps, Microsoft Azure AI, Snowflake, model APIs</dd></div>
+      <div class="skill"><dt>Tooling</dt><dd>Power BI, Tableau, Advanced Excel, Git, GitHub Actions, Docker, pytest</dd></div>
+      <div class="skill"><dt>Delivery</dt><dd>Root-cause analysis, stakeholder communication, process improvement, workflow optimisation</dd></div>
+    </dl>
+  </section>
+
+  <section class="wrap contact" id="contact">
+    <p class="eyebrow rise">Get in touch</p>
+    <h2 class="rise d1">Building something that needs measuring?</h2>
+    <p class="lede rise d2">
+      I&rsquo;m looking for applied AI and forward-deployed engineering roles — the kind where
+      you sit with the actual workflow before deciding what to build.
+    </p>
+    <div class="links rise d3">
+      <a href="mailto:jerryanand10@gmail.com">jerryanand10@gmail.com</a>
+      <a href="https://www.linkedin.com/in/david-jeremie-anand/" target="_blank" rel="noopener">LinkedIn ↗</a>
+      <a href="https://github.com/Jeremie2002-sudo" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <span>David Jeremie Anand · New Delhi, India</span>
+  <span>Built as one file. No trackers, no cookies.</span>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ==================================================================
+     WATERFALL SPECTROGRAM
+     A real SDR waterfall is a low-resolution time-frequency heatmap
+     scrolling downward: each new row is one instant's spectrum. That's
+     exactly what this is — synthesised rather than sampled, but built
+     the same way, and rendered at 220x150 then scaled up so the browser's
+     own smoothing supplies the bloom.
+     ================================================================== */
+
+  var COLS = 220, ROWS = 150;
+
+  /* Magma-style ramp: the standard perceptual colormap for spectrograms.
+     Dark violet through magenta to a pale ember at full intensity. */
+  var STOPS = [
+    [0.00,   6,   8,  14],
+    [0.22,  38,  22,  74],
+    [0.42, 111,  32, 122],
+    [0.62, 183,  55, 111],
+    [0.80, 233, 110,  67],
+    [0.92, 253, 176,  86],
+    [1.00, 255, 235, 190]
+  ];
+
+  function ramp(t) {
+    if (t <= 0) return STOPS[0];
+    if (t >= 1) return STOPS[STOPS.length - 1];
+    for (var i = 1; i < STOPS.length; i++) {
+      if (t <= STOPS[i][0]) {
+        var a = STOPS[i - 1], b = STOPS[i];
+        var k = (t - a[0]) / (b[0] - a[0]);
+        return [
+          a[1] + (b[1] - a[1]) * k,
+          a[2] + (b[2] - a[2]) * k,
+          a[3] + (b[3] - a[3]) * k
+        ];
+      }
+    }
+    return STOPS[STOPS.length - 1];
+  }
+
+  function startWaterfall() {
+    var canvas = document.getElementById("waterfall");
+    var ctx = canvas.getContext("2d", { alpha: true });
+    canvas.width = COLS; canvas.height = ROWS;
+
+    var img = ctx.createImageData(COLS, ROWS);
+    var rows = [];                     /* circular buffer of spectra */
+    var head = 0;
+    for (var r = 0; r < ROWS; r++) rows.push(new Float32Array(COLS));
+
+    /* Carriers drifting across the band. Each contributes a gaussian
+       peak; together they never repeat visibly. */
+    var carriers = [
+      { f: 0.18, w: 0.030, a: 0.95, drift:  0.00013, wob: 0.055, ph: 0.0 },
+      { f: 0.35, w: 0.018, a: 0.72, drift: -0.00009, wob: 0.032, ph: 1.7 },
+      { f: 0.52, w: 0.055, a: 0.60, drift:  0.00006, wob: 0.070, ph: 3.1 },
+      { f: 0.71, w: 0.014, a: 0.88, drift: -0.00016, wob: 0.026, ph: 4.4 },
+      { f: 0.86, w: 0.038, a: 0.55, drift:  0.00011, wob: 0.048, ph: 5.9 }
+    ];
+
+    var t = 0, raf = null, running = false, last = 0;
+
+    function spectrum(out) {
+      for (var x = 0; x < COLS; x++) {
+        var k = x / COLS;
+        /* Noise floor, gently uneven across the band. */
+        var v = 0.05 + 0.035 * Math.sin(k * 11 + t * 0.7) + Math.random() * 0.05;
+        for (var c = 0; c < carriers.length; c++) {
+          var car = carriers[c];
+          var centre = car.f + Math.sin(t * 0.6 + car.ph) * car.wob + car.drift * t * 40;
+          centre = ((centre % 1) + 1) % 1;
+          var d = k - centre;
+          if (d > 0.5) d -= 1; else if (d < -0.5) d += 1;
+          /* Amplitude breathes, so bands fade in and out like real traffic. */
+          var amp = car.a * (0.55 + 0.45 * Math.sin(t * 0.9 + car.ph * 1.3));
+          v += amp * Math.exp(-(d * d) / (2 * car.w * car.w));
+        }
+        out[x] = v > 1 ? 1 : v;
+      }
+    }
+
+    function paint() {
+      var d = img.data, p = 0;
+      for (var y = 0; y < ROWS; y++) {
+        var row = rows[(head + y) % ROWS];
+        /* Older rows sit lower and fade, giving the waterfall depth. */
+        var age = 1 - y / ROWS;
+        for (var x = 0; x < COLS; x++) {
+          var c = ramp(row[x] * (0.35 + 0.65 * age));
+          d[p++] = c[0]; d[p++] = c[1]; d[p++] = c[2];
+          d[p++] = 255 * Math.pow(age, 0.55);
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+
+    function frame(ts) {
+      if (!running) return;
+      /* ~26fps is plenty for a slow scroll and a third of the work. */
+      if (ts - last > 38) {
+        last = ts;
+        t += 0.055;
+        head = (head - 1 + ROWS) % ROWS;
+        spectrum(rows[head]);
+        paint();
+      }
+      raf = requestAnimationFrame(frame);
+    }
+
+    /* Seed the buffer so the first paint is already a full waterfall
+       rather than an empty panel filling in. */
+    for (var s = 0; s < ROWS; s++) { t += 0.055; head = (head - 1 + ROWS) % ROWS; spectrum(rows[head]); }
+    paint();
+
+    if (reduced) return;
+
+    running = true;
+    raf = requestAnimationFrame(frame);
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (e.isIntersecting && !running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
+          else if (!e.isIntersecting && running) { running = false; cancelAnimationFrame(raf); }
+        });
+      }, { threshold: 0.01 }).observe(canvas);
+    }
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) { running = false; cancelAnimationFrame(raf); }
+      else if (!running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
+    });
+  }
+
+  /* ==================================================================
+     POINTER GLOW — eased toward the cursor so it trails rather than snaps
+     ================================================================== */
+
+  function startGlow() {
+    var el = document.getElementById("glow");
+    var hero = document.getElementById("top");
+    var tx = innerWidth / 2, ty = innerHeight * 0.42, cx = tx, cy = ty, on = false;
+
+    hero.addEventListener("pointermove", function (e) {
+      var r = hero.getBoundingClientRect();
+      tx = e.clientX - r.left; ty = e.clientY - r.top;
+      if (!on) { on = true; loop(); }
+    }, { passive: true });
+
+    function loop() {
+      cx += (tx - cx) * 0.06;
+      cy += (ty - cy) * 0.06;
+      el.style.transform = "translate(" + cx + "px," + cy + "px)";
+      if (Math.abs(tx - cx) > 0.4 || Math.abs(ty - cy) > 0.4) requestAnimationFrame(loop);
+      else on = false;
+    }
+    el.style.transform = "translate(" + cx + "px," + cy + "px)";
+  }
+
+  /* ==================================================================
+     REVEALS + COUNTERS
+     ================================================================== */
+
+  function countTo(el) {
+    var to = parseInt(el.dataset.to, 10), started = null, dur = 1400;
+    function step(ts) {
+      if (started === null) started = ts;
+      var k = Math.min((ts - started) / dur, 1);
+      el.firstChild.nodeValue = Math.round((1 - Math.pow(1 - k, 3)) * to) + "%";
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function startReveals() {
+    var items = document.querySelectorAll(".rise");
+    if (!("IntersectionObserver" in window)) {
+      items.forEach(function (el) {
+        el.classList.add("seen");
+        var n = el.querySelector("b[data-to]");
+        if (n) n.firstChild.nodeValue = n.dataset.to + "%";
+      });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add("seen");
+        var num = e.target.querySelector("b[data-to]");
+        if (num) { reduced ? (num.firstChild.nodeValue = num.dataset.to + "%") : countTo(num); }
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: "0px 0px -10% 0px", threshold: 0.15 });
+    items.forEach(function (el) { io.observe(el); });
+  }
+
+  /* ================================================================== */
+
+  startWaterfall();
+  startReveals();
+  if (!reduced && matchMedia("(pointer: fine)").matches) startGlow();
+  requestAnimationFrame(function () { document.documentElement.classList.add("lit"); });
+})();
+</script>
