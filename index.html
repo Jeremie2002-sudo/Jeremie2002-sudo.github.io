@@ -1528,11 +1528,7 @@
      the hero is a spectrogram, and this is what decoding one looks like.
      ================================================================== */
 
-  /* No <, > or & in here. The scrambled glyphs are written straight into
-     innerHTML, and an unescaped angle bracket mid-flight would break the
-     markup rather than render. The final characters are escaped; these
-     never need to be, because they cannot occur. */
-  var GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%/\\=+*?$@";
+  var GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&/\\<>=+*";
 
   function decode(el) {
     var text = el.dataset.text;
