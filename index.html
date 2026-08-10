@@ -60,6 +60,10 @@
     --flare:   #B8401D;
     --plasma:  #9B2064;
     --violet:  #4A2FA6;
+    /* Wine and blush. On paper the blush has to run deeper than a true
+       pastel or it disappears into the ground. */
+    --wine:    #7A1F3D;
+    --blush:   #C9738D;
 
     --display: system-ui, -apple-system, "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --serif: "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
@@ -84,6 +88,8 @@
       --flare:   #FF7A4A;
       --plasma:  #D4479A;
       --violet:  #6E4FD8;
+      --wine:    #8E2F52;
+      --blush:   #F5A8C0;
     }
   }
 
@@ -102,6 +108,8 @@
     --flare:   #FF7A4A;
     --plasma:  #D4479A;
     --violet:  #6E4FD8;
+    --wine:    #8E2F52;
+    --blush:   #F5A8C0;
   }
   :root[data-theme="light"] {
     --ground-rgb: 246 244 241;
@@ -117,6 +125,8 @@
     --flare:   #B8401D;
     --plasma:  #9B2064;
     --violet:  #4A2FA6;
+    --wine:    #7A1F3D;
+    --blush:   #C9738D;
   }
 
   html { background: var(--void); scroll-behavior: smooth; }
@@ -149,7 +159,7 @@
   /* Scroll progress — a spectral hairline, the only fixed chrome. */
   .progress {
     position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 12;
-    background: linear-gradient(90deg, var(--violet), var(--plasma) 38%, var(--flare) 72%, var(--ember));
+    background: linear-gradient(90deg, var(--violet), var(--wine) 26%, var(--plasma) 48%, var(--blush) 66%, var(--flare) 84%, var(--ember));
     transform: scaleX(0); transform-origin: left;
     will-change: transform;
   }
@@ -280,7 +290,8 @@
   .lit h1 .ln:nth-child(2) > span { transform: none; transition-delay: .3s; }
 
   h1 .accent {
-    background: linear-gradient(96deg, var(--ember) 0%, var(--flare) 38%, var(--plasma) 78%, var(--violet) 104%);
+    background: linear-gradient(96deg,
+      var(--ember) 0%, var(--flare) 28%, var(--blush) 56%, var(--plasma) 82%, var(--wine) 106%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
 
@@ -339,13 +350,13 @@
     font-size: clamp(48px, 7.4vw, 88px);
     line-height: .9; letter-spacing: -.06em;
     font-variant-numeric: tabular-nums;
-    background: linear-gradient(150deg, var(--ink) 26%, var(--ember) 128%);
+    background: linear-gradient(150deg, var(--ink) 24%, var(--blush) 96%, var(--wine) 132%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
   .metric .bar { height: 2px; margin: 18px 0 15px; background: var(--line); position: relative; overflow: hidden; }
   .metric .bar i {
     position: absolute; inset: 0; transform-origin: left; transform: scaleX(0);
-    background: linear-gradient(90deg, var(--violet), var(--plasma) 40%, var(--flare) 72%, var(--ember));
+    background: linear-gradient(90deg, var(--wine), var(--plasma) 34%, var(--blush) 56%, var(--flare) 80%, var(--ember));
     transition: transform 1.6s cubic-bezier(.16,.86,.24,1) .15s;
   }
   .metric.seen .bar i { transform: scaleX(var(--fill)); }
@@ -844,23 +855,28 @@
      high energy goes dark and saturated and the quiet band stays near the
      page colour — which is how spectrograms have always been printed.
      Recolouring one for the other would give you a muddy grey wash. */
+  /* Wine sits in the mid-band and blush just below the peak, so the ramp
+     runs violet -> wine -> rose -> blush -> warm -> pale. The amber peak
+     stays: it is what keeps the brightest carriers reading as energy
+     rather than as a pink wash. */
   var RAMP_DARK = [
-    [0.00,   8,   9,  20],
-    [0.16,  34,  20,  72],
-    [0.34, 100,  30, 124],
-    [0.54, 176,  50, 118],
-    [0.72, 228, 100,  76],
-    [0.88, 252, 172,  92],
-    [1.00, 255, 238, 200]
+    [0.00,  10,   8,  18],
+    [0.15,  40,  20,  64],
+    [0.32,  92,  26,  80],
+    [0.47, 143,  34,  79],
+    [0.60, 200,  80, 116],
+    [0.72, 236, 130, 140],
+    [0.86, 250, 180, 130],
+    [1.00, 255, 236, 206]
   ];
   var RAMP_LIGHT = [
     [0.00, 246, 244, 241],
-    [0.16, 250, 226, 186],
-    [0.34, 243, 176, 104],
-    [0.54, 219, 112,  70],
-    [0.72, 172,  46, 104],
-    [0.88,  94,  38, 130],
-    [1.00,  28,  18,  56]
+    [0.15, 250, 224, 230],
+    [0.32, 240, 180, 196],
+    [0.47, 214, 120, 148],
+    [0.62, 168,  52,  92],
+    [0.80, 106,  30,  74],
+    [1.00,  34,  16,  44]
   ];
   var STOPS = RAMP_DARK;
 
