@@ -196,15 +196,19 @@
      when the GPU offers one, falling back to drifting motes on a 2D canvas
      when it does not — the fallback is not a stub, it is the previous
      effect kept intact for anything that cannot compile a shader. */
+  /* width/height are required, not decorative. A canvas takes its intrinsic
+     size from its width/height attributes, and inset:0 alone will not
+     stretch it — leave these off and it sits at its buffer size with hard
+     edges across the page. */
   #motes, #shader {
     position: fixed; inset: 0; z-index: 0;
+    width: 100%; height: 100%;
     pointer-events: none;
     opacity: 0;
     transition: opacity 2s ease .5s;
   }
   .lit #motes { opacity: 1; }
-  .lit #shader { opacity: .82; }
-  :root[data-theme="light"] #shader { opacity: .5; }
+  .lit #shader { opacity: 1; }
   .wrap, nav, .progress, .theme, .grain { position: relative; z-index: 1; }
   nav { z-index: 11; } .progress { z-index: 12; } .theme { z-index: 13; } .grain { z-index: 9; }
 
@@ -1460,11 +1464,15 @@
     "  vec3 col = mix(u_c, u_b, m1);",
     "  col = mix(col, u_a, m2 * 0.75);",
 
-    /* Keep it as atmosphere: heavily damped, and darker toward the edges so
-       it never competes with the type sitting on top of it. */
-    "  float vig = smoothstep(1.25, 0.15, length(uv - 0.5));",
-    "  float amt = mix(0.16, 0.30, u_dark);",
-    "  gl_FragColor = vec4(col * vig * amt, 1.0);",
+    /* Alpha carries the intensity, not the colour. Writing alpha 1.0 and
+       dimming the RGB instead made this an opaque sheet — fine over a black
+       ground, a grey blanket over a white one. Now quiet regions are
+       genuinely transparent and only the bright folds tint the page, so it
+       reads as wisps of colour in both themes. */
+    "  float vig = smoothstep(1.30, 0.10, length(uv - 0.5));",
+    "  float energy = smoothstep(0.30, 0.95, f) * vig;",
+    "  float a = energy * mix(0.13, 0.34, u_dark);",
+    "  gl_FragColor = vec4(col, a);",
     "}"
   ].join("\n");
 
@@ -1509,6 +1517,13 @@
       canvas.height = Math.max(2, Math.round(innerHeight * s));
       gl.viewport(0, 0, canvas.width, canvas.height);
     }
+    /* The canvas composites over the page using its own alpha, so the
+       clear colour must be fully transparent — otherwise every pixel the
+       shader leaves quiet still paints black. */
+    gl.clearColor(0, 0, 0, 0);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
     resize();
     addEventListener("resize", resize, { passive: true });
 
@@ -1542,6 +1557,7 @@
         gl.uniform3fv(uB, tint.b);
         gl.uniform3fv(uC, tint.c);
         gl.uniform1f(uDark, dark);
+        gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
       }
       raf = requestAnimationFrame(frame);
