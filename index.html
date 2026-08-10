@@ -913,10 +913,10 @@
     content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
     background: linear-gradient(to bottom,
       transparent 0%,
-      rgb(var(--ground-rgb) / .14) 16%,
-      rgb(var(--ground-rgb) / .40) 40%,
-      rgb(var(--ground-rgb) / .58) 68%,
-      rgb(var(--ground-rgb) / .46) 100%);
+      rgb(var(--ground-rgb) / .14) 18%,
+      rgb(var(--ground-rgb) / .38) 45%,
+      rgb(var(--ground-rgb) / .30) 78%,
+      transparent 100%);
   }
 
   /* A soft local scrim behind the text block only. With the section-wide
@@ -973,7 +973,9 @@
   .links a.primary:hover svg { transform: translateY(2px); }
 
   footer {
-    border-top: 1px solid var(--line);
+    /* No rule above the footer. It was the last hard line on the page,
+       cutting across exactly where the closing waterfall is meant to
+       dissolve back into the shader. */
     padding-block: 36px 60px;
     font-family: var(--mono); font-size: 11px;
     letter-spacing: .13em; color: var(--dim);
@@ -2210,7 +2212,7 @@
              stays at full strength through the first 38% and dissolves
              across the rest, smoothstepped so it eases at both ends
              rather than switching on. */
-          var HOLD = 0.38;
+          var HOLD = 0.55;
           var f = s <= HOLD ? 0 : (s - HOLD) / (1 - HOLD);
           f = f * f * (3 - 2 * f);
           inner.style.opacity = (1 - f).toFixed(3);
@@ -2375,18 +2377,23 @@
       }
     }
 
-    /* Fades in across the top third rather than switching on, so it
-       emerges out of the shader instead of butting against it, and holds
-       full strength through the lower two thirds where the copy sits.
-       The mirror of the hero, which fades out downward. */
+    /* Transparent at both ends, full through the middle. The waterfall
+       emerges out of the shader at the top and dissolves back into it at
+       the bottom, so the section reads as the shader briefly resolving
+       into a signal rather than as a panel dropped on top of it. Holding
+       full strength to the bottom edge left a hard cut where the section
+       ended. */
     function paint() {
       var d = img.data, p = 0;
       for (var y = 0; y < R; y++) {
         var row = rows[(head + y) % R];
-        var age = 1 - y / R;
-        var a = age > .66 ? (1 - age) / .34 : 1;
-        a = a * a * (3 - 2 * a);              /* ease the handoff */
-        var A = (255 * Math.max(0, Math.min(1, a))) | 0;
+        var age = 1 - y / R;                  /* 1 at the top, 0 at the bottom */
+        var a = 1;
+        if (age > .70) a = (1 - age) / .30;   /* emerge */
+        else if (age < .22) a = age / .22;    /* dissolve back */
+        a = Math.max(0, Math.min(1, a));
+        a = a * a * (3 - 2 * a);              /* ease both handoffs */
+        var A = (255 * a) | 0;
         var lift = (.84 + .16 * age) * 255;
         for (var x = 0; x < C; x++) {
           var idx = (row[x] * lift) | 0;
