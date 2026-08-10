@@ -881,6 +881,51 @@
 
   /* === CONTACT ====================================================== */
 
+  /* === CLOSER =======================================================
+     Full-bleed, so the page opens out at the end instead of stopping
+     inside the same column every other section uses.
+     ================================================================== */
+
+  .closer {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding-block: clamp(96px, 16vh, 190px);
+    margin-top: clamp(40px, 7vh, 90px);
+    border-top: 1px solid var(--line);
+  }
+  #wf-close-layer { position: absolute; inset: 0; z-index: -2; contain: strict; }
+  #waterfall-close {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0;
+    transition: opacity 1.6s ease;
+  }
+  .closer.awake #waterfall-close { opacity: .55; }
+
+  /* Scrim reads from the top here, the mirror of the hero's — the type
+     sits above the waterfall rather than below it. */
+  .closer::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(to bottom,
+      rgb(var(--ground-rgb) / 1) 0%,
+      rgb(var(--ground-rgb) / .92) 22%,
+      rgb(var(--ground-rgb) / .62) 48%,
+      rgb(var(--ground-rgb) / .28) 72%,
+      transparent 100%);
+  }
+  .closer-inner { position: relative; }
+
+  /* The closing line runs at hero scale. It is the last thing anyone
+     reads, and at h2 size it was indistinguishable from "What I reach
+     for." */
+  .closer-line {
+    font-size: clamp(34px, 7.4vw, 88px) !important;
+    line-height: .96;
+    letter-spacing: -.045em;
+    max-width: 16ch;
+    margin: 26px 0 clamp(26px, 4vh, 44px) !important;
+  }
+
   .links { display: flex; flex-wrap: wrap; gap: 12px 14px; margin-top: 38px; }
   .links a {
     font-family: var(--mono); font-size: 12.5px; letter-spacing: .11em;
@@ -1316,21 +1361,34 @@
     </dl>
   </section>
 
-  <section class="wrap" id="contact">
-    <p class="eyebrow rise">Get in touch</p>
-    <h2 class="rise d1">Building something that needs measuring?</h2>
-    <p class="lede rise d2">
-      I&rsquo;m looking for applied AI and forward-deployed engineering roles — the kind where
-      you sit with the actual workflow before deciding what to build.
-    </p>
-    <div class="links rise d3">
-      <a class="primary" href="/David_Jeremie_Anand_Resume.pdf" download>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4 19h16"/></svg>
-        Download résumé
-      </a>
-      <a href="mailto:jerryanand10@gmail.com">jerryanand10@gmail.com</a>
-      <a href="https://www.linkedin.com/in/david-jeremie-anand/" target="_blank" rel="noopener">LinkedIn ↗</a>
-      <a href="https://github.com/Jeremie2002-sudo" target="_blank" rel="noopener">GitHub ↗</a>
+  <!-- The closer bookends the page. It opens with the waterfall behind the
+       name and now ends with the waterfall returning behind the closing
+       line, full-bleed, so the site begins and ends in the same world
+       rather than simply stopping. Same generator as the hero, its own
+       instance and its own buffer. -->
+  <section class="closer" id="contact">
+    <div id="wf-close-layer" aria-hidden="true"><canvas id="waterfall-close"></canvas></div>
+
+    <div class="wrap closer-inner">
+      <p class="eyebrow rise">Get in touch</p>
+      <h2 class="closer-line rise d1">Building something that needs measuring?</h2>
+      <p class="lede rise d2">
+        I&rsquo;m looking for applied AI and forward-deployed engineering roles — the kind
+        where you sit with the actual workflow before deciding what to build.
+      </p>
+
+      <!-- Email leads. The four links were styled as equals, which is odd
+           on a section whose whole job is "get in touch" — the address is
+           the action, the rest are somewhere to look you up. -->
+      <div class="links rise d3">
+        <a class="primary" href="mailto:jerryanand10@gmail.com">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5h18v11H3z"/><path d="m3 7 9 6.5L21 7"/></svg>
+          jerryanand10@gmail.com
+        </a>
+        <a href="/David_Jeremie_Anand_Resume.pdf" download>Résumé <i>&#8595;</i></a>
+        <a href="https://www.linkedin.com/in/david-jeremie-anand/" target="_blank" rel="noopener">LinkedIn ↗</a>
+        <a href="https://github.com/Jeremie2002-sudo" target="_blank" rel="noopener">GitHub ↗</a>
+      </div>
     </div>
   </section>
 
@@ -2218,6 +2276,7 @@
         window.__paintPalette(max > 0 ? scrollY / max : 0);
       }
       if (window.__repaintWaterfall) window.__repaintWaterfall();
+      if (window.__repaintCloser) window.__repaintCloser();
       if (window.__refreshMotes) window.__refreshMotes();
       if (window.__shaderTint) window.__shaderTint();
     });
@@ -2236,6 +2295,7 @@
         window.__paintPalette(max > 0 ? scrollY / max : 0);
       }
       if (window.__repaintWaterfall) window.__repaintWaterfall();
+      if (window.__repaintCloser) window.__repaintCloser();
       if (window.__refreshMotes) window.__refreshMotes();
       if (window.__shaderTint) window.__shaderTint();
     });
@@ -2243,9 +2303,112 @@
     STOPS = current() === "dark" ? RAMP_DARK : RAMP_LIGHT;
   }
 
+  /* ==================================================================
+     CLOSER WATERFALL
+     A second, smaller instance behind the closing line. Deliberately not a
+     copy of the hero generator — it reuses the same LUT, the same ramps and
+     the same carrier maths, just at a coarser grid and a slower step, so
+     it reads as the same signal seen later rather than a different effect.
+     Only runs while the closer is on screen.
+     ================================================================== */
+
+  function startCloser() {
+    var section = document.querySelector(".closer");
+    var canvas = document.getElementById("waterfall-close");
+    if (!section || !canvas) return;
+
+    var C = 150, R = 120;
+    var ctx = canvas.getContext("2d");
+    canvas.width = C; canvas.height = R;
+    var img = ctx.createImageData(C, R);
+    var rows = [], head = 0;
+    for (var i = 0; i < R; i++) rows.push(new Float32Array(C));
+
+    var carriers = [
+      { f: .22, w: .030, a: .90, wob: .050, ph: 1.2, dr:  .00009 },
+      { f: .44, w: .012, a: .76, wob: .022, ph: 3.6, dr: -.00007 },
+      { f: .61, w: .046, a: .62, wob: .060, ph: 0.4, dr:  .00005 },
+      { f: .80, w: .017, a: .86, wob: .028, ph: 4.9, dr: -.00011 }
+    ];
+
+    var t = 0, raf = null, running = false, last = 0;
+
+    function spectrum(out) {
+      for (var x = 0; x < C; x++) {
+        var k = x / C;
+        var v = .05 + .035 * Math.sin(k * 9 + t * .6) + Math.random() * .05;
+        for (var c = 0; c < carriers.length; c++) {
+          var car = carriers[c];
+          var centre = car.f + Math.sin(t * .5 + car.ph) * car.wob + car.dr * t * 40;
+          centre = ((centre % 1) + 1) % 1;
+          var d = k - centre;
+          if (d > .5) d -= 1; else if (d < -.5) d += 1;
+          var amp = car.a * (.6 + .4 * Math.sin(t * .8 + car.ph * 1.2));
+          v += amp * Math.exp(-(d * d) / (2 * car.w * car.w));
+        }
+        out[x] = v > 1 ? 1 : v;
+      }
+    }
+
+    /* Fades toward the top, the mirror of the hero, so the two bookends
+       lean toward each other rather than repeating. */
+    function paint() {
+      var d = img.data, p = 0;
+      for (var y = 0; y < R; y++) {
+        var row = rows[(head + y) % R];
+        var age = 1 - y / R;
+        var alpha = age < .62 ? 1 : (1 - age) / .38;
+        var A = (255 * Math.max(0, Math.min(1, alpha))) | 0;
+        var lift = (.84 + .16 * age) * 255;
+        for (var x = 0; x < C; x++) {
+          var idx = (row[x] * lift) | 0;
+          if (idx > 255) idx = 255; else if (idx < 0) idx = 0;
+          var o = idx * 3;
+          d[p++] = LUT[o]; d[p++] = LUT[o + 1]; d[p++] = LUT[o + 2]; d[p++] = A;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+
+    for (var s = 0; s < R; s++) { t += .034; head = (head - 1 + R) % R; spectrum(rows[head]); }
+    paint();
+    window.__repaintCloser = paint;
+
+    if (reduced) { section.classList.add("awake"); return; }
+
+    function frame(ts) {
+      if (!running) return;
+      if (ts - last > 40) {
+        last = ts; t += .034;
+        head = (head - 1 + R) % R;
+        spectrum(rows[head]);
+        paint();
+      }
+      raf = requestAnimationFrame(frame);
+    }
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          section.classList.toggle("awake", e.isIntersecting);
+          if (e.isIntersecting && !running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
+          else if (!e.isIntersecting && running) { running = false; cancelAnimationFrame(raf); }
+        });
+      }, { threshold: .04 }).observe(section);
+    } else {
+      section.classList.add("awake");
+      running = true; raf = requestAnimationFrame(frame);
+    }
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) { running = false; cancelAnimationFrame(raf); }
+    });
+  }
+
   startTheme();
   if (!reduced) startPalette();
   startWaterfall();
+  startCloser();
   startReveals();
   startChrome();
 
