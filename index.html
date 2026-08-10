@@ -1975,7 +1975,13 @@
     startCursor();
     startTilt();
     startMagnets();
-    startInertia();
+    /* startInertia() is deliberately not called.
+       Taking over the wheel means calling preventDefault on every scroll
+       event, so any bug in the easing loop does not degrade scrolling —
+       it removes it. That is exactly what happened: CSS smooth-scrolling
+       fought the loop and the page froze. The function is kept below for
+       reference, but nothing on this page is worth risking the ability to
+       scroll it. */
   }
   requestAnimationFrame(function () { document.documentElement.classList.add("lit"); });
 })();
