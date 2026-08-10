@@ -495,9 +495,11 @@
     background: radial-gradient(340px 260px at var(--cx, 50%) var(--cy, 0%), rgb(var(--accent-rgb) / .1), transparent 68%);
     opacity: 0; transition: opacity .5s ease;
   }
+  /* No drop shadow on hover. The lit top edge and the pointer-tracking
+     glow already say "raised"; a coloured shadow underneath made the cards
+     look like they were floating off the page. */
   .cell:hover .cell-in {
     border-color: rgb(var(--accent-rgb) / .32);
-    box-shadow: 0 18px 50px -20px rgb(var(--accent-rgb) / .3);
   }
   .cell:hover .cell-in::before { opacity: 1; }
   .cell:hover .cell-in::after { opacity: 1; }
