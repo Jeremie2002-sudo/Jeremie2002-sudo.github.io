@@ -1711,6 +1711,12 @@
       if (!running) return;
       /* 30fps. Folding noise this slow is indistinguishable from 60 and
          halves the GPU work. */
+      /* While the hero fills the viewport the shader is entirely hidden
+         behind the waterfall and its scrim, so drawing it is pure waste —
+         and it is the one moment both continuous loops would otherwise run
+         at once. Skip it until the hero starts leaving. */
+      if ((window.__heroScroll || 0) < 0.12) { raf = requestAnimationFrame(frame); return; }
+
       if (ts - last > 33) {
         last = ts;
         var dark = (document.documentElement.dataset.theme
