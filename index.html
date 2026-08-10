@@ -447,6 +447,43 @@
   .row:hover { border-bottom-color: rgb(var(--accent-rgb) / .18); }
   .row dt { font-family: var(--mono); font-size: 11px; letter-spacing: .13em; color: var(--dim); padding-top: 8px; font-variant-numeric: tabular-nums; }
   .row h4 { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.2vw, 21px); letter-spacing: -.022em; }
+
+  /* "Current" badge. Two nested pulses on the same 2.8s clock: a live dot
+     and a halo breathing out of the pill. Built from --accent-rgb so it
+     glows amber on the dark ground and burnt-orange on paper without a
+     second rule. */
+  .now {
+    display: inline-flex; align-items: center; gap: 7px;
+    vertical-align: middle;
+    margin-left: 12px;
+    padding: 4px 12px 4px 10px;
+    font-family: var(--mono); font-size: 9.5px; font-weight: 400;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--ember);
+    background: rgb(var(--accent-rgb) / .08);
+    border: 1px solid rgb(var(--accent-rgb) / .38);
+    border-radius: 999px;
+    white-space: nowrap;
+    animation: halo 2.8s ease-in-out infinite;
+  }
+  .now i {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 9px 1px rgb(var(--accent-rgb) / .9);
+    animation: blip 2.8s ease-in-out infinite;
+  }
+  @keyframes halo {
+    0%, 100% { box-shadow: 0 0 0 0 rgb(var(--accent-rgb) / .26); }
+    50%      { box-shadow: 0 0 20px 3px rgb(var(--accent-rgb) / .20); }
+  }
+  @keyframes blip {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: .5; transform: scale(.78); }
+  }
+
+  @media (max-width: 680px) {
+    .now { margin-left: 10px; font-size: 9px; padding: 3px 10px 3px 8px; }
+  }
   .row .meta { color: var(--dim); font-size: 15px; font-style: italic; margin-top: 3px; }
   .row p { color: var(--soft); margin-top: 12px; max-width: var(--measure); font-size: 16.5px; }
 
@@ -547,6 +584,9 @@
     h1 .ln > span { transform: none !important; }
     .fade, .rise { opacity: 1 !important; transform: none !important; }
     .metric .bar i { transform: scaleX(var(--fill)) !important; }
+    /* The badge keeps its glow, just stops breathing. */
+    .now { box-shadow: 0 0 14px 2px rgb(var(--accent-rgb) / .18) !important; }
+    .now i { opacity: 1 !important; transform: none !important; }
     #waterfall { opacity: .8 !important; transform: none !important; }
     #glow, .grain { display: none; }
   }
@@ -801,7 +841,7 @@
       <div class="row rise">
         <dt>2026 —</dt>
         <dd>
-          <h4>Masters&rsquo; Union</h4>
+          <h4>Masters&rsquo; Union <span class="now"><i aria-hidden="true"></i>Current</span></h4>
           <div class="meta">PGP in Applied AI and Agentic Systems · Gurugram</div>
         </dd>
       </div>
