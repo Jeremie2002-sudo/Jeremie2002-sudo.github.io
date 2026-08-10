@@ -1,3 +1,11 @@
+<meta charset="utf-8">
+<!-- Without this, mobile browsers lay the page out at a virtual ~980px and
+     zoom out to fit — so every max-width media query below (820, 680, 640,
+     380) silently never matches on a phone, and the visitor gets a shrunk
+     desktop layout. The mobile rules in this file were all written blind
+     against that; this is what makes them run. -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>David Jeremie Anand — Applied AI &amp; Agentic Systems</title>
 <meta name="description" content="Applied AI and agentic systems engineer. Two years turning tangled operations into measurable results, now building AI systems backed by tests and evaluation.">
 <meta name="theme-color" content="#05070B" media="(prefers-color-scheme: dark)">
