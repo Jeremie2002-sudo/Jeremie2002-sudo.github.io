@@ -88,8 +88,8 @@
       --deep:    #0A0E16;
       --raised:  #10151F;
       --ink:     #F2F5FA;
-      --soft:    #A3B0C4;
-      --dim:     #667488;
+      --soft:    #C3CEDD;
+      --dim:     #7C8B9E;
       --line:    #1A2231;
       --ember:   #FFB454;
       --flare:   #FF7A4A;
@@ -108,8 +108,8 @@
     --deep:    #0A0E16;
     --raised:  #10151F;
     --ink:     #F2F5FA;
-    --soft:    #A3B0C4;
-    --dim:     #667488;
+    --soft:    #C3CEDD;
+    --dim:     #7C8B9E;
     --line:    #1A2231;
     --ember:   #FFB454;
     --flare:   #FF7A4A;
@@ -404,31 +404,46 @@
   .piece {
     position: relative;
     border-bottom: 1px solid var(--line);
-    padding: clamp(34px, 5vw, 62px) 0;
-    transition: background .55s ease;
+    padding: clamp(34px, 5vw, 62px) 0 clamp(34px, 5vw, 62px) clamp(18px, 2.6vw, 34px);
+    transition: background .5s ease;
   }
+  /* A permanent spectral rail, not a hover-only flourish. It grows and
+     brightens on hover, but the section has colour and structure standing
+     still — which is what was missing when it read as text on black. */
   .piece::before {
-    content: ""; position: absolute; inset: 0;
-    background: radial-gradient(70% 130% at 12% 0%, rgb(var(--accent-rgb) / .06), transparent 60%);
-    opacity: 0; transition: opacity .55s ease; pointer-events: none;
+    content: ""; position: absolute; left: 0; top: clamp(34px, 5vw, 62px); bottom: clamp(34px, 5vw, 62px);
+    width: 2px; border-radius: 2px;
+    background: linear-gradient(to bottom, var(--ember), var(--blush) 42%, var(--plasma) 72%, var(--wine));
+    opacity: .5;
+    transform: scaleY(.82); transform-origin: center;
+    transition: opacity .5s ease, transform .5s cubic-bezier(.16,.86,.24,1);
   }
-  .piece:hover::before { opacity: 1; }
+  .piece:hover::before { opacity: 1; transform: scaleY(1); }
+  .piece:hover { background: linear-gradient(100deg, rgb(var(--accent-rgb) / .05), transparent 46%); }
 
-  .piece-grid { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 0 clamp(18px, 3vw, 44px); }
+  .piece-grid { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 0 clamp(18px, 3vw, 40px); }
 
+  /* Big ghosted index numbers. They give the column a rhythm and some
+     weight instead of a row of faint 11px labels. */
   .num {
-    font-family: var(--mono); font-size: 11px; letter-spacing: .16em;
-    color: var(--dim); padding-top: 12px;
-    transition: color .4s ease;
+    font-family: var(--display); font-weight: 700;
+    font-size: clamp(30px, 4vw, 46px);
+    line-height: .9; letter-spacing: -.05em;
+    padding-top: 2px;
+    background: linear-gradient(160deg, var(--blush), var(--plasma) 60%, var(--wine));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    opacity: .34;
+    transition: opacity .45s ease;
   }
-  .piece:hover .num { color: var(--ember); }
+  .piece:hover .num { opacity: .95; }
 
   .piece h3 {
     font-family: var(--display); font-weight: 650;
     font-size: clamp(23px, 3.5vw, 40px);
     letter-spacing: -.038em; line-height: 1.04;
+    color: var(--ink);
   }
-  .piece h3 em { font-style: normal; color: var(--dim); font-weight: 400; }
+  .piece h3 em { font-style: normal; color: var(--soft); font-weight: 400; }
 
   .piece .stack {
     font-family: var(--mono); font-size: 10.5px;
@@ -1272,7 +1287,6 @@
     var hero = document.getElementById("top");
     var inner = hero.querySelector(".hero-inner");
     var canvas = document.getElementById("waterfall");
-    var sections = Array.prototype.slice.call(document.querySelectorAll("main section"));
     var ticking = false;
 
     function update() {
@@ -1297,19 +1311,13 @@
           inner.style.opacity = (1 - s * 1.3).toFixed(3);
         }
 
-        /* Sections breathe through the viewport. The curve is generous —
-           anything near the middle band sits at full strength, and the
-           floor is .55, so text never becomes hard to read. */
-        var mid = innerHeight / 2;
-        for (var i = 0; i < sections.length; i++) {
-          var r = sections[i].getBoundingClientRect();
-          if (r.bottom < -200 || r.top > innerHeight + 200) continue;
-          var centre = r.top + r.height / 2;
-          var d = Math.min(Math.abs(centre - mid) / (innerHeight * 0.95), 1);
-          var e = 1 - d * d;                      /* flat in the middle */
-          sections[i].style.opacity = (0.55 + 0.45 * e).toFixed(3);
-          sections[i].style.transform = "translate3d(0," + ((1 - e) * 16).toFixed(1) + "px,0)";
-        }
+        /* Section "breathing" used to live here — opacity tied to distance
+           from the viewport centre. It was a mistake twice over: it left
+           most of the page rendering at 55% opacity, which read as dull
+           rather than deep, and it called getBoundingClientRect on every
+           section on every scroll frame, forcing a layout recalculation
+           while the waterfall was trying to paint. Content should be at
+           full strength; depth belongs in the background layers. */
       }
       ticking = false;
     }
