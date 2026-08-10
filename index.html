@@ -1683,28 +1683,65 @@
 
   function startInertia() {
     if (matchMedia("(pointer: coarse)").matches) return;   /* never on touch */
+
+    /* CSS sets scroll-behavior: smooth for anchor links. Left in place it
+       makes every scrollTo below start its own smooth animation, sixty
+       times a second, each cancelling the last — while preventDefault
+       blocks the native scroll. The page stops moving entirely. Inertia
+       owns the scrolling now, so the CSS smoothing has to go, and anchor
+       clicks are animated through the same target instead. */
+    var root = document.documentElement;
+    root.style.scrollBehavior = "auto";
+
     var target = scrollY, current = scrollY, running = false;
 
-    function max() { return document.documentElement.scrollHeight - innerHeight; }
+    function max() { return root.scrollHeight - innerHeight; }
+    function clamp(v) { return Math.min(Math.max(v, 0), max()); }
+
+    function run() {
+      if (running) return;
+      running = true;
+      current = scrollY;
+      requestAnimationFrame(step);
+    }
+
+    function step() {
+      current += (target - current) * .12;
+      if (Math.abs(target - current) < .5) {
+        current = target;
+        running = false;
+      }
+      /* Explicitly instant — see the note above. */
+      scrollTo({ top: current, behavior: "instant" });
+      if (running) requestAnimationFrame(step);
+    }
 
     addEventListener("wheel", function (e) {
       if (e.ctrlKey) return;                                /* pinch-zoom */
       e.preventDefault();
-      target = Math.min(Math.max(target + e.deltaY, 0), max());
-      if (!running) { running = true; current = scrollY; requestAnimationFrame(step); }
+      target = clamp(target + e.deltaY);
+      run();
     }, { passive: false });
 
-    /* Anything that moves the page by other means resets our target. */
+    /* Keyboard, scrollbar drags and anything else native: adopt whatever
+       the browser did, so we never fight it. */
     addEventListener("scroll", function () {
       if (!running) { target = scrollY; current = scrollY; }
     }, { passive: true });
 
-    function step() {
-      current += (target - current) * .12;
-      if (Math.abs(target - current) < .4) { current = target; running = false; }
-      scrollTo(0, current);
-      if (running) requestAnimationFrame(step);
-    }
+    /* Anchors glide through the same easing rather than snapping, since
+       the CSS that used to do it is now off. */
+    document.addEventListener("click", function (e) {
+      var a = e.target.closest('a[href^="#"]');
+      if (!a) return;
+      var id = a.getAttribute("href");
+      if (id === "#" || id.length < 2) return;
+      var el = document.querySelector(id);
+      if (!el) return;
+      e.preventDefault();
+      target = clamp(el.getBoundingClientRect().top + scrollY);
+      run();
+    });
   }
 
   /* ==================================================================
