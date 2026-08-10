@@ -1,25 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="David Jeremie Anand">
-  <!-- DJA monogram. The A dominates and carries the site's spectral
-       gradient; D and J stack beside it in plasma. Letterforms are drawn
-       geometrically rather than set in a typeface, so the mark renders
-       identically everywhere instead of depending on installed fonts. -->
+  <!-- Three spectral ribbons, drifting the way the carriers do in the
+       waterfall behind the site's title. Warm at the top, cooling
+       downward; the bands run past the tile edge and are clipped, so the
+       mark reads as a window onto something continuous rather than a
+       closed shape. -->
   <defs>
-    <linearGradient id="g" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#8E2F52"/>
-      <stop offset=".42" stop-color="#D4479A"/>
-      <stop offset=".72" stop-color="#F5A8C0"/>
-      <stop offset="1" stop-color="#FFB454"/>
+    <linearGradient id="r1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFC978"/><stop offset=".55" stop-color="#FFB454"/><stop offset="1" stop-color="#F08A6A"/>
     </linearGradient>
+    <linearGradient id="r2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F9BCCE"/><stop offset=".55" stop-color="#F5A8C0"/><stop offset="1" stop-color="#E2679F"/>
+    </linearGradient>
+    <linearGradient id="r3" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#D4479A"/><stop offset=".55" stop-color="#B03A82"/><stop offset="1" stop-color="#8E2F52"/>
+    </linearGradient>
+    <clipPath id="rc"><rect width="64" height="64" rx="14"/></clipPath>
   </defs>
 
   <rect width="64" height="64" rx="14" fill="#0A0E16"/>
 
-  <g fill="none" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M25 52 L40 12 L55 52 M29.5 41 H50.5"/>
-  </g>
-
-  <g fill="none" stroke="#E2679F" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M9 13 V30 M9 13 H13.5 A8.5 8.5 0 0 1 13.5 30 H9"/>
-    <path d="M20 35 V48 A5 5 0 0 1 10 48"/>
+  <g clip-path="url(#rc)" fill="none" stroke-linecap="round" stroke-width="9.5">
+    <path d="M-6 21 C10 21 14 9 32 9 C50 9 54 21 70 21" stroke="url(#r1)"/>
+    <path d="M-6 39 C10 39 14 27 32 27 C50 27 54 39 70 39" stroke="url(#r2)"/>
+    <path d="M-6 57 C10 57 14 45 32 45 C50 45 54 57 70 57" stroke="url(#r3)"/>
   </g>
 </svg>
