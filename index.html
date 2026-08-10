@@ -263,10 +263,19 @@
      waterfall before first paint, so there is no reason to open on an
      empty panel — and a two-second fade from black reads as a broken
      page rather than an entrance. It blooms from present to vivid. */
+  /* Two elements, deliberately. Parallax transforms the wrapper; the canvas
+     itself is never transformed while it is being painted. Writing a
+     transform onto the same element that putImageData targets makes the
+     compositor re-rasterise and re-upload the scaled texture on every
+     scroll frame — which is exactly what made scrolling back up stutter. */
+  #wf-layer {
+    position: absolute; inset: 0; z-index: -2;
+    will-change: transform;
+    contain: strict;
+  }
   #waterfall {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
-    z-index: -2;
     opacity: .34;
     transform: scale(1.05);
     transition: opacity 1.4s ease, transform 2.4s cubic-bezier(.16,.8,.3,1);
@@ -349,8 +358,17 @@
 
   /* === REVEALS ====================================================== */
 
-  .rise { opacity: 0; transform: translateY(28px); transition: opacity .95s ease, transform .95s cubic-bezier(.16,.86,.24,1); }
-  .rise.seen { opacity: 1; transform: none; }
+  /* Blur-to-focus. Elements resolve into legibility rather than simply
+     appearing — the same idea as a lens pulling focus. Strictly one-shot:
+     once something has arrived it stays at full strength, because the
+     alternative (dimming as it leaves) is what made the page look dull. */
+  .rise {
+    opacity: 0;
+    transform: translateY(30px) scale(.985);
+    filter: blur(7px);
+    transition: opacity 1s ease, transform 1.05s cubic-bezier(.16,.86,.24,1), filter .85s ease;
+  }
+  .rise.seen { opacity: 1; transform: none; filter: none; }
   .d1 { transition-delay: .09s } .d2 { transition-delay: .18s } .d3 { transition-delay: .27s }
 
   /* Was clamp(90px, 14vh, 180px) — up to 180px top *and* bottom, so
@@ -639,7 +657,7 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
     h1 .ln > span { transform: none !important; }
-    .fade, .rise { opacity: 1 !important; transform: none !important; }
+    .fade, .rise { opacity: 1 !important; transform: none !important; filter: none !important; }
     .metric .bar i { transform: scaleX(var(--fill)) !important; }
     /* The badge keeps its glow, just stops breathing. */
     .now { box-shadow: 0 0 14px 2px rgb(var(--accent-rgb) / .18) !important; }
@@ -687,7 +705,7 @@
 </nav>
 
 <header class="hero" id="top">
-  <canvas id="waterfall" aria-hidden="true"></canvas>
+  <div id="wf-layer" aria-hidden="true"><canvas id="waterfall"></canvas></div>
   <div id="glow" aria-hidden="true"></div>
 
   <div class="wrap hero-inner">
@@ -974,7 +992,10 @@
      240x160 and scaled up so the browser's smoothing supplies the bloom.
      ================================================================== */
 
-  var COLS = 240, ROWS = 160;
+  /* 200x132 rather than 240x160 — 31% fewer pixels per frame, and the CSS
+     upscale plus the browser's smoothing hides the difference entirely at
+     the size this is displayed. */
+  var COLS = 200, ROWS = 132;
 
   /* Two ramps, because a spectrogram has to invert with the ground.
      On black, high energy glows toward a pale ember (magma). On paper,
@@ -1176,6 +1197,72 @@
   }
 
   /* ==================================================================
+     SCROLL-DRIVEN PALETTE
+     The accent trio walks through the spectrum as you descend — amber and
+     blush at the top, rose through the work, deep violet by the contact
+     section. Everything keyed to those tokens follows: the project rails,
+     the index numbers, the progress bar, the motes, the Current badge.
+
+     Written as CSS custom properties on :root so one write per frame
+     recolours the whole page, rather than touching dozens of elements.
+     ================================================================== */
+
+  var JOURNEY = {
+    dark: [
+      { ember: [255, 180,  84], blush: [245, 168, 192], plasma: [212,  71, 154] },
+      { ember: [255, 138, 110], blush: [240, 140, 180], plasma: [186,  62, 160] },
+      { ember: [226,  99, 158], blush: [206, 130, 214], plasma: [140,  74, 200] },
+      { ember: [166,  96, 220], blush: [168, 140, 236], plasma: [110,  79, 216] }
+    ],
+    light: [
+      { ember: [165,  92,   8], blush: [201, 115, 141], plasma: [155,  32, 100] },
+      { ember: [176,  72,  36], blush: [190, 100, 145], plasma: [140,  36, 116] },
+      { ember: [154,  56,  96], blush: [160,  92, 168], plasma: [110,  46, 158] },
+      { ember: [104,  62, 168], blush: [124,  96, 190], plasma:  [74,  47, 166] }
+    ]
+  };
+
+  function startPalette() {
+    var root = document.documentElement;
+
+    function isDark() {
+      return (root.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
+    }
+
+    function mix(a, b, k) {
+      return [
+        Math.round(a[0] + (b[0] - a[0]) * k),
+        Math.round(a[1] + (b[1] - a[1]) * k),
+        Math.round(a[2] + (b[2] - a[2]) * k)
+      ];
+    }
+
+    function hex(c) {
+      return "#" + c.map(function (v) { return ("0" + v.toString(16)).slice(-2); }).join("");
+    }
+
+    window.__paintPalette = function (p) {
+      var stops = JOURNEY[isDark() ? "dark" : "light"];
+      var span = stops.length - 1;
+      var pos = Math.min(Math.max(p, 0), 1) * span;
+      var i = Math.min(Math.floor(pos), span - 1);
+      var k = pos - i;
+      var a = stops[i], b = stops[i + 1];
+
+      var ember = mix(a.ember, b.ember, k);
+      var blush = mix(a.blush, b.blush, k);
+      var plasma = mix(a.plasma, b.plasma, k);
+
+      root.style.setProperty("--ember", hex(ember));
+      root.style.setProperty("--blush", hex(blush));
+      root.style.setProperty("--plasma", hex(plasma));
+      root.style.setProperty("--accent-rgb", ember.join(" "));
+    };
+
+    window.__paintPalette(0);
+  }
+
+  /* ==================================================================
      AMBIENT MOTES
      A slow spectral drift behind the whole page, so nothing is ever
      completely static once the waterfall scrolls away. Deliberately few
@@ -1194,7 +1281,7 @@
       canvas.width = w * dpr; canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       /* Density scales with area so a laptop and a phone feel the same. */
-      var want = Math.round(Math.min(46, Math.max(16, (w * h) / 34000)));
+      var want = Math.round(Math.min(32, Math.max(14, (w * h) / 52000)));
       while (motes.length < want) motes.push(spawn());
       motes.length = want;
     }
@@ -1224,7 +1311,9 @@
 
     function frame(ts) {
       if (!running) return;
-      if (ts - last > 32) {
+      /* 20fps. A full-viewport clear and redraw is the most expensive thing
+         on the page per pixel, and drift this slow reads identically. */
+      if (ts - last > 50) {
         last = ts;
         ctx.clearRect(0, 0, w, h);
         for (var i = 0; i < motes.length; i++) {
@@ -1286,7 +1375,7 @@
     var nav = document.getElementById("nav");
     var hero = document.getElementById("top");
     var inner = hero.querySelector(".hero-inner");
-    var canvas = document.getElementById("waterfall");
+    var wfLayer = document.getElementById("wf-layer");
     var ticking = false;
 
     function update() {
@@ -1294,6 +1383,13 @@
       var k = max > 0 ? scrollY / max : 0;
       bar.style.transform = "scaleX(" + k.toFixed(4) + ")";
       nav.classList.toggle("up", scrollY > hero.offsetHeight * .72);
+
+      /* Walk the accent trio through the spectrum with the scroll. One
+         write, and everything keyed to those tokens follows. */
+      if (!reduced && window.__paintPalette) {
+        window.__paintPalette(k);
+        if (window.__refreshMotes) window.__refreshMotes();
+      }
 
       var h = hero.offsetHeight || 1;
       var s = Math.min(Math.max(scrollY / h, 0), 1);
@@ -1304,9 +1400,8 @@
            and the content at a fifth, so the two separate with depth.
            Untouched at the very top, or this would stomp the entrance. */
         if (s < 1) {
-          canvas.style.transform = scrollY > 2
-            ? "translate3d(0," + (scrollY * 0.32).toFixed(1) + "px,0)"
-            : "";
+          /* The wrapper, never the canvas — see the note on #wf-layer. */
+          wfLayer.style.transform = "translate3d(0," + (scrollY * 0.32).toFixed(1) + "px,0)";
           inner.style.transform = "translate3d(0," + (scrollY * 0.15).toFixed(1) + "px,0)";
           inner.style.opacity = (1 - s * 1.3).toFixed(3);
         }
@@ -1404,6 +1499,7 @@
   }
 
   startTheme();
+  if (!reduced) startPalette();
   startWaterfall();
   startReveals();
   startChrome();
