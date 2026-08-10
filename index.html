@@ -520,6 +520,27 @@
   }
   .links a:hover { border-color: rgb(var(--accent-rgb) / .39); color: var(--ember); transform: translateY(-3px); background: rgb(var(--accent-rgb) / .05); }
 
+  /* One primary action among the contact links. Someone who has read this
+     far should have something to take away, and it should be obvious which
+     of the four buttons that is. */
+  .links a.primary {
+    display: inline-flex; align-items: center; gap: 9px;
+    color: var(--ember);
+    border-color: rgb(var(--accent-rgb) / .45);
+    background: rgb(var(--accent-rgb) / .09);
+  }
+  .links a.primary:hover {
+    border-color: rgb(var(--accent-rgb) / .8);
+    background: rgb(var(--accent-rgb) / .16);
+  }
+  .links a.primary svg {
+    width: 14px; height: 14px; flex: none;
+    fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+    transition: transform .35s cubic-bezier(.16,.86,.24,1);
+  }
+  .links a.primary:hover svg { transform: translateY(2px); }
+
   footer {
     border-top: 1px solid var(--line);
     padding-block: 36px 60px;
@@ -883,6 +904,10 @@
       you sit with the actual workflow before deciding what to build.
     </p>
     <div class="links rise d3">
+      <a class="primary" href="/David_Jeremie_Anand_Resume.pdf" download>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4 19h16"/></svg>
+        Download résumé
+      </a>
       <a href="mailto:jerryanand10@gmail.com">jerryanand10@gmail.com</a>
       <a href="https://www.linkedin.com/in/david-jeremie-anand/" target="_blank" rel="noopener">LinkedIn ↗</a>
       <a href="https://github.com/Jeremie2002-sudo" target="_blank" rel="noopener">GitHub ↗</a>
