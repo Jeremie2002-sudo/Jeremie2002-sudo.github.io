@@ -352,7 +352,12 @@
   h1 {
     font-family: var(--display);
     font-weight: 700;
-    font-size: clamp(48px, 12.4vw, 168px);
+    /* Capped at 146px, not 168px. The reveal needs overflow:hidden, which
+       clips horizontally as well as vertically — and at 168px "David
+       Jeremie" typesets to 1119px inside a 999px column, so the final
+       letter was being sliced off its right edge. 146px lands at roughly
+       972px, inside the column at every width the clamp can reach. */
+    font-size: clamp(48px, 11vw, 146px);
     line-height: .84;
     letter-spacing: -.055em;
     text-wrap: balance;
