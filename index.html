@@ -994,7 +994,17 @@
     h2 { font-size: clamp(28px, 8.4vw, 38px); margin: 14px 0 22px; }
     .lede { font-size: 17px; }
 
-    .hero { padding-bottom: 40px; }
+    /* Centre the hero on phones instead of pinning it to the bottom.
+       Bottom-alignment composes well on a wide screen — waterfall filling
+       the frame, name low like a film title — but on a tall narrow one it
+       means the top 60% is empty and the name is shoved against the
+       bottom edge, which is all you see on landing. Centred, the name sits
+       where the eye lands and the waterfall frames it above and below. */
+    .hero {
+      justify-content: center;
+      padding-top: 96px;      /* clears the fixed theme toggle */
+      padding-bottom: 40px;
+    }
     h1 { font-size: clamp(44px, 15vw, 68px); margin-bottom: 20px; }
     .hero .eyebrow { margin-bottom: 14px; }
     .tagline { gap: 4px 14px; font-size: 10.5px; letter-spacing: .16em; }
