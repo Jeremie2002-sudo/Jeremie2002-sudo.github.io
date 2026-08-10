@@ -163,6 +163,25 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
+  /* Ambient motes. A fixed field of slow spectral drift behind everything,
+     so the page is never completely still even where there is no waterfall.
+     Kept very low contrast — it should register as air, not as confetti. */
+  #motes {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 2s ease .5s;
+  }
+  .lit #motes { opacity: 1; }
+  .wrap, nav, .progress, .theme, .grain { position: relative; z-index: 1; }
+  nav { z-index: 11; } .progress { z-index: 12; } .theme { z-index: 13; } .grain { z-index: 9; }
+
+  /* Sections breathe as they pass through the viewport: full strength in
+     the middle band, easing back toward the edges. The floor is high
+     enough (.55) that nothing becomes hard to read — the point is depth,
+     not a peekaboo. */
+  main section { will-change: opacity, transform; }
+
   /* Scroll progress — a spectral hairline, the only fixed chrome. */
   .progress {
     position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 12;
@@ -608,12 +627,16 @@
     /* The badge keeps its glow, just stops breathing. */
     .now { box-shadow: 0 0 14px 2px rgb(var(--accent-rgb) / .18) !important; }
     .now i { opacity: 1 !important; transform: none !important; }
+    main section { opacity: 1 !important; transform: none !important; }
+    .hero-inner { transform: none !important; opacity: 1 !important; }
+    #motes { display: none; }
     #waterfall { opacity: .8 !important; transform: none !important; }
     #glow, .grain { display: none; }
   }
 </style>
 
 <div class="progress" id="progress" aria-hidden="true"></div>
+<canvas id="motes" aria-hidden="true"></canvas>
 <div class="grain" aria-hidden="true"></div>
 
 <button class="theme" id="theme" type="button" aria-label="Switch between light and dark">
@@ -999,7 +1022,36 @@
 
     var t = 0, raf = null, running = false, last = 0;
 
+    /* Chirps: a transmitter sliding across the band. In a real waterfall
+       this draws a bright diagonal streak, because each successive row
+       catches it at a different frequency. It is the closest honest
+       equivalent to something moving through the scene — and unlike a
+       drawn vehicle it belongs here.
+
+       One runs at a time, on a randomised gap, so the hero never settles
+       into a loop you can predict. */
+    var chirp = null, nextChirp = 6 + Math.random() * 7;
+
+    function updateChirp() {
+      if (chirp) {
+        chirp.age += .055;
+        if (chirp.age > chirp.life) { chirp = null; nextChirp = 7 + Math.random() * 9; }
+      } else {
+        nextChirp -= .055;
+        if (nextChirp <= 0) {
+          var up = Math.random() < .5;
+          chirp = {
+            age: 0, life: 3.4 + Math.random() * 2.6,
+            from: up ? .08 : .92, to: up ? .92 : .08,
+            w: .009 + Math.random() * .006,
+            a: .78 + Math.random() * .3
+          };
+        }
+      }
+    }
+
     function spectrum(out) {
+      var s = window.__heroScroll || 0;
       for (var x = 0; x < COLS; x++) {
         var k = x / COLS;
         var v = .06 + .04 * Math.sin(k * 11 + t * .7) + Math.random() * .055;
@@ -1012,7 +1064,16 @@
           var amp = car.a * (.58 + .42 * Math.sin(t * .9 + car.ph * 1.3));
           v += amp * Math.exp(-(d * d) / (2 * car.w * car.w));
         }
-        out[x] = v > 1 ? 1 : v;
+        if (chirp) {
+          var p = chirp.age / chirp.life;
+          /* Ease the sweep and fade it in and out at the ends, so it
+             arrives and leaves rather than blinking on. */
+          var pos = chirp.from + (chirp.to - chirp.from) * (p * p * (3 - 2 * p));
+          var env = Math.sin(p * Math.PI);
+          var dc = k - pos;
+          v += chirp.a * env * Math.exp(-(dc * dc) / (2 * chirp.w * chirp.w));
+        }
+        out[x] = v > 1 ? 1 : v * (1 - s * .25);
       }
     }
 
@@ -1040,6 +1101,7 @@
       if (ts - last > 38) {                      /* ~26fps: plenty for a slow scroll */
         last = ts;
         t += .055;
+        updateChirp();
         head = (head - 1 + ROWS) % ROWS;
         spectrum(rows[head]);
         paint();
@@ -1069,6 +1131,75 @@
         });
       }, { threshold: .01 }).observe(canvas);
     }
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) { running = false; cancelAnimationFrame(raf); }
+      else if (!running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
+    });
+  }
+
+  /* ==================================================================
+     AMBIENT MOTES
+     A slow spectral drift behind the whole page, so nothing is ever
+     completely static once the waterfall scrolls away. Deliberately few
+     and deliberately faint — this should read as air in the room.
+     ================================================================== */
+
+  function startMotes() {
+    var canvas = document.getElementById("motes");
+    var ctx = canvas.getContext("2d");
+    var motes = [], w = 0, h = 0, raf = null, running = false, last = 0;
+    var HUES = ["--ember", "--blush", "--plasma", "--violet"];
+
+    function resize() {
+      var dpr = Math.min(devicePixelRatio || 1, 2);
+      w = innerWidth; h = innerHeight;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      /* Density scales with area so a laptop and a phone feel the same. */
+      var want = Math.round(Math.min(46, Math.max(16, (w * h) / 34000)));
+      while (motes.length < want) motes.push(spawn());
+      motes.length = want;
+    }
+
+    function spawn() {
+      return {
+        x: Math.random() * innerWidth,
+        y: Math.random() * innerHeight,
+        r: 0.7 + Math.random() * 2.1,
+        vx: (Math.random() - .5) * .085,
+        vy: -.05 - Math.random() * .13,       /* drifting gently upward */
+        a: .05 + Math.random() * .13,
+        hue: HUES[(Math.random() * HUES.length) | 0],
+        ph: Math.random() * 6.28
+      };
+    }
+
+    function frame(ts) {
+      if (!running) return;
+      if (ts - last > 32) {
+        last = ts;
+        var cs = getComputedStyle(document.documentElement);
+        ctx.clearRect(0, 0, w, h);
+        for (var i = 0; i < motes.length; i++) {
+          var m = motes[i];
+          m.x += m.vx; m.y += m.vy; m.ph += .012;
+          if (m.y < -8) { m.y = h + 8; m.x = Math.random() * w; }
+          if (m.x < -8) m.x = w + 8; else if (m.x > w + 8) m.x = -8;
+          ctx.globalAlpha = m.a * (.55 + .45 * Math.sin(m.ph));
+          ctx.fillStyle = cs.getPropertyValue(m.hue).trim();
+          ctx.beginPath();
+          ctx.arc(m.x, m.y, m.r, 0, 6.2832);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+      raf = requestAnimationFrame(frame);
+    }
+
+    resize();
+    addEventListener("resize", resize, { passive: true });
+    running = true;
+    raf = requestAnimationFrame(frame);
     document.addEventListener("visibilitychange", function () {
       if (document.hidden) { running = false; cancelAnimationFrame(raf); }
       else if (!running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
@@ -1106,6 +1237,9 @@
     var bar = document.getElementById("progress");
     var nav = document.getElementById("nav");
     var hero = document.getElementById("top");
+    var inner = hero.querySelector(".hero-inner");
+    var canvas = document.getElementById("waterfall");
+    var sections = Array.prototype.slice.call(document.querySelectorAll("main section"));
     var ticking = false;
 
     function update() {
@@ -1113,6 +1247,37 @@
       var k = max > 0 ? scrollY / max : 0;
       bar.style.transform = "scaleX(" + k.toFixed(4) + ")";
       nav.classList.toggle("up", scrollY > hero.offsetHeight * .72);
+
+      var h = hero.offsetHeight || 1;
+      var s = Math.min(Math.max(scrollY / h, 0), 1);
+      window.__heroScroll = s;
+
+      if (!reduced) {
+        /* Hero parallax: the canvas drifts at a third of the scroll rate
+           and the content at a fifth, so the two separate with depth.
+           Untouched at the very top, or this would stomp the entrance. */
+        if (s < 1) {
+          canvas.style.transform = scrollY > 2
+            ? "translate3d(0," + (scrollY * 0.32).toFixed(1) + "px,0)"
+            : "";
+          inner.style.transform = "translate3d(0," + (scrollY * 0.15).toFixed(1) + "px,0)";
+          inner.style.opacity = (1 - s * 1.3).toFixed(3);
+        }
+
+        /* Sections breathe through the viewport. The curve is generous —
+           anything near the middle band sits at full strength, and the
+           floor is .55, so text never becomes hard to read. */
+        var mid = innerHeight / 2;
+        for (var i = 0; i < sections.length; i++) {
+          var r = sections[i].getBoundingClientRect();
+          if (r.bottom < -200 || r.top > innerHeight + 200) continue;
+          var centre = r.top + r.height / 2;
+          var d = Math.min(Math.abs(centre - mid) / (innerHeight * 0.95), 1);
+          var e = 1 - d * d;                      /* flat in the middle */
+          sections[i].style.opacity = (0.55 + 0.45 * e).toFixed(3);
+          sections[i].style.transform = "translate3d(0," + ((1 - e) * 16).toFixed(1) + "px,0)";
+        }
+      }
       ticking = false;
     }
     addEventListener("scroll", function () {
@@ -1197,6 +1362,7 @@
   startWaterfall();
   startReveals();
   startChrome();
+  if (!reduced) startMotes();
   if (!reduced && matchMedia("(pointer: fine)").matches) startGlow();
   requestAnimationFrame(function () { document.documentElement.classList.add("lit"); });
 })();
