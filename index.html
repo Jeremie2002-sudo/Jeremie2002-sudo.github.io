@@ -353,7 +353,9 @@
   .rise.seen { opacity: 1; transform: none; }
   .d1 { transition-delay: .09s } .d2 { transition-delay: .18s } .d3 { transition-delay: .27s }
 
-  section { padding-block: clamp(90px, 14vh, 180px); }
+  /* Was clamp(90px, 14vh, 180px) — up to 180px top *and* bottom, so
+     360px of dead space between every pair of sections. Roughly halved. */
+  section { padding-block: clamp(52px, 7.5vh, 96px); }
 
   h2 {
     font-family: var(--display); font-weight: 700;
@@ -576,8 +578,8 @@
   @media (max-width: 680px) {
     body { font-size: 16.5px; }
 
-    section { padding-block: 58px; }
-    h2 { font-size: clamp(28px, 8.4vw, 38px); margin: 16px 0 26px; }
+    section { padding-block: 44px; }
+    h2 { font-size: clamp(28px, 8.4vw, 38px); margin: 14px 0 22px; }
     .lede { font-size: 17px; }
 
     .hero { padding-bottom: 40px; }
@@ -989,6 +991,21 @@
   ];
   var STOPS = RAMP_DARK;
 
+  /* Colour lookup table. The ramp used to be interpolated per pixel, which
+     at 240x160 and 26fps meant close to a million interpolations a second
+     and visible stutter. The ramp only has 256 distinct useful values, so
+     it is resolved once into a flat array and indexed thereafter. Rebuilt
+     only when the theme changes. */
+  var LUT = new Uint8Array(256 * 3);
+
+  function buildLUT() {
+    var rgb = [0, 0, 0];
+    for (var i = 0; i < 256; i++) {
+      ramp(i / 255, rgb);
+      LUT[i * 3] = rgb[0]; LUT[i * 3 + 1] = rgb[1]; LUT[i * 3 + 2] = rgb[2];
+    }
+  }
+
   function ramp(t, out) {
     if (t <= 0) { out[0] = STOPS[0][1]; out[1] = STOPS[0][2]; out[2] = STOPS[0][3]; return; }
     if (t >= 1) { var L = STOPS[STOPS.length - 1]; out[0] = L[1]; out[1] = L[2]; out[2] = L[3]; return; }
@@ -1009,8 +1026,9 @@
     canvas.width = COLS; canvas.height = ROWS;
 
     var img = ctx.createImageData(COLS, ROWS);
-    var rows = [], head = 0, rgb = [0, 0, 0];
+    var rows = [], head = 0;
     for (var r = 0; r < ROWS; r++) rows.push(new Float32Array(COLS));
+    buildLUT();
 
     var carriers = [
       { f: .16, w: .028, a: .98, wob: .052, ph: 0.0, dr:  .00012 },
@@ -1086,11 +1104,16 @@
            last stretch. The page scrim handles legibility; the canvas
            should not also be dimming itself. */
         var alpha = age > .34 ? 1 : age / .34;
-        var lift = .82 + .18 * age;
+        /* Alpha and lift depend only on the row, so hoist them out of the
+           inner loop rather than recomputing 240 times per row. */
+        var A = (255 * alpha) | 0;
+        var lift = (.82 + .18 * age) * 255;
         for (var x = 0; x < COLS; x++) {
-          ramp(row[x] * lift, rgb);
-          d[p++] = rgb[0]; d[p++] = rgb[1]; d[p++] = rgb[2];
-          d[p++] = 255 * alpha;
+          var idx = (row[x] * lift) | 0;
+          if (idx > 255) idx = 255; else if (idx < 0) idx = 0;
+          var o = idx * 3;
+          d[p++] = LUT[o]; d[p++] = LUT[o + 1]; d[p++] = LUT[o + 2];
+          d[p++] = A;
         }
       }
       ctx.putImageData(img, 0, 0);
@@ -1174,11 +1197,20 @@
       };
     }
 
+    /* Resolve the four token colours once, not once per mote per frame.
+       getPropertyValue forces style resolution, and calling it 46 times a
+       frame was a needless tax. */
+    var palette = {};
+    function refreshPalette() {
+      var cs = getComputedStyle(document.documentElement);
+      HUES.forEach(function (h) { palette[h] = cs.getPropertyValue(h).trim(); });
+    }
+    window.__refreshMotes = refreshPalette;
+
     function frame(ts) {
       if (!running) return;
       if (ts - last > 32) {
         last = ts;
-        var cs = getComputedStyle(document.documentElement);
         ctx.clearRect(0, 0, w, h);
         for (var i = 0; i < motes.length; i++) {
           var m = motes[i];
@@ -1186,7 +1218,7 @@
           if (m.y < -8) { m.y = h + 8; m.x = Math.random() * w; }
           if (m.x < -8) m.x = w + 8; else if (m.x > w + 8) m.x = -8;
           ctx.globalAlpha = m.a * (.55 + .45 * Math.sin(m.ph));
-          ctx.fillStyle = cs.getPropertyValue(m.hue).trim();
+          ctx.fillStyle = palette[m.hue];
           ctx.beginPath();
           ctx.arc(m.x, m.y, m.r, 0, 6.2832);
           ctx.fill();
@@ -1197,6 +1229,7 @@
     }
 
     resize();
+    refreshPalette();
     addEventListener("resize", resize, { passive: true });
     running = true;
     raf = requestAnimationFrame(frame);
@@ -1345,14 +1378,18 @@
       root.dataset.theme = next;
       try { localStorage.setItem("theme", next); } catch (e) { /* private mode */ }
       STOPS = next === "dark" ? RAMP_DARK : RAMP_LIGHT;
+      buildLUT();
       if (window.__repaintWaterfall) window.__repaintWaterfall();
+      if (window.__refreshMotes) window.__refreshMotes();
     });
 
     /* Follow the OS only while the visitor has not chosen for themselves. */
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
       if (root.dataset.theme) return;
       STOPS = e.matches ? RAMP_DARK : RAMP_LIGHT;
+      buildLUT();
       if (window.__repaintWaterfall) window.__repaintWaterfall();
+      if (window.__refreshMotes) window.__refreshMotes();
     });
 
     STOPS = current() === "dark" ? RAMP_DARK : RAMP_LIGHT;
