@@ -358,11 +358,12 @@
     text-wrap: balance;
     margin-bottom: clamp(24px, 3.4vh, 42px);
   }
-  /* The clipping box needs room for the part of a glyph that sits below
-     the baseline. At line-height .84 with only .04em of padding, round
-     letters like e and a had their bottom curve sliced off. The negative
-     margin gives the box the room without opening a gap in the layout. */
-  h1 .ln { display: block; overflow: hidden; padding-bottom: .16em; margin-bottom: -.16em; }
+  /* Measured rather than guessed: at font-size 168px the line box is
+     141px (line-height .84), so the glyph ink overflows it by roughly
+     30px top and bottom. .16em gave 26.9px — still short, which is why
+     the e stayed clipped. .30em clears it with margin to spare, and the
+     negative margin keeps the line spacing unchanged. */
+  h1 .ln { display: block; overflow: hidden; padding-bottom: .30em; margin-bottom: -.30em; }
   h1 .ln > span {
     display: block;
     transform: translateY(106%);
@@ -501,6 +502,10 @@
      than a translucent box. */
   .cell-in {
     position: relative;
+    /* border-box, or height:100% resolves to the cell height *plus* the
+       padding — every panel then overflowed its grid cell by 76px and
+       bled into the one below. That, not the tilt, was the overlap. */
+    box-sizing: border-box;
     height: 100%;
     padding: clamp(24px, 2.8vw, 38px);
     border-radius: 18px;
