@@ -360,15 +360,28 @@
     font-size: clamp(48px, 11vw, 146px);
     line-height: .84;
     letter-spacing: -.055em;
-    text-wrap: balance;
+    /* No balancing here. The two lines are split by hand in the markup, so
+       there is nothing for the browser to balance — and it was quietly
+       narrowing the line box, which made the overflow worse. */
     margin-bottom: clamp(24px, 3.4vh, 42px);
   }
-  /* Measured rather than guessed: at font-size 168px the line box is
-     141px (line-height .84), so the glyph ink overflows it by roughly
-     30px top and bottom. .16em gave 26.9px — still short, which is why
-     the e stayed clipped. .30em clears it with margin to spare, and the
-     negative margin keeps the line spacing unchanged. */
-  h1 .ln { display: block; overflow: hidden; padding-bottom: .30em; margin-bottom: -.30em; }
+  /* The reveal only ever needed to clip vertically — a line sliding up out
+     of its box. Clipping both axes also sliced the right edge off the last
+     letter whenever the line was wider than its column, which is what kept
+     eating the e. overflow-x:visible with overflow-y:clip is the one valid
+     mixed pairing, so the line can run past its column but still cannot
+     show above or below the box.
+
+     Vertical padding still matters: at this size the glyph ink overflows
+     the .84 line box by ~36px, and .30em clears it. */
+  h1 .ln {
+    display: block;
+    overflow: hidden;                 /* fallback for anything without clip */
+    overflow-x: visible;
+    overflow-y: clip;
+    padding-bottom: .30em;
+    margin-bottom: -.30em;
+  }
   h1 .ln > span {
     display: block;
     transform: translateY(106%);
