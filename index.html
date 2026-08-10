@@ -3,6 +3,13 @@
 <meta name="theme-color" content="#05070B" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#F6F4F1" media="(prefers-color-scheme: light)">
 
+<!-- Favicon. SVG first for anything modern (one file, every size), .ico as
+     the fallback for Safari and older browsers that still ignore SVG. -->
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
 <!-- Link previews. Without these, LinkedIn/WhatsApp/Slack render a blank
      card — and they cache that first scrape, so it is worth getting right
      before the link is shared anywhere. -->
@@ -180,7 +187,10 @@
   nav.up { transform: none; }
   nav a { text-decoration: none; color: var(--dim); transition: color .25s ease; }
   nav a:hover { color: var(--ember); }
-  nav .who { color: var(--ink); letter-spacing: .1em; }
+  nav .who { color: var(--ink); letter-spacing: .1em; display: flex; align-items: center; gap: 11px; }
+  /* The mark uses currentColor bars only for the plate, so it tracks the
+     theme; the bars keep their own spectral colours in both. */
+  nav .who svg { width: 19px; height: 19px; flex: none; border-radius: 5px; }
   nav .set { display: flex; gap: 22px; align-items: center; }
   nav .set { padding-right: 52px; }
   @media (max-width: 640px) { nav .set a:not(:last-child) { display: none; } }
@@ -556,7 +566,16 @@
 </button>
 
 <nav id="nav" aria-label="Sections">
-  <a class="who" href="#top">David Jeremie Anand</a>
+  <a class="who" href="#top">
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <rect width="64" height="64" rx="14" fill="var(--deep)"/>
+      <rect x="12" y="34" width="7" height="18" rx="3.5" fill="var(--wine)"/>
+      <rect x="23" y="22" width="7" height="30" rx="3.5" fill="var(--plasma)"/>
+      <rect x="34" y="12" width="7" height="40" rx="3.5" fill="var(--blush)"/>
+      <rect x="45" y="27" width="7" height="25" rx="3.5" fill="var(--ember)"/>
+    </svg>
+    David Jeremie Anand
+  </a>
   <span class="set">
     <a href="#work">Work</a>
     <a href="#experience">Experience</a>
