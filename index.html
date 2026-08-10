@@ -1,27 +1,65 @@
 <title>David Jeremie Anand — Applied AI &amp; Agentic Systems</title>
 <meta name="description" content="Applied AI and agentic systems engineer. Two years turning tangled operations into measurable results, now building AI systems backed by tests and evaluation.">
-<meta name="theme-color" content="#05070B">
+<meta name="theme-color" content="#05070B" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F6F4F1" media="(prefers-color-scheme: light)">
+
+<!-- Link previews. Without these, LinkedIn/WhatsApp/Slack render a blank
+     card — and they cache that first scrape, so it is worth getting right
+     before the link is shared anywhere. -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://davidjeremieanand.com/">
+<meta property="og:title" content="David Jeremie Anand — Applied AI &amp; Agentic Systems">
+<meta property="og:description" content="Two years turning tangled operations into measurable results, now building AI systems backed by tests and evaluation. Agentic RAG, multi-agent reasoning, LLM evaluation.">
+<meta property="og:image" content="https://davidjeremieanand.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A spectrogram waterfall in violet and amber, with the name David Jeremie Anand.">
+<meta property="og:site_name" content="davidjeremieanand.com">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="David Jeremie Anand — Applied AI &amp; Agentic Systems">
+<meta name="twitter:description" content="Two years turning tangled operations into measurable results, now building AI systems backed by tests and evaluation.">
+<meta name="twitter:image" content="https://davidjeremieanand.com/og.png">
+
+<!-- Runs before any paint. Without this the page renders in the OS theme
+     for one frame and then snaps to the saved choice — a visible flash on
+     every single load. Deliberately tiny and deliberately blocking. -->
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
+    } catch (e) { /* storage blocked; fall back to the OS preference */ }
+  })();
+</script>
 
 <style>
   /* ------------------------------------------------------------------
-     A spectrogram waterfall carries the hero, so this page commits to a
-     dark world rather than offering two. The magma colormap only reads
-     on a near-black ground; a light variant would be a different design,
-     not a recolour of this one.
+     Both themes are real designs, not a recolour. The waterfall inverts
+     between them: on black, high energy glows (magma). On paper, high
+     energy goes dark and saturated — which is how spectrograms have
+     always been printed. Same data, opposite reading.
+
+     Every surface colour is a token, and the scrims are built from
+     --ground-rgb / --accent-rgb so they follow the theme instead of
+     being hardcoded to one ground.
      ------------------------------------------------------------------ */
   :root {
-    --void:    #05070B;
-    --deep:    #0A0E16;
-    --raised:  #10151F;
-    --ink:     #F2F5FA;
-    --soft:    #A3B0C4;
-    --dim:     #667488;
-    --line:    #1A2231;
+    /* Light — warm paper, ink, deepened accents that hold contrast. */
+    --ground-rgb: 246 244 241;
+    --accent-rgb: 165 92 8;
 
-    --ember:   #FFB454;
-    --flare:   #FF7A4A;
-    --plasma:  #D4479A;
-    --violet:  #6E4FD8;
+    --void:    #F6F4F1;
+    --deep:    #EEEAE5;
+    --raised:  #E6E1DA;
+    --ink:     #14171C;
+    --soft:    #4B5563;
+    --dim:     #8A9099;
+    --line:    #DCD6CE;
+
+    --ember:   #A55C08;
+    --flare:   #B8401D;
+    --plasma:  #9B2064;
+    --violet:  #4A2FA6;
 
     --display: system-ui, -apple-system, "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --serif: "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
@@ -29,6 +67,56 @@
 
     --measure: 60ch;
     --edge: clamp(20px, 5vw, 68px);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground-rgb: 5 7 11;
+      --accent-rgb: 255 180 84;
+      --void:    #05070B;
+      --deep:    #0A0E16;
+      --raised:  #10151F;
+      --ink:     #F2F5FA;
+      --soft:    #A3B0C4;
+      --dim:     #667488;
+      --line:    #1A2231;
+      --ember:   #FFB454;
+      --flare:   #FF7A4A;
+      --plasma:  #D4479A;
+      --violet:  #6E4FD8;
+    }
+  }
+
+  /* An explicit choice beats the OS preference, in both directions. */
+  :root[data-theme="dark"] {
+    --ground-rgb: 5 7 11;
+    --accent-rgb: 255 180 84;
+    --void:    #05070B;
+    --deep:    #0A0E16;
+    --raised:  #10151F;
+    --ink:     #F2F5FA;
+    --soft:    #A3B0C4;
+    --dim:     #667488;
+    --line:    #1A2231;
+    --ember:   #FFB454;
+    --flare:   #FF7A4A;
+    --plasma:  #D4479A;
+    --violet:  #6E4FD8;
+  }
+  :root[data-theme="light"] {
+    --ground-rgb: 246 244 241;
+    --accent-rgb: 165 92 8;
+    --void:    #F6F4F1;
+    --deep:    #EEEAE5;
+    --raised:  #E6E1DA;
+    --ink:     #14171C;
+    --soft:    #4B5563;
+    --dim:     #8A9099;
+    --line:    #DCD6CE;
+    --ember:   #A55C08;
+    --flare:   #B8401D;
+    --plasma:  #9B2064;
+    --violet:  #4A2FA6;
   }
 
   html { background: var(--void); scroll-behavior: smooth; }
@@ -54,6 +142,7 @@
   .grain {
     position: fixed; inset: 0; z-index: 9;
     pointer-events: none; opacity: .028;
+    mix-blend-mode: multiply;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
@@ -72,7 +161,7 @@
     padding: 16px var(--edge);
     font-family: var(--mono); font-size: 11px;
     letter-spacing: .16em; text-transform: uppercase;
-    background: #05070BD9;
+    background: rgb(var(--ground-rgb) / .86);
     backdrop-filter: blur(14px);
     border-bottom: 1px solid var(--line);
     transform: translateY(-102%);
@@ -82,8 +171,35 @@
   nav a { text-decoration: none; color: var(--dim); transition: color .25s ease; }
   nav a:hover { color: var(--ember); }
   nav .who { color: var(--ink); letter-spacing: .1em; }
-  nav .set { display: flex; gap: 22px; }
+  nav .set { display: flex; gap: 22px; align-items: center; }
+  nav .set { padding-right: 52px; }
   @media (max-width: 640px) { nav .set a:not(:last-child) { display: none; } }
+
+  /* Theme toggle. Fixed rather than living inside the nav, because the nav
+     stays hidden across the whole hero — which is exactly where someone
+     decides the page is too bright or too dark. */
+  .theme {
+    position: fixed; top: 13px; right: var(--edge); z-index: 13;
+    width: 38px; height: 38px;
+    display: grid; place-items: center;
+    border: 1px solid var(--line); border-radius: 999px;
+    background: rgb(var(--ground-rgb) / .72);
+    backdrop-filter: blur(10px);
+    color: var(--soft); cursor: pointer;
+    transition: color .3s ease, border-color .3s ease, transform .35s cubic-bezier(.16,.86,.24,1);
+  }
+  .theme:hover { color: var(--ember); border-color: rgb(var(--accent-rgb) / .42); transform: rotate(20deg); }
+  .theme svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+
+  /* Show the icon for the theme you would switch TO. */
+  .theme .moon { display: none; }
+  .theme .sun  { display: block; }
+  :root[data-theme="light"] .theme .sun  { display: none; }
+  :root[data-theme="light"] .theme .moon { display: block; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme]) .theme .sun  { display: none; }
+    :root:not([data-theme]) .theme .moon { display: block; }
+  }
 
   .eyebrow {
     font-family: var(--mono); font-size: 11px;
@@ -125,10 +241,10 @@
   .hero::after {
     content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
     background: linear-gradient(to top,
-      var(--void) 0%,
-      #05070BF2 16%,
-      #05070BB8 34%,
-      #05070B4D 54%,
+      rgb(var(--ground-rgb) / 1) 0%,
+      rgb(var(--ground-rgb) / .95) 16%,
+      rgb(var(--ground-rgb) / .72) 34%,
+      rgb(var(--ground-rgb) / .3) 54%,
       transparent 74%);
   }
 
@@ -136,7 +252,7 @@
     position: absolute; width: 52vmax; height: 52vmax;
     left: 0; top: 0; margin: -26vmax 0 0 -26vmax;
     z-index: -1; pointer-events: none;
-    background: radial-gradient(circle, #FFB4541F 0%, #D4479A0F 38%, transparent 68%);
+    background: radial-gradient(circle, rgb(var(--accent-rgb) / .12) 0%, rgb(var(--accent-rgb) / .05) 38%, transparent 68%);
     opacity: 0; transition: opacity 1.8s ease .7s;
     will-change: transform;
   }
@@ -251,7 +367,7 @@
   }
   .piece::before {
     content: ""; position: absolute; inset: 0;
-    background: radial-gradient(70% 130% at 12% 0%, #FFB4540F, transparent 60%);
+    background: radial-gradient(70% 130% at 12% 0%, rgb(var(--accent-rgb) / .06), transparent 60%);
     opacity: 0; transition: opacity .55s ease; pointer-events: none;
   }
   .piece:hover::before { opacity: 1; }
@@ -287,8 +403,8 @@
     color: var(--soft); font-variant-numeric: tabular-nums;
     transition: border-color .4s ease, color .4s ease;
   }
-  .piece:hover .chip { border-color: #FFB4542E; }
-  .chip.hot { border-color: #FFB45440; color: var(--ember); }
+  .piece:hover .chip { border-color: rgb(var(--accent-rgb) / .18); }
+  .chip.hot { border-color: rgb(var(--accent-rgb) / .25); color: var(--ember); }
 
   .visit {
     font-family: var(--mono); font-size: 11px; letter-spacing: .17em;
@@ -307,7 +423,7 @@
     border-bottom: 1px solid var(--line);
     transition: border-color .45s ease;
   }
-  .row:hover { border-bottom-color: #FFB4542E; }
+  .row:hover { border-bottom-color: rgb(var(--accent-rgb) / .18); }
   .row dt { font-family: var(--mono); font-size: 11px; letter-spacing: .13em; color: var(--dim); padding-top: 8px; font-variant-numeric: tabular-nums; }
   .row h4 { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.2vw, 21px); letter-spacing: -.022em; }
   .row .meta { color: var(--dim); font-size: 15px; font-style: italic; margin-top: 3px; }
@@ -331,7 +447,7 @@
     border-bottom: 1px solid var(--line);
     transition: border-color .45s ease;
   }
-  .skill:hover { border-bottom-color: #FFB4542E; }
+  .skill:hover { border-bottom-color: rgb(var(--accent-rgb) / .18); }
   .skill dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: .17em; text-transform: uppercase; color: var(--ember); padding-top: 6px; }
   .skill dd { color: var(--soft); font-size: 16.5px; }
 
@@ -344,7 +460,7 @@
     border: 1px solid var(--line); border-radius: 999px; color: var(--ink);
     transition: border-color .38s ease, color .38s ease, transform .38s cubic-bezier(.16,.86,.24,1), background .38s ease;
   }
-  .links a:hover { border-color: #FFB45463; color: var(--ember); transform: translateY(-3px); background: #FFB4540D; }
+  .links a:hover { border-color: rgb(var(--accent-rgb) / .39); color: var(--ember); transform: translateY(-3px); background: rgb(var(--accent-rgb) / .05); }
 
   footer {
     border-top: 1px solid var(--line);
@@ -417,6 +533,16 @@
 
 <div class="progress" id="progress" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
+
+<button class="theme" id="theme" type="button" aria-label="Switch between light and dark">
+  <svg class="sun" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.2"/>
+    <path d="M12 2.6v2.2M12 19.2v2.2M4.2 12H2M22 12h-2.2M6.5 6.5 5 5M19 19l-1.5-1.5M17.5 6.5 19 5M5 19l1.5-1.5"/>
+  </svg>
+  <svg class="moon" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2Z"/>
+  </svg>
+</button>
 
 <nav id="nav" aria-label="Sections">
   <a class="who" href="#top">David Jeremie Anand</a>
@@ -713,9 +839,12 @@
 
   var COLS = 240, ROWS = 160;
 
-  /* Magma: the standard perceptual colormap for spectrograms. Deep
-     violet through magenta to a pale ember at full intensity. */
-  var STOPS = [
+  /* Two ramps, because a spectrogram has to invert with the ground.
+     On black, high energy glows toward a pale ember (magma). On paper,
+     high energy goes dark and saturated and the quiet band stays near the
+     page colour — which is how spectrograms have always been printed.
+     Recolouring one for the other would give you a muddy grey wash. */
+  var RAMP_DARK = [
     [0.00,   8,   9,  20],
     [0.16,  34,  20,  72],
     [0.34, 100,  30, 124],
@@ -724,6 +853,16 @@
     [0.88, 252, 172,  92],
     [1.00, 255, 238, 200]
   ];
+  var RAMP_LIGHT = [
+    [0.00, 246, 244, 241],
+    [0.16, 250, 226, 186],
+    [0.34, 243, 176, 104],
+    [0.54, 219, 112,  70],
+    [0.72, 172,  46, 104],
+    [0.88,  94,  38, 130],
+    [1.00,  28,  18,  56]
+  ];
+  var STOPS = RAMP_DARK;
 
   function ramp(t, out) {
     if (t <= 0) { out[0] = STOPS[0][1]; out[1] = STOPS[0][2]; out[2] = STOPS[0][3]; return; }
@@ -810,6 +949,10 @@
        waterfall rather than an empty panel filling in. */
     for (var s = 0; s < ROWS; s++) { t += .055; head = (head - 1 + ROWS) % ROWS; spectrum(rows[head]); }
     paint();
+
+    /* Repaint on demand so a theme switch recolours the existing data
+       instantly, instead of waiting for 160 new rows to scroll through. */
+    window.__repaintWaterfall = paint;
 
     if (reduced) return;
 
@@ -915,6 +1058,40 @@
 
   /* ================================================================== */
 
+  /* ==================================================================
+     THEME
+     Applied before paint by the inline head script; this only wires the
+     toggle and tells the waterfall to swap ramps and repaint.
+     ================================================================== */
+
+  function startTheme() {
+    var btn = document.getElementById("theme");
+    var root = document.documentElement;
+
+    function current() {
+      return root.dataset.theme ||
+        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    }
+
+    btn.addEventListener("click", function () {
+      var next = current() === "dark" ? "light" : "dark";
+      root.dataset.theme = next;
+      try { localStorage.setItem("theme", next); } catch (e) { /* private mode */ }
+      STOPS = next === "dark" ? RAMP_DARK : RAMP_LIGHT;
+      if (window.__repaintWaterfall) window.__repaintWaterfall();
+    });
+
+    /* Follow the OS only while the visitor has not chosen for themselves. */
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
+      if (root.dataset.theme) return;
+      STOPS = e.matches ? RAMP_DARK : RAMP_LIGHT;
+      if (window.__repaintWaterfall) window.__repaintWaterfall();
+    });
+
+    STOPS = current() === "dark" ? RAMP_DARK : RAMP_LIGHT;
+  }
+
+  startTheme();
   startWaterfall();
   startReveals();
   startChrome();
