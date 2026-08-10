@@ -344,6 +344,10 @@
 
   .hero-inner { position: relative; }
   .hero .eyebrow { margin-bottom: clamp(18px, 2.6vh, 30px); }
+  /* No rule in the hero. Against the waterfall it read as a stray grey
+     line rather than a divider, and the eyebrow has plenty of separation
+     without it. */
+  .hero .eyebrow::after { display: none; }
 
   h1 {
     font-family: var(--display);
@@ -354,7 +358,11 @@
     text-wrap: balance;
     margin-bottom: clamp(24px, 3.4vh, 42px);
   }
-  h1 .ln { display: block; overflow: hidden; padding-bottom: .04em; }
+  /* The clipping box needs room for the part of a glyph that sits below
+     the baseline. At line-height .84 with only .04em of padding, round
+     letters like e and a had their bottom curve sliced off. The negative
+     margin gives the box the room without opening a gap in the layout. */
+  h1 .ln { display: block; overflow: hidden; padding-bottom: .16em; margin-bottom: -.16em; }
   h1 .ln > span {
     display: block;
     transform: translateY(106%);
@@ -481,11 +489,6 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(14px, 1.6vw, 22px);
-    /* Distant vanishing point. A near one (1400px) exaggerates the
-       projection, which is what pushed a tilted card's corners over its
-       neighbours. Confirmed by the phone, where tilt never runs and
-       nothing overlapped. */
-    perspective: 2200px;
   }
   .cell { grid-column: span 1; position: relative; }
   /* Whichever card you are on sits above the others, so any residual
@@ -1192,10 +1195,11 @@
      240x160 and scaled up so the browser's smoothing supplies the bloom.
      ================================================================== */
 
-  /* 200x132 rather than 240x160 — 31% fewer pixels per frame, and the CSS
-     upscale plus the browser's smoothing hides the difference entirely at
-     the size this is displayed. */
-  var COLS = 200, ROWS = 132;
+  /* The colour lookup table made painting roughly forty times cheaper per
+     pixel, which buys back resolution. More rows is what actually reads as
+     smoother: each row is a thinner slice, so the downward scroll steps in
+     finer increments instead of visibly jumping. */
+  var COLS = 260, ROWS = 224;
 
   /* Two ramps, because a spectrogram has to invert with the ground.
      On black, high energy glows toward a pale ember (magma). On paper,
@@ -1266,12 +1270,19 @@
     for (var r = 0; r < ROWS; r++) rows.push(new Float32Array(COLS));
     buildLUT();
 
+    /* Eight carriers rather than five, with a wider spread of bandwidths.
+       A couple of very narrow ones read as sharp bright threads against
+       the broad soft ones, which is what gives a real waterfall its depth
+       — an evenly-sized set looks like wallpaper. */
     var carriers = [
-      { f: .16, w: .028, a: .98, wob: .052, ph: 0.0, dr:  .00012 },
-      { f: .33, w: .016, a: .78, wob: .030, ph: 1.7, dr: -.00008 },
+      { f: .10, w: .044, a: .58, wob: .060, ph: 0.6, dr:  .00007 },
+      { f: .16, w: .026, a: .98, wob: .052, ph: 0.0, dr:  .00012 },
+      { f: .28, w: .009, a: .74, wob: .020, ph: 2.4, dr: -.00006 },
+      { f: .33, w: .016, a: .80, wob: .030, ph: 1.7, dr: -.00008 },
       { f: .50, w: .052, a: .66, wob: .068, ph: 3.1, dr:  .00005 },
-      { f: .69, w: .013, a: .92, wob: .024, ph: 4.4, dr: -.00015 },
-      { f: .85, w: .036, a: .60, wob: .046, ph: 5.9, dr:  .00010 }
+      { f: .62, w: .007, a: .68, wob: .016, ph: 5.2, dr:  .00009 },
+      { f: .69, w: .013, a: .94, wob: .024, ph: 4.4, dr: -.00015 },
+      { f: .85, w: .034, a: .62, wob: .046, ph: 5.9, dr:  .00010 }
     ];
 
     var t = 0, raf = null, running = false, last = 0;
@@ -1287,11 +1298,15 @@
     var chirp = null, nextChirp = 6 + Math.random() * 7;
 
     function updateChirp() {
+      /* Same per-frame delta as t. At the old 26fps x .055 and the new
+         36fps x .040 the wall-clock rate is within a percent, so chirps
+         keep the cadence they had rather than speeding up with the frame
+         rate. */
       if (chirp) {
-        chirp.age += .055;
+        chirp.age += .040;
         if (chirp.age > chirp.life) { chirp = null; nextChirp = 7 + Math.random() * 9; }
       } else {
-        nextChirp -= .055;
+        nextChirp -= .040;
         if (nextChirp <= 0) {
           var up = Math.random() < .5;
           chirp = {
@@ -1357,9 +1372,12 @@
 
     function frame(ts) {
       if (!running) return;
-      if (ts - last > 38) {                      /* ~26fps: plenty for a slow scroll */
+      /* ~36fps. With the lookup table the paint is cheap enough to afford
+         it, and the extra frames are what remove the last of the visible
+         stepping. */
+      if (ts - last > 27) {
         last = ts;
-        t += .055;
+        t += .040;
         updateChirp();
         head = (head - 1 + ROWS) % ROWS;
         spectrum(rows[head]);
@@ -1370,7 +1388,7 @@
 
     /* Seed the whole buffer so the first paint is already a full
        waterfall rather than an empty panel filling in. */
-    for (var s = 0; s < ROWS; s++) { t += .055; head = (head - 1 + ROWS) % ROWS; spectrum(rows[head]); }
+    for (var s = 0; s < ROWS; s++) { t += .040; head = (head - 1 + ROWS) % ROWS; spectrum(rows[head]); }
     paint();
 
     /* Repaint on demand so a theme switch recolours the existing data
@@ -1827,34 +1845,32 @@
      Both are transform-only, so they stay on the compositor.
      ================================================================== */
 
-  function startTilt() {
+  /* Tilt is gone. A rotated element's projected corners extend past its
+     grid cell no matter how shallow the angle, so the wide feature card
+     kept bleeding over the two beneath it — reducing 5 degrees to 2 and
+     pushing the vanishing point back only made it subtler, not absent.
+     A card that overlaps its neighbour is a worse bug than a card that
+     does not tilt is a missing feature.
+
+     The pointer-following light stays: it was the better half of the
+     effect and it costs no geometry. */
+  function startCardLight() {
     document.querySelectorAll("[data-tilt]").forEach(function (card) {
       var inner = card.querySelector(".cell-in") || card;
-      var queued = false, nx = 0, ny = 0, px = 50, py = 0;
+      var queued = false, px = 50, py = 0;
 
       card.addEventListener("pointermove", function (e) {
         var r = card.getBoundingClientRect();
-        nx = (e.clientX - r.left) / r.width - .5;
-        ny = (e.clientY - r.top) / r.height - .5;
         px = ((e.clientX - r.left) / r.width) * 100;
         py = ((e.clientY - r.top) / r.height) * 100;
         if (!queued) {
           queued = true;
           requestAnimationFrame(function () {
-            /* 2 degrees, not 5. A rotated element's projected corners
-               extend past its grid cell, so a steeper tilt made the wide
-               feature card visibly overlap the two beneath it. */
-            inner.style.transform =
-              "rotateX(" + (-ny * 2).toFixed(2) + "deg) rotateY(" + (nx * 2.4).toFixed(2) + "deg)";
             inner.style.setProperty("--cx", px.toFixed(1) + "%");
             inner.style.setProperty("--cy", py.toFixed(1) + "%");
             queued = false;
           });
         }
-      }, { passive: true });
-
-      card.addEventListener("pointerleave", function () {
-        inner.style.transform = "";
       }, { passive: true });
     });
   }
@@ -2052,7 +2068,7 @@
   if (!reduced && matchMedia("(pointer: fine)").matches) {
     startGlow();
     startCursor();
-    startTilt();
+    startCardLight();
     startMagnets();
     /* startInertia() is deliberately not called.
        Taking over the wheel means calling preventDefault on every scroll
