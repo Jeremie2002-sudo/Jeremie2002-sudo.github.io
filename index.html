@@ -182,6 +182,12 @@
   }
   @media (pointer: fine) {
     .has-cursor, .has-cursor a, .has-cursor button, .has-cursor .cell { cursor: none; }
+    /* Text keeps its I-beam. Hiding the cursor over prose makes selecting
+       and copying it feel broken, and someone reading a portfolio does
+       copy things — an email address, a project name. */
+    .has-cursor p, .has-cursor li, .has-cursor dd, .has-cursor h1,
+    .has-cursor h2, .has-cursor h3, .has-cursor h4 { cursor: text; }
+    .has-cursor a, .has-cursor button, .has-cursor .theme { cursor: none; }
   }
   @media (pointer: coarse) { .cur-ring, .cur-dot { display: none; } }
 
@@ -736,13 +742,25 @@
   .marquee-track {
     display: flex; align-items: center; gap: 20px;
     width: max-content;
-    animation: slide 46s linear infinite;
+    /* Slower than before: the items are longer now, and a certificate name
+       has to be readable as it passes. */
+    animation: slide 78s linear infinite;
   }
   .marquee:hover .marquee-track { animation-play-state: paused; }
+  .marquee-label {
+    font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: .28em; text-transform: uppercase;
+    color: var(--dim);
+    padding-inline: var(--edge);
+    margin-bottom: 14px;
+  }
   .marquee span {
     font-family: var(--display); font-weight: 600;
-    font-size: clamp(18px, 2.4vw, 30px);
-    letter-spacing: -.02em;
+    /* Smaller than the old tech names — these are certificate titles, so
+       there are more words per item and they need to read as a list rather
+       than as headlines. */
+    font-size: clamp(15px, 1.9vw, 23px);
+    letter-spacing: -.015em;
     color: var(--soft);
     white-space: nowrap;
   }
@@ -1168,13 +1186,16 @@
     </dl>
   </section>
 
-  <!-- Full-bleed marquee. Breaks out of the column entirely, which is
-       half of why it registers — the page has one continuous horizontal
-       motion running through it. -->
-  <div class="marquee rise" aria-hidden="true">
-    <div class="marquee-track">
-      <span>Python</span><i>·</i><span>FastAPI</span><i>·</i><span>FAISS</span><i>·</i><span>LLMOps</span><i>·</i><span>Agentic AI</span><i>·</i><span>RAG</span><i>·</i><span>pytest</span><i>·</i><span>Docker</span><i>·</i><span>GitHub Actions</span><i>·</i><span>Snowflake</span><i>·</i><span>Azure AI</span><i>·</i><span>Power BI</span><i>·</i><span>SQL</span><i>·</i><span>GenAIOps</span><i>·</i>
-      <span>Python</span><i>·</i><span>FastAPI</span><i>·</i><span>FAISS</span><i>·</i><span>LLMOps</span><i>·</i><span>Agentic AI</span><i>·</i><span>RAG</span><i>·</i><span>pytest</span><i>·</i><span>Docker</span><i>·</i><span>GitHub Actions</span><i>·</i><span>Snowflake</span><i>·</i><span>Azure AI</span><i>·</i><span>Power BI</span><i>·</i><span>SQL</span><i>·</i><span>GenAIOps</span><i>·</i>
+  <!-- Certifications, not technologies. The old marquee scrolled Python,
+       FastAPI, Docker and so on, then the Skills section listed the same
+       things twenty pixels later — motion in place of information. These
+       are ten certificates the site did not show anywhere, so the band now
+       carries content instead of repeating it. -->
+  <div class="marquee rise">
+    <p class="marquee-label">Certified</p>
+    <div class="marquee-track" aria-hidden="true">
+      <span>Snowflake Generative AI</span><i>·</i><span>Microsoft Azure AI Essentials</span><i>·</i><span>Become an AI Engineer</span><i>·</i><span>Advanced LLMs with RAG</span><i>·</i><span>Vector Databases and RAG</span><i>·</i><span>GenAIOps Foundations</span><i>·</i><span>Fine-Tuning for LLMs</span><i>·</i><span>Generative AI in Cloud Computing</span><i>·</i><span>Astronomer Data Engineering</span><i>·</i><span>AI Ecosystem for Developers</span><i>·</i>
+      <span>Snowflake Generative AI</span><i>·</i><span>Microsoft Azure AI Essentials</span><i>·</i><span>Become an AI Engineer</span><i>·</i><span>Advanced LLMs with RAG</span><i>·</i><span>Vector Databases and RAG</span><i>·</i><span>GenAIOps Foundations</span><i>·</i><span>Fine-Tuning for LLMs</span><i>·</i><span>Generative AI in Cloud Computing</span><i>·</i><span>Astronomer Data Engineering</span><i>·</i><span>AI Ecosystem for Developers</span><i>·</i>
     </div>
   </div>
 
@@ -1775,13 +1796,25 @@
     ring.className = "cur-ring"; dot.className = "cur-dot";
     document.body.appendChild(ring); document.body.appendChild(dot);
 
-    var tx = innerWidth / 2, ty = innerHeight / 2, rx = tx, ry = ty, on = false;
+    var tx = innerWidth / 2, ty = innerHeight / 2, rx = tx, ry = ty, on = false, live = false;
 
     addEventListener("pointermove", function (e) {
       tx = e.clientX; ty = e.clientY;
       dot.style.transform = "translate3d(" + tx + "px," + ty + "px,0)";
+      /* Hide the real cursor only once ours has actually been positioned by
+         a real pointer event. Hiding it up front means that if anything
+         here fails, or the visitor never moves the mouse, they are left
+         with no pointer at all — a broken decoration is survivable, no
+         cursor is not. */
+      if (!live) { live = true; document.documentElement.classList.add("has-cursor"); }
       if (!on) { on = true; requestAnimationFrame(loop); }
     }, { passive: true });
+
+    /* Give the native cursor back whenever ours cannot be trusted to be
+       on screen: another window takes focus, or the page is hidden. */
+    function release() { document.documentElement.classList.remove("has-cursor"); live = false; }
+    addEventListener("blur", release);
+    document.addEventListener("visibilitychange", function () { if (document.hidden) release(); });
 
     function loop() {
       rx += (tx - rx) * .16; ry += (ty - ry) * .16;
@@ -1797,8 +1830,6 @@
     document.addEventListener("pointerout", function (e) {
       if (e.target.closest("a, button, .cell, .theme")) ring.classList.remove("big");
     }, { passive: true });
-
-    document.documentElement.classList.add("has-cursor");
   }
 
   /* ==================================================================
