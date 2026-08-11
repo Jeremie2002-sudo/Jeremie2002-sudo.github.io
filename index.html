@@ -2341,7 +2341,12 @@
        reads as wisps of colour in both themes. */
     "  float vig = smoothstep(1.30, 0.10, length(uv - 0.5));",
     "  float energy = smoothstep(0.30, 0.95, f) * vig;",
-    "  float a = energy * mix(0.13, 0.34, u_dark);",
+    /* Light was 0.13 — barely a stain. On black, bright folds glow, so a
+       little alpha reads as a lot; on paper the same folds are dark inks
+       that need more presence to register at all. 0.24 puts the two themes
+       at comparable perceived strength; the section scrims still sit
+       between this and the text, so legibility is theirs to hold. */
+    "  float a = energy * mix(0.24, 0.34, u_dark);",
     "  gl_FragColor = vec4(col, a);",
     "}"
   ].join("\n");
