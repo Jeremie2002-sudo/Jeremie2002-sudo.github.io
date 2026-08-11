@@ -436,9 +436,23 @@
   h1 .accent {
     background-image: var(--name-fill, none), linear-gradient(96deg,
       var(--ember) 0%, var(--flare) 28%, var(--blush) 56%, var(--plasma) 82%, var(--wine) 106%);
-    background-size: 100% 100%, 100% 100%;
+    /* The fill tile repeats down the letters and is scrolled by animating
+       its position — one decoded image moving, rather than a new image
+       every frame. Replacing the image was what made the name strobe.
+       240px matches the tile the script builds; the mirrored bottom half
+       means position can run a full tile and wrap invisibly. */
+    background-size: 100% 240px, 100% 100%;
+    background-repeat: repeat-y, no-repeat;
     background-blend-mode: overlay;
     -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: namedrift 9s linear infinite;
+  }
+  /* Downward, like the waterfall it came from, and at roughly the rate the
+     real one crosses its panel. The global reduced-motion rule kills this
+     animation, which leaves a still texture rather than nothing. */
+  @keyframes namedrift {
+    from { background-position: 0 0, 0 0; }
+    to   { background-position: 0 240px, 0 0; }
   }
 
   .tagline {
@@ -791,7 +805,14 @@
   .evi .k  { color: var(--ember); }
 
   @media (max-width: 680px) {
-    .evi-body { font-size: 11px; padding: 13px 13px 15px; }
+    /* 10.5px and tighter padding. The panels were overflowing their own box
+       on a phone and demanding a sideways swipe to read a line — technically
+       contained, since overflow-x kept the page still, but a readout you
+       have to drag is not a readout. Every line is now under ~37 characters
+       and the type is sized so that fits a 360px screen without scrolling.
+       overflow-x stays as a backstop, not as the plan. */
+    .evi-body { font-size: 10.5px; padding: 12px 12px 14px; line-height: 1.6; }
+    .evi figcaption { padding: 8px 12px; font-size: 9px; }
   }
   .visit i { font-style: normal; transition: transform .38s cubic-bezier(.16,.86,.24,1); }
   .visit:hover i { transform: translate(5px, -5px); }
@@ -1207,6 +1228,10 @@
     h1 { font-size: 40px; }
     .metric b { font-size: 46px; }
     .piece h3 { font-size: 21px; }
+    /* One more step down for the evidence readouts. Measured against the
+       real font: at 10.5px the widest line still overran a 320px screen by
+       22px, which is the class of phone this breakpoint exists for. */
+    .evi-body { font-size: 9.5px; padding: 11px 11px 13px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1373,14 +1398,14 @@
           <figure class="evi rise">
             <figcaption><b></b> promptdrift · ci <em>illustrative</em></figcaption>
             <div class="evi-body">
-              <span class="l" style="--i:0"><span class="q">$</span> promptdrift run --baseline .promptdrift/baseline.json</span>
+              <span class="l" style="--i:0"><span class="q">$</span> promptdrift run --ci</span>
               <span class="l sp" style="--i:1"></span>
-              <span class="l" style="--i:2">  <span class="ok">✓</span>  deterministic     24 passed</span>
-              <span class="l" style="--i:3">  <span class="ok">✓</span>  judge (cached)    18 passed</span>
-              <span class="l" style="--i:4">  <span class="no">✗</span>  regressions        2 found</span>
+              <span class="l" style="--i:2">  <span class="ok">✓</span>  deterministic  24 passed</span>
+              <span class="l" style="--i:3">  <span class="ok">✓</span>  judge (cached) 18 passed</span>
+              <span class="l" style="--i:4">  <span class="no">✗</span>  regressions     2 found</span>
               <span class="l sp" style="--i:5"></span>
-              <span class="l" style="--i:6">     refund_policy_v3   <span class="hl">0.91 → 0.62</span></span>
-              <span class="l" style="--i:7">     tone_guardrail     <span class="hl">0.88 → 0.71</span></span>
+              <span class="l" style="--i:6">    refund_policy_v3  <span class="hl">0.91 → 0.62</span></span>
+              <span class="l" style="--i:7">    tone_guardrail    <span class="hl">0.88 → 0.71</span></span>
               <span class="l sp" style="--i:8"></span>
               <span class="l" style="--i:9">  <span class="k">exit 1 — merge blocked</span></span>
             </div>
@@ -1410,14 +1435,14 @@
           <figure class="evi rise">
             <figcaption><b></b> synapse · critic <em>illustrative</em></figcaption>
             <div class="evi-body">
-              <span class="l" style="--i:0"><span class="q">query</span>  what changed in the Q3 retention policy?</span>
-              <span class="l" style="--i:1"><span class="q">fused</span>  bm25 + faiss → rrf → listwise rerank</span>
+              <span class="l" style="--i:0"><span class="q">query</span>  what changed in Q3 policy?</span>
+              <span class="l" style="--i:1"><span class="q">fused</span>  bm25 + faiss → rrf → rerank</span>
               <span class="l sp" style="--i:2"></span>
-              <span class="l" style="--i:3">audit log retention 90 → 180 days <span class="ok">[1]</span></span>
-              <span class="l" style="--i:4">deletion requests resolve in 30 days <span class="ok">[2]</span></span>
-              <span class="l" style="--i:5"><span class="no">⚠ "applies to all regions" — unsupported</span></span>
+              <span class="l" style="--i:3">retention moved 90 → 180 days <span class="ok">[1]</span></span>
+              <span class="l" style="--i:4">deletion resolves in 30 days <span class="ok">[2]</span></span>
+              <span class="l" style="--i:5"><span class="no">⚠ "all regions" — unsupported</span></span>
               <span class="l sp" style="--i:6"></span>
-              <span class="l" style="--i:7"><span class="q">[1] policy_v3.pdf p.4   [2] compliance.md</span></span>
+              <span class="l" style="--i:7"><span class="q">[1] policy_v3.pdf  [2] notes.md</span></span>
             </div>
           </figure>
 
@@ -1445,14 +1470,15 @@
           <figure class="evi rise">
             <figcaption><b></b> ledgr · tool call <em>illustrative</em></figcaption>
             <div class="evi-body">
-              <span class="l" style="--i:0"><span class="q">user</span>   how much did I spend on groceries in March?</span>
+              <span class="l" style="--i:0"><span class="q">user</span>   groceries spend in March?</span>
               <span class="l sp" style="--i:1"></span>
               <span class="l" style="--i:2"><span class="k">tool</span>   query_transactions(</span>
-              <span class="l" style="--i:3">         category="groceries", month="2026-03")</span>
-              <span class="l" style="--i:4">       <span class="hl">→ 41 rows · sum 18,430.00</span></span>
-              <span class="l sp" style="--i:5"></span>
-              <span class="l" style="--i:6"><span class="q">reply</span>  ₹18,430 across 41 transactions.</span>
-              <span class="l" style="--i:7"><span class="q">       the database did the arithmetic, not the model.</span></span>
+              <span class="l" style="--i:3">         category="groceries",</span>
+              <span class="l" style="--i:4">         month="2026-03")</span>
+              <span class="l" style="--i:5">       <span class="hl">→ 41 rows · sum 18,430.00</span></span>
+              <span class="l sp" style="--i:6"></span>
+              <span class="l" style="--i:7"><span class="q">reply</span>  ₹18,430 · 41 transactions</span>
+              <span class="l" style="--i:8"><span class="q">       the database did the maths</span></span>
             </div>
           </figure>
 
@@ -2024,45 +2050,54 @@
      ================================================================== */
 
   function startNameFill() {
-    if (reduced) return;
     var accent = document.querySelector("h1 .accent");
     var src = document.getElementById("waterfall");
     if (!accent || !src) return;
 
+    /* One image, built once. The first version replaced this background
+       with a freshly encoded data URL ten times a second, which reads as
+       the letters flickering — every swap is a new resource the browser
+       has to decode, and between decode and paint there is nothing to clip
+       the glyphs to. On a phone, where the decode is slower, it strobed.
+
+       The motion now comes from scrolling one static tile instead, which
+       is both free and closer to what a waterfall does anyway. */
+    var TILE_W = 320, HALF = 120;
     var off = document.createElement("canvas");
-    off.width = 320; off.height = 96;
+    off.width = TILE_W; off.height = HALF * 2;
     var octx = off.getContext && off.getContext("2d");
     if (!octx) return;
 
-    var onScreen = true, last = 0;
-    if ("IntersectionObserver" in window) {
-      new IntersectionObserver(function (es) {
-        es.forEach(function (e) { onScreen = e.isIntersecting; });
-      }, { threshold: 0 }).observe(accent);
-    }
-
-    function tick(ts) {
-      requestAnimationFrame(tick);
-      /* 10fps. The letters carry a texture, not an animation — running it
-         at frame rate would cost three times the encoding for a difference
-         nobody can see, and toDataURL is the expensive part. */
-      if (!onScreen || document.hidden || ts - last < 100) return;
-      last = ts;
-      /* Sample the band the name actually sits in, so the fill agrees with
-         the waterfall immediately behind it instead of being an unrelated
-         crop of the same generator. */
-      octx.drawImage(src, 0, src.height * .30, src.width, src.height * .34,
-                          0, 0, off.width, off.height);
+    function build() {
+      /* Top half is a slice of the waterfall; bottom half is the same
+         slice flipped. That makes the tile's last row equal its first, so
+         it repeats vertically with no seam and the CSS can scroll it
+         forever without a jump. */
+      octx.setTransform(1, 0, 0, 1, 0, 0);
+      octx.clearRect(0, 0, TILE_W, HALF * 2);
+      octx.drawImage(src, 0, src.height * .30, src.width, src.height * .40,
+                          0, 0, TILE_W, HALF);
+      octx.setTransform(1, 0, 0, -1, 0, HALF * 2);
+      octx.drawImage(src, 0, src.height * .30, src.width, src.height * .40,
+                          0, 0, TILE_W, HALF);
+      octx.setTransform(1, 0, 0, 1, 0, 0);
       try {
         accent.style.setProperty("--name-fill", "url(" + off.toDataURL() + ")");
       } catch (e) {
         /* Nothing here should taint the canvas, but if a browser disagrees
-           the gradient underneath is already correct — so stop rather than
-           throw every frame. */
-        onScreen = false;
+           the gradient underneath is already correct — do nothing. */
       }
     }
-    requestAnimationFrame(tick);
+
+    build();
+
+    /* Rebuilt only on a theme change, which is the one moment the texture
+       is genuinely wrong: the ramp under it has been swapped. One decode
+       per toggle is not a flicker. */
+    if (window.MutationObserver) {
+      new MutationObserver(build).observe(document.documentElement,
+        { attributes: true, attributeFilter: ["data-theme"] });
+    }
   }
 
   /* ==================================================================
