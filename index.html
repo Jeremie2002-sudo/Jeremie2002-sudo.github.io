@@ -414,9 +414,30 @@
   .lit h1 .ln:nth-child(1) > span { transform: none; transition-delay: .18s; }
   .lit h1 .ln:nth-child(2) > span { transform: none; transition-delay: .3s; }
 
+  /* The surname is filled with the live waterfall, blended over the
+     gradient it always had.
+
+     Two layers rather than a replacement, for one reason: legibility. The
+     spectrogram's own noise floor sits near-black violet, and letters
+     painted straight from it would have vanished against a dark hero —
+     the largest, most important text on the page, unreadable. Blending in
+     `overlay` keeps the gradient's luminance and lets the signal modulate
+     it, so the name still reads at a glance but visibly moves.
+
+     --name-fill defaults to none, so with JavaScript off, on a browser
+     that cannot do this, or under reduced motion, this is exactly the
+     gradient it has always been. Nothing to fall back to because nothing
+     was taken away.
+
+     Doing it as a background also means the browser keeps handling the
+     font metrics. Painting the text into a canvas instead would have meant
+     matching a clamp() size, -.055em tracking and the slide-up reveal by
+     hand, all of which the element already does correctly. */
   h1 .accent {
-    background: linear-gradient(96deg,
+    background-image: var(--name-fill, none), linear-gradient(96deg,
       var(--ember) 0%, var(--flare) 28%, var(--blush) 56%, var(--plasma) 82%, var(--wine) 106%);
+    background-size: 100% 100%, 100% 100%;
+    background-blend-mode: overlay;
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
 
@@ -1973,6 +1994,59 @@
   }
 
   /* ==================================================================
+     NAME FILL
+     Pipes the hero waterfall into the surname as a CSS background layer,
+     which h1 .accent blends over its gradient and clips to the glyphs.
+
+     A background image, not canvas text, so the browser keeps doing the
+     font work — the element already handles a clamp() size, -.055em
+     tracking and a slide-up reveal, none of which is worth re-deriving in
+     canvas coordinates.
+     ================================================================== */
+
+  function startNameFill() {
+    if (reduced) return;
+    var accent = document.querySelector("h1 .accent");
+    var src = document.getElementById("waterfall");
+    if (!accent || !src) return;
+
+    var off = document.createElement("canvas");
+    off.width = 320; off.height = 96;
+    var octx = off.getContext && off.getContext("2d");
+    if (!octx) return;
+
+    var onScreen = true, last = 0;
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (es) {
+        es.forEach(function (e) { onScreen = e.isIntersecting; });
+      }, { threshold: 0 }).observe(accent);
+    }
+
+    function tick(ts) {
+      requestAnimationFrame(tick);
+      /* 10fps. The letters carry a texture, not an animation — running it
+         at frame rate would cost three times the encoding for a difference
+         nobody can see, and toDataURL is the expensive part. */
+      if (!onScreen || document.hidden || ts - last < 100) return;
+      last = ts;
+      /* Sample the band the name actually sits in, so the fill agrees with
+         the waterfall immediately behind it instead of being an unrelated
+         crop of the same generator. */
+      octx.drawImage(src, 0, src.height * .30, src.width, src.height * .34,
+                          0, 0, off.width, off.height);
+      try {
+        accent.style.setProperty("--name-fill", "url(" + off.toDataURL() + ")");
+      } catch (e) {
+        /* Nothing here should taint the canvas, but if a browser disagrees
+           the gradient underneath is already correct — so stop rather than
+           throw every frame. */
+        onScreen = false;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* ==================================================================
      SCROLL-DRIVEN PALETTE
      The accent trio walks through the spectrum as you descend — amber and
      blush at the top, rose through the work, deep violet by the contact
@@ -2793,6 +2867,7 @@
   startTheme();
   if (!reduced) startPalette();
   startWaterfall();
+  startNameFill();   /* after startWaterfall: it reads that canvas */
   startCloser();
   startReveals();
   startChrome();
