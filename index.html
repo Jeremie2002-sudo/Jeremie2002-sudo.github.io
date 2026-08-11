@@ -269,6 +269,27 @@
   }
   @media (max-width: 640px) { nav .set a:not(:last-child), .freq { display: none; } }
 
+  /* The scroll companion. Fixed on the right edge, translated down the
+     viewport by page progress from the shared scroll tick; starts below
+     the theme toggle's corner and never intercepts the pointer. */
+  #voyager {
+    position: fixed; right: clamp(18px, 5vw, 64px); top: 0;
+    width: 44px; z-index: 1; pointer-events: none;
+    opacity: 0; transition: opacity .7s ease;
+    will-change: transform;
+  }
+  #voyager.on { opacity: .8; }
+  #voyager svg { display: block; width: 100%; height: auto; color: var(--dim); }
+  #voyager rect, #voyager path {
+    stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round;
+  }
+  #voyager .vtrail {
+    stroke: var(--ember); stroke-width: 1.4;
+    stroke-dasharray: 1.5 6; opacity: .55;
+    animation: scene-beam 1.5s linear infinite;
+  }
+  @media (max-width: 680px) { #voyager { display: none; } }
+
   /* Theme toggle. Fixed rather than living inside the nav, because the nav
      stays hidden across the whole hero — which is exactly where someone
      decides the page is too bright or too dark. */
@@ -1603,6 +1624,20 @@
     <a href="#contact">Contact</a>
   </span>
 </nav>
+
+<!-- The voyager. A satellite parked over the hero when the page lands,
+     descending the right edge with you as you scroll — the transmission
+     you follow down the page — and fading out as the closer arrives,
+     where the scene's own satellite is already streaming to the desk.
+     Same drawing as that one, so they read as the same object. -->
+<div id="voyager" aria-hidden="true">
+  <svg viewBox="0 0 44 70">
+    <rect x="16" y="4" width="11" height="8" rx="1.5"/>
+    <path d="M3 6h11v4H3zM29 6h11v4H29z"/>
+    <path d="M21 12v4"/>
+    <path class="vtrail" d="M21.5 18V66"/>
+  </svg>
+</div>
 
 <header class="hero" id="top">
   <div id="wf-layer" aria-hidden="true"><canvas id="waterfall"></canvas></div>
@@ -3562,15 +3597,28 @@
     if (!lists.length && !freqEl) return;
     var ticking = false;
 
+    var voy = document.getElementById("voyager");
+    var closerEl = document.querySelector(".closer");
+
     function update() {
       ticking = false;
+      var doc = document.documentElement;
+      var sp = scrollY / Math.max(1, doc.scrollHeight - innerHeight);
+      if (sp < 0) sp = 0; else if (sp > 1) sp = 1;
       /* The dial: page progress mapped onto the FM band, 87.5 to 108.0.
-         Same scroll tick as the pulse — one listener for both. */
+         Same scroll tick as the pulse — one listener for everything. */
       if (freqEl) {
-        var doc = document.documentElement;
-        var sp = scrollY / Math.max(1, doc.scrollHeight - innerHeight);
-        if (sp < 0) sp = 0; else if (sp > 1) sp = 1;
         freqEl.textContent = (87.5 + sp * 20.5).toFixed(1) + " MHz";
+      }
+      /* The voyager descends the right edge with the reader, and hands
+         off to the scene's satellite once the closer is arriving. Not
+         under reduced motion — it is a drifting decoration, not a
+         position readout like the dial. */
+      if (voy && !reduced) {
+        voy.style.transform = "translateY(" + Math.round(innerHeight * (.12 + .62 * sp)) + "px)";
+        var ct = closerEl ? closerEl.getBoundingClientRect().top : 1 / 0;
+        if (ct < innerHeight * .85) voy.classList.remove("on");
+        else voy.classList.add("on");
       }
       var anchor = innerHeight * .42;
       for (var i = 0; i < lists.length; i++) {
