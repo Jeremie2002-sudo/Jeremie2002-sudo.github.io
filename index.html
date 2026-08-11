@@ -1462,19 +1462,22 @@
             the question that actually blocks a merge. Cheap deterministic checks run first
             and short-circuit the paid LLM-as-judge calls.
           </p>
+          <!-- Condensed from the run the README itself documents — real
+               case names, real pass rates, real REGRESSED semantics. -->
           <figure class="evi rise">
-            <figcaption><b></b> promptdrift · ci <em>illustrative</em></figcaption>
+            <figcaption><b></b> promptdrift · run <em>from the readme</em></figcaption>
             <div class="evi-body">
-              <span class="l" style="--i:0"><span class="q">$</span> promptdrift run --ci</span>
-              <span class="l sp" style="--i:1"></span>
-              <span class="l" style="--i:2">  <span class="ok">✓</span>  deterministic  24 passed</span>
-              <span class="l" style="--i:3">  <span class="ok">✓</span>  judge (cached) 18 passed</span>
-              <span class="l" style="--i:4">  <span class="no">✗</span>  regressions     2 found</span>
-              <span class="l sp" style="--i:5"></span>
-              <span class="l" style="--i:6">    refund_policy_v3  <span class="hl">0.91 → 0.62</span></span>
-              <span class="l" style="--i:7">    tone_guardrail    <span class="hl">0.88 → 0.71</span></span>
-              <span class="l sp" style="--i:8"></span>
-              <span class="l" style="--i:9">  <span class="k">exit 1 — merge blocked</span></span>
+              <span class="l" style="--i:0"><span class="q">$</span> promptdrift run suite.yaml</span>
+              <span class="l" style="--i:1"><span class="q">support-triage · llama3.2 · 6 cases</span></span>
+              <span class="l sp" style="--i:2"></span>
+              <span class="l" style="--i:3">  <span class="ok">✓</span>  4 passed</span>
+              <span class="l" style="--i:4">  <span class="hl">~</span>  refund-request   <span class="hl">100% → 67%</span></span>
+              <span class="l" style="--i:5">  <span class="no">✗</span>  vague-complaint  <span class="hl">100% → 33%</span></span>
+              <span class="l sp" style="--i:6"></span>
+              <span class="l" style="--i:7"><span class="no">REGRESSED</span> — expected OTHER,</span>
+              <span class="l" style="--i:8">            got 'ACCOUNT'</span>
+              <span class="l sp" style="--i:9"></span>
+              <span class="l" style="--i:10">  <span class="k">FAIL 5/6 · exit 1 · merge blocked</span></span>
             </div>
           </figure>
 
@@ -1499,17 +1502,22 @@
             The critic is the interesting part: it grounds every answer in retrieved evidence
             and flags its own unsupported claims.
           </p>
+          <!-- The stage names are the real pipeline (planner, RRF fusion,
+               listwise rerank, synthesizer draft, critic) — the query and
+               documents are invented, hence the label. -->
           <figure class="evi rise">
-            <figcaption><b></b> synapse · critic <em>illustrative</em></figcaption>
+            <figcaption><b></b> synapse · reasoning trace <em>illustrative</em></figcaption>
             <div class="evi-body">
               <span class="l" style="--i:0"><span class="q">query</span>  what changed in Q3 policy?</span>
-              <span class="l" style="--i:1"><span class="q">fused</span>  bm25 + faiss → rrf → rerank</span>
-              <span class="l sp" style="--i:2"></span>
-              <span class="l" style="--i:3">retention moved 90 → 180 days <span class="ok">[1]</span></span>
-              <span class="l" style="--i:4">deletion resolves in 30 days <span class="ok">[2]</span></span>
-              <span class="l" style="--i:5"><span class="no">⚠ "all regions" — unsupported</span></span>
-              <span class="l sp" style="--i:6"></span>
-              <span class="l" style="--i:7"><span class="q">[1] policy_v3.pdf  [2] notes.md</span></span>
+              <span class="l" style="--i:1"><span class="q">plan</span>   2 sub-questions</span>
+              <span class="l" style="--i:2"><span class="q">fused</span>  bm25 + faiss → rrf → rerank</span>
+              <span class="l sp" style="--i:3"></span>
+              <span class="l" style="--i:4"><span class="q">draft</span>  retention now 180 days <span class="ok">[1]</span></span>
+              <span class="l" style="--i:5">       deletion window 30 days <span class="ok">[2]</span></span>
+              <span class="l" style="--i:6"><span class="k">critic</span> <span class="no">⚠ "all regions" unsupported</span></span>
+              <span class="l" style="--i:7">       <span class="q">claim removed from answer</span></span>
+              <span class="l sp" style="--i:8"></span>
+              <span class="l" style="--i:9"><span class="q">[1] policy_v3.pdf  [2] notes.md</span></span>
             </div>
           </figure>
 
@@ -1536,16 +1544,20 @@
           </p>
           <figure class="evi rise">
             <figcaption><b></b> ledgr · tool call <em>illustrative</em></figcaption>
+            <!-- get_totals is the assistant's real tool (finance_ai/
+                 assistant.py), and the dining question is the README's own
+                 example — the amount is invented, hence the label. -->
             <div class="evi-body">
-              <span class="l" style="--i:0"><span class="q">user</span>   groceries spend in March?</span>
+              <span class="l" style="--i:0"><span class="q">user</span>   dining spend last month?</span>
               <span class="l sp" style="--i:1"></span>
-              <span class="l" style="--i:2"><span class="k">tool</span>   query_transactions(</span>
-              <span class="l" style="--i:3">         category="groceries",</span>
-              <span class="l" style="--i:4">         month="2026-03")</span>
-              <span class="l" style="--i:5">       <span class="hl">→ 41 rows · sum 18,430.00</span></span>
-              <span class="l sp" style="--i:6"></span>
-              <span class="l" style="--i:7"><span class="q">reply</span>  ₹18,430 · 41 transactions</span>
-              <span class="l" style="--i:8"><span class="q">       the database did the maths</span></span>
+              <span class="l" style="--i:2"><span class="k">tool</span>   get_totals(</span>
+              <span class="l" style="--i:3">         start="2026-07-01",</span>
+              <span class="l" style="--i:4">         end="2026-07-31",</span>
+              <span class="l" style="--i:5">         category="Dining")</span>
+              <span class="l" style="--i:6">       <span class="hl">→ expenses 12,840.00</span></span>
+              <span class="l sp" style="--i:7"></span>
+              <span class="l" style="--i:8"><span class="q">reply</span>  ₹12,840 on dining in July</span>
+              <span class="l" style="--i:9"><span class="q">       the database did the maths</span></span>
             </div>
           </figure>
 
