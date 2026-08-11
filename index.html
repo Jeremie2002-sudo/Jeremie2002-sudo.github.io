@@ -1931,9 +1931,11 @@
             <path d="M298 41v4"/>
           </g>
           <path class="beam" d="M298 47L297 101"/>
-          <!-- receiving station: SDR box cabled to the laptop, whip antenna.
-               The HackRF project, drawn where it happened -->
-          <path class="set" d="M236 145c12 6 24 6 36-2"/>
+          <!-- receiving station: SDR box beside the laptop, whip antenna.
+               The HackRF project, drawn where it happened. It had a cable
+               to the laptop; the sag crossed the mug and read as a stray
+               swoosh — nobody could tell what it was, so it is gone.
+               Adjacency carries the connection. -->
           <rect class="bezel" x="272" y="136" width="24" height="12" rx="2"/>
           <circle class="led" cx="278" cy="142" r="1.8"/>
           <path class="set" d="M290 136L297 104"/>
@@ -1948,10 +1950,10 @@
             <path class="limb shin" d="M122 157L113 205"/>
             <path class="limb foot" d="M112 208h17"/>
             <g class="breathe">
-              <path class="torso" d="M90 86c7 3 11 11 12 22 1 10 0 20-3 29l-3 9-22 2c-3-14-3-30 2-44 2-8 7-12 14-18z"/>
-              <circle class="head" cx="86" cy="73" r="12.5"/>
-              <path class="hp" d="M74 68a13 13 0 0 1 24 0"/>
-              <rect class="pad" x="93" y="66" width="5" height="12" rx="2.5"/>
+              <path class="torso" d="M90 87c6 3 9 10 10 20 1 9 0 19-3 27l-3 10-17 3c-2-13-2-28 2-41 2-7 6-11 11-19z"/>
+              <circle class="head" cx="86" cy="73" r="11.5"/>
+              <path class="hp" d="M75 69a12 12 0 0 1 22 0"/>
+              <rect class="pad" x="92" y="66" width="5" height="12" rx="2.5"/>
               <path class="limb arm" d="M90 102C102 114 112 120 122 126"/>
               <path class="limb arm fore" d="M122 126C134 134 142 139 152 144"/>
             </g>
@@ -2187,7 +2189,8 @@
         age: 0, life: 2.1 + Math.random() * 1.2,
         from: k, to: to < .03 ? .03 : to > .97 ? .97 : to,
         w: .010 + Math.random() * .004,
-        a: .95 + Math.random() * .25
+        a: .95 + Math.random() * .25,
+        hot: true
       });
     }
 
@@ -2239,9 +2242,18 @@
           var ch = chirps[ci];
           var p = ch.age / ch.life;
           /* Ease the sweep and fade it in and out at the ends, so it
-             arrives and leaves rather than blinking on. */
+             arrives and leaves rather than blinking on.
+
+             Except when the visitor keyed it. sin(p*PI) starts at zero
+             and swells, which is right for ambient traffic arriving from
+             elsewhere — and reads as broken lag on a click, because the
+             tap produces nothing for half a second. A hot chirp hits full
+             power in the first 5% of its life and only fades on the way
+             out. */
           var pos = ch.from + (ch.to - ch.from) * (p * p * (3 - 2 * p));
-          var env = Math.sin(p * Math.PI);
+          var env = ch.hot
+            ? Math.min(p / .05, 1) * Math.min((1 - p) / .3, 1)
+            : Math.sin(p * Math.PI);
           var dc = k - pos;
           v += ch.a * env * Math.exp(-(dc * dc) / (2 * ch.w * ch.w));
         }
