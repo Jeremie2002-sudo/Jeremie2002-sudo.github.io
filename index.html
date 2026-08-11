@@ -900,6 +900,20 @@
   .skill:hover { border-color: rgb(var(--accent-rgb) / .28); }
   .skill:hover::before { opacity: 1; }
   .skill.feature { grid-column: span 2; }
+
+  /* Chips rather than a comma list. The tile around this was already built
+     to the bento standard, but the content inside it was still a resume
+     dump — one long sentence per category, which is the hardest shape to
+     scan and precisely what someone scanning this section is doing. Same
+     component the project cards use, so the page keeps one vocabulary.
+
+     Written as dd.chipset, not .chipset: `.skill dd { margin: 0 }` above
+     is more specific than a bare class and would win the margin.
+
+     The three chips carrying this site's argument are marked hot, the same
+     treatment the test-count chips get in the bento. */
+  .skill dd.chipset { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+  .skill:hover .chip { border-color: rgb(var(--accent-rgb) / .2); }
   @media (max-width: 820px) {
     .skills { grid-template-columns: minmax(0, 1fr); }
     .skill.feature { grid-column: span 1; }
@@ -1422,11 +1436,21 @@
     <h2 class="rise d1">What I reach for.</h2>
 
     <dl class="skills rise d1">
-      <div class="skill"><dt>Programming</dt><dd>Python, SQL, FastAPI, Flask, data analysis and cleaning, exploratory analysis</dd></div>
-      <div class="skill feature"><dt>Applied AI</dt><dd>Machine learning, generative AI, agentic AI, large language models, prompt engineering, Retrieval-Augmented Generation</dd></div>
-      <div class="skill"><dt>Systems &amp; cloud</dt><dd>Vector databases (FAISS), LLMOps, GenAIOps, Microsoft Azure AI, Snowflake, model APIs</dd></div>
-      <div class="skill"><dt>Tooling</dt><dd>Power BI, Tableau, Advanced Excel, Git, GitHub Actions, Docker, pytest</dd></div>
-      <div class="skill"><dt>Delivery</dt><dd>Root-cause analysis, stakeholder communication, process improvement, workflow optimisation</dd></div>
+      <div class="skill"><dt>Programming</dt><dd class="chipset">
+        <span class="chip">Python</span><span class="chip">SQL</span><span class="chip">FastAPI</span><span class="chip">Flask</span><span class="chip">Data cleaning</span><span class="chip">Exploratory analysis</span>
+      </dd></div>
+      <div class="skill feature"><dt>Applied AI</dt><dd class="chipset">
+        <span class="chip hot">Agentic AI</span><span class="chip hot">RAG</span><span class="chip hot">LLM evaluation</span><span class="chip">Large language models</span><span class="chip">Prompt engineering</span><span class="chip">Generative AI</span><span class="chip">Machine learning</span>
+      </dd></div>
+      <div class="skill"><dt>Systems &amp; cloud</dt><dd class="chipset">
+        <span class="chip">FAISS</span><span class="chip">LLMOps</span><span class="chip">GenAIOps</span><span class="chip">Azure AI</span><span class="chip">Snowflake</span><span class="chip">Model APIs</span>
+      </dd></div>
+      <div class="skill"><dt>Tooling</dt><dd class="chipset">
+        <span class="chip">Git</span><span class="chip">GitHub Actions</span><span class="chip">Docker</span><span class="chip">pytest</span><span class="chip">Power BI</span><span class="chip">Tableau</span><span class="chip">Advanced Excel</span>
+      </dd></div>
+      <div class="skill"><dt>Delivery</dt><dd class="chipset">
+        <span class="chip">Root-cause analysis</span><span class="chip">Process improvement</span><span class="chip">Workflow optimisation</span><span class="chip">Stakeholder communication</span>
+      </dd></div>
     </dl>
   </section>
 
