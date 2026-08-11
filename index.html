@@ -1258,8 +1258,20 @@
   .grad .gfill { fill: currentColor; }
   .grad .ghand { fill: currentColor; stroke: none; }
   .grad .gneck { stroke-width: 7; }
-  /* The cap floats where it was thrown, never landing. */
+  .grad .gcut { stroke: rgb(var(--ground-rgb)); stroke-width: 2.5; }
+  /* The throw is the reader's. --capp comes from the shared scroll tick:
+     0 holds the cap in the raised hand, 1 is airborne at rest, and the
+     spin unwinds on the way up — scrub the page and he throws it. The
+     default is 1 so no-JS and reduced motion get the finished pose, and
+     the idle drift lives on the inner group so the two transforms
+     compose instead of fighting over one attribute. */
   .grad .cap {
+    transform-box: fill-box; transform-origin: center;
+    transform:
+      translate(calc(-14px * (1 - var(--capp, 1))), calc(24px * (1 - var(--capp, 1))))
+      rotate(calc(-160deg * (1 - var(--capp, 1))));
+  }
+  .grad .cap-inner {
     transform-box: fill-box; transform-origin: center;
     animation: cap-float 3.2s ease-in-out infinite alternate;
   }
@@ -1996,18 +2008,27 @@
           <path class="limb" d="M70 118L66 170"/>
           <path class="limb" d="M82 118L88 170"/>
           <path class="gneck" d="M75 62l1 9"/>
-          <path class="gfill gown" d="M76 72c8 1 13 6 15 14l4 32-42 1 5-33c2-8 9-13 18-14z"/>
+          <!-- A real gown: flared hem, and a V-stole cut into the fill in
+               ground colour. The sleeve drape hangs off the raised arm. -->
+          <path class="gfill gown" d="M76 72c8 1 13 6 15 14l7 33-50 1 7-34c2-8 9-13 18-14z"/>
+          <path class="gcut" d="M67 77l9 15 9-15"/>
           <circle class="gfill" cx="74" cy="52" r="11"/>
           <!-- One visible arm, like the desk scene — the second one kept
                reading as luggage on the hip at this size. -->
           <path class="limb" d="M87 90C96 78 102 66 107 54"/>
+          <path class="gfill" d="M90 86l11-15 5 8-12 15z"/>
           <circle class="ghand" cx="108" cy="52" r="3.2"/>
         </g>
+        <!-- Outer group takes the scroll-driven throw (--capp 0 = in the
+             hand, 1 = airborne); the inner group keeps the idle drift so
+             the two transforms compose instead of fighting. -->
         <g class="cap">
-          <path class="gfill" d="M104 30l16-8 16 8-16 8z"/>
-          <path d="M112 36c0 5 16 5 16 0"/>
-          <path d="M120 30l3 13"/>
-          <circle class="ghand" cx="123" cy="45" r="1.8"/>
+          <g class="cap-inner">
+            <path class="gfill" d="M104 30l16-8 16 8-16 8z"/>
+            <path d="M112 36c0 5 16 5 16 0"/>
+            <path d="M120 30l3 13"/>
+            <circle class="ghand" cx="123" cy="45" r="1.8"/>
+          </g>
         </g>
       </svg>
     </div>
@@ -3668,6 +3689,7 @@
 
     var voy = document.getElementById("voyager");
     var closerEl = document.querySelector(".closer");
+    var grad = document.querySelector(".grad");
 
     function update() {
       ticking = false;
@@ -3688,6 +3710,15 @@
         var ct = closerEl ? closerEl.getBoundingClientRect().top : 1 / 0;
         if (ct < innerHeight * .85) voy.classList.remove("on");
         else voy.classList.add("on");
+      }
+      /* The cap toss, scrubbed by scroll: the throw runs while the
+         vignette climbs from 92% to 42% of the viewport. Skipped under
+         reduced motion — the CSS default already shows it thrown. */
+      if (grad && !reduced) {
+        var gr = grad.getBoundingClientRect();
+        var gp = (innerHeight * .92 - gr.top) / (innerHeight * .5);
+        if (gp < 0) gp = 0; else if (gp > 1) gp = 1;
+        grad.style.setProperty("--capp", gp.toFixed(3));
       }
       var anchor = innerHeight * .42;
       for (var i = 0; i < lists.length; i++) {
