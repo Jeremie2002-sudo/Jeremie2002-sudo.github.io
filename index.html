@@ -262,7 +262,12 @@
   nav .who svg { width: 19px; height: 19px; flex: none; border-radius: 5px; }
   nav .set { display: flex; gap: 22px; align-items: center; }
   nav .set { padding-right: 52px; }
-  @media (max-width: 640px) { nav .set a:not(:last-child) { display: none; } }
+  .freq {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
+    color: var(--ember); font-variant-numeric: tabular-nums;
+    opacity: .8; margin-right: 6px;
+  }
+  @media (max-width: 640px) { nav .set a:not(:last-child), .freq { display: none; } }
 
   /* Theme toggle. Fixed rather than living inside the nav, because the nav
      stays hidden across the whole hero — which is exactly where someone
@@ -845,6 +850,10 @@
     transition-delay: calc(var(--i, 0) * 62ms);
   }
   .evi.seen .l { opacity: 1; transform: none; }
+  /* Instant reset state for the hover replay: transitions off so the
+     lines vanish in one frame, then removing the class lets them run
+     their staggered entrance again — re-executing the command. */
+  .evi.replay .l { transition: none; opacity: 0; transform: translateY(5px); }
   .evi .sp { height: .72em; }
 
   .evi .q  { color: var(--dim); }
@@ -1275,15 +1284,44 @@
      coming down, at a walking pace. */
   .scene .sat rect, .scene .sat path { stroke-width: 1.5; }
   .scene .sat { animation: scene-sat 6.4s ease-in-out infinite alternate; }
-  .scene .led { fill: var(--ember); stroke: none; animation: scene-led 2.2s ease-in-out infinite; }
   .scene .beam {
     stroke: var(--ember); stroke-width: 1.6;
     stroke-dasharray: 1.5 6; opacity: .5;
     animation: scene-beam 1.5s linear infinite;
   }
+  /* Every 5s the satellite transmits: a bright packet sweeps down the
+     beam in the first ~0.7s of the cycle, and the LED below flashes on
+     the same clock as it lands. The dash pattern is one 10px segment in
+     a 64px cycle — a little longer than the beam — so driving the offset
+     through one full cycle marches the packet top to bottom exactly once.
+     Base opacity 0, so under reduced motion (which freezes the sweep)
+     there is no stray dash parked on the line. */
+  .scene .tx {
+    stroke-width: 2.2; opacity: 0;
+    stroke-dasharray: 10 54; stroke-dashoffset: 64;
+    animation: scene-tx 5s linear infinite;
+  }
+  .scene .led {
+    fill: var(--ember); stroke: none;
+    transform-box: fill-box; transform-origin: center;
+    animation: scene-led 5s ease-in-out infinite;
+  }
   @keyframes scene-sat { from { transform: translateY(0); } to { transform: translateY(2.5px); } }
-  @keyframes scene-led { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
   @keyframes scene-beam { to { stroke-dashoffset: -15; } }
+  @keyframes scene-tx {
+    0%     { stroke-dashoffset: 64; opacity: .95; }
+    14%    { stroke-dashoffset: 0; opacity: .95; }
+    14.01% { opacity: 0; }
+    100%   { stroke-dashoffset: 0; opacity: 0; }
+  }
+  /* Dim while the packet travels, flare as it arrives (~14%), settle. */
+  @keyframes scene-led {
+    0%, 12% { opacity: .3; transform: scale(1); }
+    16%     { opacity: 1; transform: scale(1.8); }
+    28%     { opacity: .75; transform: scale(1); }
+    60%     { opacity: .45; }
+    100%    { opacity: .3; transform: scale(1); }
+  }
 
   /* Breathing: torso, head and arms rise together just over a pixel on a
      slow cycle. Subliminal — but it is the difference between a figure
@@ -1481,6 +1519,10 @@
     David Jeremie Anand
   </a>
   <span class="set">
+    <!-- Where on the band you are. Scroll maps to the FM dial, 87.5 at
+         the hero to 108.0 at the footer — the scroll-driven palette
+         finally gets a number, and the page reads as tuning across it. -->
+    <span class="freq" id="freq" aria-hidden="true">87.5 MHz</span>
     <a href="#work">Work</a>
     <a href="#experience">Experience</a>
     <a href="#contact">Contact</a>
@@ -1931,6 +1973,7 @@
             <path d="M298 41v4"/>
           </g>
           <path class="beam" d="M298 47L297 101"/>
+          <path class="beam tx" d="M298 47L297 101"/>
           <!-- receiving station: SDR box beside the laptop, whip antenna.
                The HackRF project, drawn where it happened. It had a cable
                to the laptop; the sag crossed the mug and read as a stray
@@ -1962,10 +2005,12 @@
                section cannot show through the gap around the screen blit -->
           <path class="bezel" d="M157 91h64l6 52h-64z"/>
           <path class="set" d="M150 148h88"/>
-          <!-- mug and steam -->
-          <path class="set" d="M252 134h14v14h-14zM266 137c7 0 7 9 0 9"/>
-          <path class="steam s1" d="M256 128c-3-5 3-8 0-13"/>
-          <path class="steam s2" d="M263 126c-3-4 3-7 0-12"/>
+          <!-- mug and steam. Sits in the 244-265 band: 6px clear of the
+               laptop base (ends 238) and 7px clear of the SDR box (starts
+               272) — the handle was previously grazing the box. -->
+          <path class="set" d="M244 134h14v14h-14zM258 137c7 0 7 9 0 9"/>
+          <path class="steam s1" d="M248 128c-3-5 3-8 0-13"/>
+          <path class="steam s2" d="M255 126c-3-4 3-7 0-12"/>
         </svg>
         <canvas id="scene-screen"></canvas>
       </div>
@@ -3340,6 +3385,30 @@
   }
 
   /* ==================================================================
+     EVIDENCE REPLAY
+     Hovering a readout re-runs its staggered line entrance — the closest
+     a static panel gets to re-executing the command. The reset class
+     clears every line in one frame; removing it a reflow later lets the
+     delayed transitions run again. Throttled so waving the pointer
+     across a panel cannot strobe it.
+     ================================================================== */
+
+  function startEviReplay() {
+    var panels = document.querySelectorAll(".evi");
+    for (var i = 0; i < panels.length; i++) (function (p) {
+      var busy = false;
+      p.addEventListener("mouseenter", function () {
+        if (busy || !p.classList.contains("seen")) return;
+        busy = true;
+        p.classList.add("replay");
+        void p.offsetWidth;   /* commit the reset before removing it */
+        p.classList.remove("replay");
+        setTimeout(function () { busy = false; }, 1800);
+      });
+    })(panels[i]);
+  }
+
+  /* ==================================================================
      TIMELINE PULSE
      One dot per .rows list, positioned along the spine by how far the
      section has passed a fixed anchor at 42% of the viewport. Scroll-
@@ -3350,11 +3419,20 @@
 
   function startTimelinePulse() {
     var lists = document.querySelectorAll(".rows");
-    if (!lists.length) return;
+    var freqEl = document.getElementById("freq");
+    if (!lists.length && !freqEl) return;
     var ticking = false;
 
     function update() {
       ticking = false;
+      /* The dial: page progress mapped onto the FM band, 87.5 to 108.0.
+         Same scroll tick as the pulse — one listener for both. */
+      if (freqEl) {
+        var doc = document.documentElement;
+        var sp = scrollY / Math.max(1, doc.scrollHeight - innerHeight);
+        if (sp < 0) sp = 0; else if (sp > 1) sp = 1;
+        freqEl.textContent = (87.5 + sp * 20.5).toFixed(1) + " MHz";
+      }
       var anchor = innerHeight * .42;
       for (var i = 0; i < lists.length; i++) {
         var r = lists[i].getBoundingClientRect();
@@ -3380,6 +3458,9 @@
   startCloser();
   startScene();      /* after startCloser: it reads that canvas */
   startTimelinePulse();
+  /* Not under reduced motion: with transitions globally disabled the
+     replay would blink the panel rather than re-run it. */
+  if (!reduced) startEviReplay();
   startReveals();
   startChrome();
 
