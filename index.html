@@ -1255,7 +1255,10 @@
      opacity — marginalia on the page, not figures pasted over it. The
      opacity lives on the svg because .rise.seen outranks a bare class
      and would win the element's own opacity back to 1. */
-  .grad svg { display: block; width: 100%; height: auto; color: var(--dim); opacity: .78; }
+  .grad svg {
+    display: block; width: 100%; height: auto; color: var(--dim); opacity: .5;
+    transform: translateY(calc((1 - var(--vp, 1)) * 26px));
+  }
   .grad path, .grad circle {
     stroke: currentColor; stroke-width: 2;
     stroke-linecap: round; stroke-linejoin: round; fill: none;
@@ -1293,13 +1296,20 @@
      building (work), interning (internships) and studying (skills),
      completing the arc that ends at the desk scene. Shared vocabulary;
      each block below is independently deletable. */
-  #about, #work, #internships, #skills { position: relative; }
+  #about, #work, #experience, #internships, #skills { position: relative; }
   .vig {
     position: absolute; right: 2%; top: 6px;
     width: clamp(110px, 12vw, 150px);
     pointer-events: none;
   }
-  .vig svg { display: block; width: 100%; height: auto; color: var(--dim); opacity: .78; }
+  /* .5, down from .78 — the figures were still where the eye went first.
+     At half strength in the ground's grey they read as watermarks; the
+     whole drawing also drifts up 26px with --vp, so every vignette has
+     large motion even before its own gag plays. */
+  .vig svg {
+    display: block; width: 100%; height: auto; color: var(--dim); opacity: .5;
+    transform: translateY(calc((1 - var(--vp, 1)) * 26px));
+  }
   .vig path, .vig circle, .vig rect {
     stroke: currentColor; stroke-width: 2;
     stroke-linecap: round; stroke-linejoin: round; fill: none;
@@ -1318,8 +1328,15 @@
      the shared tick, 0 as a section enters at the viewport bottom, 1 by
      the time it settles — the same scrub that throws the graduation cap.
      Defaults to 1 so no-JS and reduced motion get the finished poses. */
-  .vig .sip { transform: translateY(calc((1 - var(--vp, 1)) * 12px)); }
-  .vig .walk { transform: translateX(calc((1 - var(--vp, 1)) * -16px)); }
+  .vig .sip { transform: translateY(calc((1 - var(--vp, 1)) * 22px)); }
+  .vig .walk { transform: translateX(calc((1 - var(--vp, 1)) * -30px)); }
+  .vig .board { transform: translateX(calc((1 - var(--vp, 1)) * 18px)); }
+  .vig .win { stroke-width: 1.5; }
+  .vig .door { fill: rgb(var(--accent-rgb) / .15); }
+  .vig .sign {
+    font: 600 7px var(--mono); letter-spacing: .12em;
+    fill: var(--dim); stroke: none; text-anchor: middle;
+  }
   .vig .bline {
     stroke-width: 1.5; opacity: .7;
     stroke-dasharray: 1; stroke-dashoffset: calc(1 - var(--vp, 1));
@@ -1860,14 +1877,17 @@
     <div class="vig rise d2" aria-hidden="true">
       <svg viewBox="0 0 160 190">
         <path class="set" d="M20 176H140"/>
-        <path d="M98 74h44v38H98z"/>
-        <path class="set" d="M104 112L98 176M136 112L142 176"/>
-        <!-- pathLength 1 normalises the wires so the scroll can draw them
-             in with a single dashoffset. -->
-        <path class="bline" pathLength="1" d="M110 86L120 98M128 82L120 98M110 86L128 82"/>
-        <circle class="bnode" cx="110" cy="86" r="2.5"/>
-        <circle class="bnode b2" cx="128" cy="82" r="2.5"/>
-        <circle class="bnode b3" cx="120" cy="98" r="2.5"/>
+        <!-- The whole easel slides in from the right as the wires draw. -->
+        <g class="board">
+          <path d="M98 74h44v38H98z"/>
+          <path class="set" d="M104 112L98 176M136 112L142 176"/>
+          <!-- pathLength 1 normalises the wires so the scroll can draw
+               them in with a single dashoffset. -->
+          <path class="bline" pathLength="1" d="M110 86L120 98M128 82L120 98M110 86L128 82"/>
+          <circle class="bnode" cx="110" cy="86" r="2.5"/>
+          <circle class="bnode b2" cx="128" cy="82" r="2.5"/>
+          <circle class="bnode b3" cx="120" cy="98" r="2.5"/>
+        </g>
         <g class="vfig">
           <path class="limb" d="M62 120L59 171"/>
           <path class="limb" d="M73 120L77 171"/>
@@ -2048,6 +2068,26 @@
   </section>
 
   <section class="wrap" id="experience">
+    <!-- Journey vignette: first day. Walking into the Genpact building —
+         the walk advances with the scroll, door lit, name on the roof. -->
+    <div class="vig rise d2" aria-hidden="true">
+      <svg viewBox="0 0 160 190">
+        <path class="set" d="M20 176H140"/>
+        <text class="sign" x="116" y="45">GENPACT</text>
+        <path d="M92 176V52h48v124"/>
+        <path class="set win" d="M100 62h8v8h-8zM114 62h8v8h-8zM128 62h8v8h-8zM100 78h8v8h-8zM114 78h8v8h-8zM128 78h8v8h-8zM100 94h8v8h-8zM114 94h8v8h-8zM128 94h8v8h-8zM100 110h8v8h-8zM114 110h8v8h-8zM128 110h8v8h-8zM100 126h8v8h-8zM114 126h8v8h-8zM128 126h8v8h-8z"/>
+        <path class="door" d="M108 150h18v26h-18z"/>
+        <g class="vfig walk">
+          <path class="limb" d="M56 120L45 170"/>
+          <path class="limb" d="M64 120L75 167"/>
+          <path class="vneck" d="M59 65l1 8"/>
+          <path class="vfill" d="M60 74c7 2 11 8 12 17 1 10 0 19-2 27l-2 5-18 1c-2-12-2-25 1-36 2-7 4-10 9-14z"/>
+          <circle class="vfill" cx="59" cy="55" r="11"/>
+          <path class="limb" d="M68 90C71 100 72 110 72 118"/>
+          <circle class="vhand" cx="72" cy="120" r="3"/>
+        </g>
+      </svg>
+    </div>
     <p class="eyebrow rise">Experience</p>
     <h2 class="rise d1">Two years inside the machine.</h2>
 
