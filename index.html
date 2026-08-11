@@ -2341,12 +2341,23 @@
        reads as wisps of colour in both themes. */
     "  float vig = smoothstep(1.30, 0.10, length(uv - 0.5));",
     "  float energy = smoothstep(0.30, 0.95, f) * vig;",
-    /* Light was 0.13 — barely a stain. On black, bright folds glow, so a
-       little alpha reads as a lot; on paper the same folds are dark inks
-       that need more presence to register at all. 0.24 puts the two themes
-       at comparable perceived strength; the section scrims still sit
-       between this and the text, so legibility is theirs to hold. */
-    "  float a = energy * mix(0.24, 0.34, u_dark);",
+    /* The canvas declares premultipliedAlpha and this shader has always
+       written unpremultiplied colour — undefined territory the compositor
+       resolves however it likes. On black that accident reads as glow and
+       is half of dark mode's character, so the dark path keeps writing the
+       legacy way, bit for bit. On paper the same accident washed the folds
+       to nothing, and no amount of alpha alone fixed it (0.13 -> 0.24 ->
+       0.45 all stayed ghosts). Light now premultiplies, which makes its
+       compositing exactly the standard source-over blend: a*ink over
+       paper, deterministic, tunable with the one 0.52 constant. */
+    /* Light also opens the energy window (0.20-0.72 against 0.30-0.95).
+       On black the eye judges the folds against near-zero luminance, so
+       even a low cap reads as a 5-7x contrast ratio; on paper the same
+       energy moves white by a few percent and vanishes. Wider window plus
+       deeper alpha is what buys an equivalent perceived ratio. */
+    "  float eL = smoothstep(0.20, 0.72, f) * vig;",
+    "  float a = mix(eL * 0.60, energy * 0.34, u_dark);",
+    "  col = mix(col * a, col, u_dark);",
     "  gl_FragColor = vec4(col, a);",
     "}"
   ].join("\n");
