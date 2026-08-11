@@ -1275,9 +1275,26 @@
      person. currentColor keeps it theme-true: a light figure on the dark
      ground, an ink one on paper. The headphones are drawn in ground
      colour so they cut into the silhouette instead of vanishing into it. */
-  .scene .torso, .scene .head { fill: currentColor; }
-  .scene .hp { stroke: rgb(var(--ground-rgb)); stroke-width: 2.6; }
-  .scene .pad { fill: rgb(var(--ground-rgb)); stroke: none; }
+  .scene .head { fill: currentColor; }
+  /* The jersey. Torso takes the striped pattern instead of the silhouette
+     fill; the currentColor outline still holds the shape where white
+     stripes meet white paper. Number on the back, tilted with the lean.
+     The upper arm is the sleeve; the forearm stays ink — skin. */
+  .scene .torso { fill: url(#arg); }
+  /* The pattern tiles are .scene rects too, so the base rule above strips
+     their attribute fills and strokes every tile — which rendered the
+     jersey as a wire cage. Explicit CSS wins it back. */
+  .scene #arg rect { stroke: none; fill: #f2f5f7; }
+  .scene #arg rect + rect { fill: #7bb2dc; }
+  .scene .ten {
+    font: 700 11px var(--display); fill: #1b2b45;
+    text-anchor: middle; stroke: none;
+  }
+  .scene .sleeve { stroke: #7bb2dc; }
+  /* Proper cans: thicker band, a real ear cup with a rim that reads in
+     both themes. */
+  .scene .hp { stroke: rgb(var(--ground-rgb)); stroke-width: 3.4; }
+  .scene .pad { fill: rgb(var(--ground-rgb)); stroke: currentColor; stroke-width: 1.5; }
 
   /* The receiving station. The LED breathes on the SDR box, and the
      downlink's dashes flow from the satellite toward the antenna — data
@@ -1299,12 +1316,12 @@
   .scene .tx {
     stroke-width: 2.2; opacity: 0;
     stroke-dasharray: 10 54; stroke-dashoffset: 64;
-    animation: scene-tx 5s linear infinite;
+    animation: scene-tx 3s linear infinite;
   }
   .scene .led {
     fill: var(--ember); stroke: none;
     transform-box: fill-box; transform-origin: center;
-    animation: scene-led 5s ease-in-out infinite;
+    animation: scene-led 3s ease-in-out infinite;
   }
   @keyframes scene-sat { from { transform: translateY(0); } to { transform: translateY(2.5px); } }
   @keyframes scene-beam { to { stroke-dashoffset: -15; } }
@@ -1959,6 +1976,16 @@
       <div class="scene rise d3" aria-hidden="true">
         <i class="scene-glow"></i>
         <svg viewBox="0 0 340 240" fill="none">
+          <defs>
+            <!-- The albiceleste. Vertical stripes at torso scale; fixed
+                 colours on purpose — a jersey is a jersey in both themes,
+                 and the currentColor outline keeps the shape legible on
+                 paper where the white stripes match the ground. -->
+            <pattern id="arg" width="11" height="8" patternUnits="userSpaceOnUse">
+              <rect width="11" height="8" fill="#f2f5f7"/>
+              <rect x="5.5" width="5.5" height="8" fill="#7bb2dc"/>
+            </pattern>
+          </defs>
           <!-- floor -->
           <path class="set" d="M24 212H316"/>
           <!-- desk -->
@@ -1994,10 +2021,11 @@
             <path class="limb foot" d="M112 208h17"/>
             <g class="breathe">
               <path class="torso" d="M90 87c6 3 9 10 10 20 1 9 0 19-3 27l-3 10-17 3c-2-13-2-28 2-41 2-7 6-11 11-19z"/>
+              <text class="ten" x="80" y="124" transform="rotate(-8 80 124)">10</text>
               <circle class="head" cx="86" cy="73" r="11.5"/>
               <path class="hp" d="M75 69a12 12 0 0 1 22 0"/>
-              <rect class="pad" x="92" y="66" width="5" height="12" rx="2.5"/>
-              <path class="limb arm" d="M90 102C102 114 112 120 122 126"/>
+              <rect class="pad" x="91" y="64" width="7" height="15" rx="3.5"/>
+              <path class="limb sleeve" d="M90 102C102 114 112 120 122 126"/>
               <path class="limb arm fore" d="M122 126C134 134 142 139 152 144"/>
             </g>
           </g>
