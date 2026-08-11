@@ -1484,6 +1484,22 @@
   ];
   var STOPS = RAMP_DARK;
 
+  /* Display window, in dB. A spectrogram has always been shown on a log
+     scale — it is most of why a real one reads as an instrument rather than
+     as a gradient. Linear energy with a hard clamp did two things wrong at
+     once: every carrier core saturated to the identical pale ember, so the
+     brightest and most-looked-at part of the image carried no structure,
+     and the noise floor was squeezed into the bottom of the ramp where the
+     ramp has the least to say. -14 sets the floor just clear of black; +4
+     is chosen so the hottest cores still reach the top of the ramp instead
+     of stopping short of it. */
+  var DB_LO = -14, DB_SPAN = 1 / (4 - (-14)), LN10 = Math.LN10;
+
+  function compress(v) {
+    var u = (10 * Math.log(v + 1e-3) / LN10 - DB_LO) * DB_SPAN;
+    return u < 0 ? 0 : u > 1 ? 1 : u;
+  }
+
   /* Colour lookup table. The ramp used to be interpolated per pixel, which
      at 240x160 and 26fps meant close to a million interpolations a second
      and visible stutter. The ramp only has 256 distinct useful values, so
@@ -1540,6 +1556,11 @@
 
     var t = 0, raf = null, running = false, last = 0, onScreen = true;
 
+    /* Reused every row rather than reallocated — this runs 30x a second.
+       nSm doubles as the previous row's noise, which is what gives the
+       floor its vertical streak. */
+    var nRaw = new Float32Array(COLS), nSm = new Float32Array(COLS);
+
     /* Chirps: a transmitter sliding across the band. In a real waterfall
        this draws a bright diagonal streak, because each successive row
        catches it at a different frequency. It is the closest honest
@@ -1574,9 +1595,30 @@
 
     function spectrum(out) {
       var s = window.__heroScroll || 0;
+      /* Receiver noise is not independent per bin. Adjacent FFT bins share
+         energy through the window function, and successive rows overlap in
+         time, so a real floor is granular and faintly streaky downward. A
+         fresh Math.random() per pixel per row is television static instead
+         — it was the one part of this image that never read as an
+         instrument. Smoothed across three bins, then carried partway into
+         the next row so the grain has some vertical life.
+
+         Centred on zero rather than added on top: the old term was strictly
+         positive, so its mean sat inside the floor constant. The floor is
+         now stated outright and the noise moves either side of it. */
+      for (var n = 0; n < COLS; n++) nRaw[n] = Math.random();
+      for (var n2 = 0; n2 < COLS; n2++) {
+        var lo = nRaw[(n2 - 1 + COLS) % COLS], mid = nRaw[n2], hi = nRaw[(n2 + 1) % COLS];
+        nSm[n2] = nSm[n2] * .38 + (lo + mid + mid + hi) * .25 * .62;
+      }
       for (var x = 0; x < COLS; x++) {
         var k = x / COLS;
-        var v = .06 + .04 * Math.sin(k * 11 + t * .7) + Math.random() * .055;
+        /* .05, not the .055-equivalent this replaced. A log display expands
+           the floor, so carrying the old amplitude through gave 2.4x the
+           contrast down there and read as fizz. This lands at about 1.5x —
+           deliberately more texture than before, since the correlated grain
+           can carry it where per-pixel static could not. */
+        var v = .0875 + .04 * Math.sin(k * 11 + t * .7) + (nSm[x] - .5) * .05;
         for (var c = 0; c < carriers.length; c++) {
           var car = carriers[c];
           var centre = car.f + Math.sin(t * .6 + car.ph) * car.wob + car.dr * t * 40;
@@ -1595,13 +1637,11 @@
           var dc = k - pos;
           v += chirp.a * env * Math.exp(-(dc * dc) / (2 * chirp.w * chirp.w));
         }
-        /* Clamp first, then dim. Written the other way round, any pixel
-           whose energy saturated returned 1 and skipped the scroll fade
-           entirely — so scrolling dimmed the whole field *except* the
-           carrier cores, which are the parts the eye is actually on. With
-           eight carriers at these amplitudes, v exceeds 1 at every core. */
-        if (v > 1) v = 1;
-        out[x] = v * (1 - s * .25);
+        /* Compress, then dim. Order matters: the linear version clamped
+           first and returned before the scroll fade, so every saturated
+           pixel ignored it and scrolling dimmed the field except its
+           carrier cores. compress() has no such early exit. */
+        out[x] = compress(v) * (1 - s * .25);
       }
     }
 
@@ -2389,11 +2429,20 @@
     ];
 
     var t = 0, raf = null, running = false, last = 0, onScreen = false;
+    var nRaw = new Float32Array(C), nSm = new Float32Array(C);
 
     function spectrum(out) {
+      /* Same correlated floor as the hero. The closer is meant to read as
+         the same band seen later, so its noise has to have the same texture
+         — a different grain here would give the trick away. */
+      for (var n = 0; n < C; n++) nRaw[n] = Math.random();
+      for (var n2 = 0; n2 < C; n2++) {
+        var lo = nRaw[(n2 - 1 + C) % C], mid = nRaw[n2], hi = nRaw[(n2 + 1) % C];
+        nSm[n2] = nSm[n2] * .38 + (lo + mid + mid + hi) * .25 * .62;
+      }
       for (var x = 0; x < C; x++) {
         var k = x / C;
-        var v = .05 + .035 * Math.sin(k * 9 + t * .6) + Math.random() * .05;
+        var v = .075 + .035 * Math.sin(k * 9 + t * .6) + (nSm[x] - .5) * .045;
         for (var c = 0; c < carriers.length; c++) {
           var car = carriers[c];
           var centre = car.f + Math.sin(t * .5 + car.ph) * car.wob + car.dr * t * 40;
@@ -2403,7 +2452,7 @@
           var amp = car.a * (.6 + .4 * Math.sin(t * .8 + car.ph * 1.2));
           v += amp * Math.exp(-(d * d) / (2 * car.w * car.w));
         }
-        out[x] = v > 1 ? 1 : v;
+        out[x] = compress(v);
       }
     }
 
