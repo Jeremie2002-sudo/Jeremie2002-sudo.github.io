@@ -1764,14 +1764,27 @@
       ctx.putImageData(rowImg, 0, 0);
     }
 
+    /* A fixed 30 rows a second, accumulated from elapsed time rather than
+       gated on it. The old `ts - last > 27` could only ever yield an
+       integer division of the display refresh, so the waterfall scrolled at
+       a speed that depended on the monitor: 30 rows/s at 60Hz, 25 at 75Hz,
+       36 at 144Hz. Anyone on a high-refresh phone was watching it run 20%
+       fast, and it is invisible to test for unless you own the hardware.
+
+       The rate is unchanged at 60Hz, so this is a correctness fix rather
+       than a visible one. dt is capped so returning from a stalled tab
+       advances a few rows instead of trying to replay hundreds. */
+    var STEP_MS = 1000 / 30, acc = 0;
+
     function frame(ts) {
       if (!running) return;
-      /* 30fps, not the 36 this once claimed. A skip-gate can only ever
-         yield an integer division of the display refresh: on 60Hz, 16.7ms
-         fails the test and 33.3ms passes, so it fires every second frame.
-         120Hz lands on the same 33.3ms. 36 was never reachable this way. */
-      if (ts - last > 27) {
-        last = ts;
+      if (!last) { last = ts; acc = 0; raf = requestAnimationFrame(frame); return; }
+      var dt = ts - last;
+      last = ts;
+      if (dt > 100) dt = 100;
+      acc += dt;
+      while (acc >= STEP_MS) {
+        acc -= STEP_MS;
         t += .040;
         updateChirp(.040);
         head = (head - 1 + ROWS) % ROWS;
@@ -2591,10 +2604,22 @@
 
     if (reduced) { section.classList.add("awake"); return; }
 
+    /* Same accumulator as the hero, at 20 rows a second. The old gate drifted
+       the same way: 20 rows/s at 60Hz but 24 at 120Hz, so the closer ran
+       fast on exactly the devices where it sat next to a hero that was also
+       running fast, by a different amount. */
+    var STEP_MS = 50, acc = 0;
+
     function frame(ts) {
       if (!running) return;
-      if (ts - last > 40) {
-        last = ts; t += .034;
+      if (!last) { last = ts; acc = 0; raf = requestAnimationFrame(frame); return; }
+      var dt = ts - last;
+      last = ts;
+      if (dt > 100) dt = 100;
+      acc += dt;
+      while (acc >= STEP_MS) {
+        acc -= STEP_MS;
+        t += .034;
         head = (head - 1 + R) % R;
         spectrum(rows[head]);
         paint();
