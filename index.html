@@ -1163,10 +1163,11 @@
      head are silhouettes filled with the ground colour — they block the
      waterfall behind them, which is what makes the figure read as a body
      in the room rather than a wire diagram over the wallpaper. */
-  .scene .limb { stroke-width: 7.5; }
-  .scene .leg { stroke-width: 9.5; }
-  .scene .shin { stroke-width: 8; }
-  .scene .foot { stroke-width: 5.5; }
+  /* Torso depth ~26px against 8.5-10px limbs — the first cut was 34px
+     deep and read as a bell with sticks. */
+  .scene .limb { stroke-width: 8.5; }
+  .scene .leg { stroke-width: 10; }
+  .scene .foot { stroke-width: 6; }
   /* One solid ink figure, not a dark torso with light sausage limbs — the
      first fill used the ground colour and the body read as a hole in the
      person. currentColor keeps it theme-true: a light figure on the dark
@@ -1820,7 +1821,7 @@
             <path class="limb shin" d="M122 157L113 205"/>
             <path class="limb foot" d="M112 208h17"/>
             <g class="breathe">
-              <path class="torso" d="M90 86c8 3 12 12 13 24 1 11 0 22-3 30l-4 10-26 2c-4-16-4-34 2-50 3-8 9-14 18-16z"/>
+              <path class="torso" d="M90 86c7 3 11 11 12 22 1 10 0 20-3 29l-3 9-22 2c-3-14-3-30 2-44 2-8 7-12 14-18z"/>
               <circle class="head" cx="86" cy="73" r="12.5"/>
               <path class="hp" d="M74 68a13 13 0 0 1 24 0"/>
               <rect class="pad" x="93" y="66" width="5" height="12" rx="2.5"/>
