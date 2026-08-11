@@ -1096,6 +1096,24 @@
   .skill:hover::before { opacity: 1; }
   .skill.feature { grid-column: span 2; }
 
+  /* Vector-space constellation behind the Applied AI tile. Absolutely
+     positioned elements paint over static content regardless of DOM
+     order, so this must stay faint enough for the chips to read through
+     it — it is atmosphere, not a diagram to study. Nodes shimmer on
+     offset delays so the field never settles into a visible loop. */
+  .skill .constellation {
+    position: absolute; right: 3%; top: 50%;
+    width: min(46%, 230px); height: auto;
+    transform: translateY(-50%);
+    opacity: .38; pointer-events: none;
+  }
+  .skill .constellation path { stroke: rgb(var(--accent-rgb) / .35); stroke-width: 1; fill: none; }
+  .skill .constellation circle { fill: rgb(var(--accent-rgb) / .9); animation: cons-shimmer 4.2s ease-in-out infinite; }
+  .skill .constellation circle:nth-of-type(2n) { animation-delay: -1.4s; }
+  .skill .constellation circle:nth-of-type(3n) { animation-delay: -2.6s; }
+  .skill .constellation circle:first-of-type { animation-delay: -.7s; }
+  @keyframes cons-shimmer { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+
   /* Chips rather than a comma list. The tile around this was already built
      to the bento standard, but the content inside it was still a resume
      dump — one long sentence per category, which is the hardest shape to
@@ -1818,7 +1836,23 @@
       <div class="skill"><dt>Programming</dt><dd class="chipset">
         <span class="chip">Python</span><span class="chip">SQL</span><span class="chip">FastAPI</span><span class="chip">Flask</span><span class="chip">Data cleaning</span><span class="chip">Exploratory analysis</span>
       </dd></div>
-      <div class="skill feature"><dt>Applied AI</dt><dd class="chipset">
+      <div class="skill feature">
+        <!-- An embedding constellation: points in a vector space, joined to
+             their neighbours, shimmering as if being re-ranked. The one
+             tile arguing for Applied AI gets the one drawing of what
+             retrieval actually looks like. Faint, behind the content. -->
+        <svg class="constellation" viewBox="0 0 200 120" aria-hidden="true">
+          <path d="M104 58L30 30M104 58L80 18M104 58L140 26M104 58L176 60M104 58L150 96M104 58L90 100M104 58L40 84M30 30L80 18M140 26L176 60M150 96L90 100M40 84L30 30"/>
+          <circle cx="104" cy="58" r="2.6"/>
+          <circle cx="30" cy="30" r="2"/>
+          <circle cx="80" cy="18" r="2"/>
+          <circle cx="140" cy="26" r="2"/>
+          <circle cx="176" cy="60" r="2"/>
+          <circle cx="150" cy="96" r="2"/>
+          <circle cx="90" cy="100" r="2"/>
+          <circle cx="40" cy="84" r="2"/>
+        </svg>
+        <dt>Applied AI</dt><dd class="chipset">
         <span class="chip hot">Agentic AI</span><span class="chip hot">RAG</span><span class="chip hot">LLM evaluation</span><span class="chip">Large language models</span><span class="chip">Prompt engineering</span><span class="chip">Generative AI</span><span class="chip">Machine learning</span>
       </dd></div>
       <div class="skill"><dt>Systems &amp; cloud</dt><dd class="chipset">
