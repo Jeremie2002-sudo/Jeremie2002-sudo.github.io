@@ -329,6 +329,16 @@
     opacity: .34;
     transform: scale(1.05);
     transition: opacity 1.4s ease, transform 2.4s cubic-bezier(.16,.8,.3,1);
+    /* The age fade used to be written into each pixel's alpha channel as
+       the row was drawn. That made a pixel's value depend on where its row
+       sat on screen, which is exactly what forced a full rebuild of every
+       row on every frame — a row could not simply scroll, it had to be
+       recoloured for its new position. Expressed here, the canvas scrolls
+       and the fade stays put. Two-thirds full strength, then out; matches
+       the alpha ramp it replaces, but at screen resolution instead of
+       quantised to the row count. */
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 66%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 66%, transparent 100%);
   }
   .lit #waterfall { opacity: .92; transform: none; }
 
@@ -1535,9 +1545,17 @@
     canvas.width = COLS; canvas.height = ROWS;
 
     var img = ctx.createImageData(COLS, ROWS);
+    var rowImg = ctx.createImageData(COLS, 1);
     var rows = [], head = 0;
     for (var r = 0; r < ROWS; r++) rows.push(new Float32Array(COLS));
     buildLUT();
+
+    /* The scroll blits this canvas onto itself at a whole-pixel offset, so
+       it must be an exact copy. With smoothing left on, a resampling filter
+       would run on every frame and its error would compound — the image
+       would silently blur away over a few seconds. This does not touch the
+       upscale to display size, which CSS does, so the bloom is unaffected. */
+    ctx.imageSmoothingEnabled = false;
 
     /* Eight carriers rather than five, with a wider spread of bandwidths.
        A couple of very narrow ones read as sharp bright threads against
@@ -1695,28 +1713,55 @@
       }
     }
 
+    function idxOf(v) {
+      var i = (v * 255) | 0;
+      return i > 255 ? 255 : i < 0 ? 0 : i;
+    }
+
+    /* Full repaint from the ring buffer. Two things still need it: the
+       initial seed, and a theme change, which has to recolour rows already
+       standing on the canvas rather than wait for 224 new ones to scroll
+       through. Everything else goes through step().
+
+       The per-pixel alpha that used to live here has moved to a CSS mask on
+       #waterfall. It had to: it made a pixel's value depend on where the
+       row sat on screen, which is precisely what forced every row to be
+       rebuilt every frame. The old per-row `lift` went with it — it dimmed
+       older rows about 18%, and the mask plus the hero scrim already do
+       that job further down the panel. */
     function paint() {
       var d = img.data, p = 0;
       for (var y = 0; y < ROWS; y++) {
         var row = rows[(head + y) % ROWS];
-        var age = 1 - y / ROWS;                 /* 1 = newest, at the top */
-        /* Hold full presence across most of the panel and fade only the
-           last stretch. The page scrim handles legibility; the canvas
-           should not also be dimming itself. */
-        var alpha = age > .34 ? 1 : age / .34;
-        /* Alpha and lift depend only on the row, so hoist them out of the
-           inner loop rather than recomputing 240 times per row. */
-        var A = (255 * alpha) | 0;
-        var lift = (.82 + .18 * age) * 255;
         for (var x = 0; x < COLS; x++) {
-          var idx = (row[x] * lift) | 0;
-          if (idx > 255) idx = 255; else if (idx < 0) idx = 0;
-          var o = idx * 3;
+          var o = idxOf(row[x]) * 3;
           d[p++] = LUT[o]; d[p++] = LUT[o + 1]; d[p++] = LUT[o + 2];
-          d[p++] = A;
+          d[p++] = 255;
         }
       }
       ctx.putImageData(img, 0, 0);
+    }
+
+    /* Scroll by blitting the canvas onto itself one row down and drawing
+       only the row that is actually new — 260 pixels a frame instead of
+       58,240. A row's colours do not change as it travels down the panel,
+       so rebuilding all of them every frame was pure repetition; this is
+       how a hardware waterfall display has always worked.
+
+       'copy' rather than the default source-over, for two reasons: the
+       shifted image must replace what is underneath rather than blend with
+       it, and it leaves the vacated top row cleared for putImageData. */
+    function step() {
+      ctx.globalCompositeOperation = "copy";
+      ctx.drawImage(ctx.canvas, 0, 1);
+      ctx.globalCompositeOperation = "source-over";
+      var row = rows[head], d = rowImg.data, p = 0;
+      for (var x = 0; x < COLS; x++) {
+        var o = idxOf(row[x]) * 3;
+        d[p++] = LUT[o]; d[p++] = LUT[o + 1]; d[p++] = LUT[o + 2];
+        d[p++] = 255;
+      }
+      ctx.putImageData(rowImg, 0, 0);
     }
 
     function frame(ts) {
@@ -1731,22 +1776,24 @@
         updateChirp(.040);
         head = (head - 1 + ROWS) % ROWS;
         spectrum(rows[head]);
-        paint();
+        step();
       }
       raf = requestAnimationFrame(frame);
     }
 
-    /* Seed the whole buffer so the first paint is already a full
-       waterfall rather than an empty panel filling in. */
-    /* Run the traffic simulation while seeding too, so the hero opens on a
-       band that already has bursts and part-finished chirps in it. Seeding
-       without it produced a suspiciously clean opening frame, with traffic
-       only starting once you had been watching for a few seconds. */
+    /* Seed the whole buffer so the first paint is already a full waterfall
+       rather than an empty panel filling in — and run the traffic
+       simulation while seeding, so the hero opens on a band that already
+       has bursts and part-finished chirps in it rather than a suspiciously
+       clean frame that only comes alive once you have been watching. */
     for (var s = 0; s < ROWS; s++) { t += .040; updateChirp(.040); head = (head - 1 + ROWS) % ROWS; spectrum(rows[head]); }
     paint();
 
     /* Repaint on demand so a theme switch recolours the existing data
-       instantly, instead of waiting for 160 new rows to scroll through. */
+       instantly, instead of waiting for ROWS new rows to scroll through.
+       This is the reason the ring buffer survives the move to blitting:
+       the canvas now holds baked colours that cannot be re-ramped, so the
+       float data behind them has to stay. */
     window.__repaintWaterfall = paint;
 
     if (reduced) return;
