@@ -839,6 +839,22 @@
       transparent);
   }
 
+  /* A pulse that rides the spine as you scroll — time passing down three
+     sections of chronology. Driven by scroll position, not a clock, so it
+     moves exactly when the reader does; JS sets --py (position) and --pa
+     (presence, fading at both ends so it arrives and leaves rather than
+     popping). Sits at the same x as the spine's 1px line. */
+  .rows::after {
+    content: ""; position: absolute;
+    left: 1px; top: calc(var(--py, 0) * 100%);
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 10px 2px rgb(var(--accent-rgb) / .5);
+    transform: translateY(-50%);
+    opacity: var(--pa, 0);
+    pointer-events: none;
+  }
+
   .row {
     position: relative;
     /* 178px, up from 148. A full month range — "AUG 2024 — AUG 2026" — is
@@ -3200,12 +3216,47 @@
     });
   }
 
+  /* ==================================================================
+     TIMELINE PULSE
+     One dot per .rows list, positioned along the spine by how far the
+     section has passed a fixed anchor at 42% of the viewport. Scroll-
+     driven rather than animated, so it only moves when the reader does —
+     which is also why it runs under reduced motion, like the progress
+     bar: position, not animation.
+     ================================================================== */
+
+  function startTimelinePulse() {
+    var lists = document.querySelectorAll(".rows");
+    if (!lists.length) return;
+    var ticking = false;
+
+    function update() {
+      ticking = false;
+      var anchor = innerHeight * .42;
+      for (var i = 0; i < lists.length; i++) {
+        var r = lists[i].getBoundingClientRect();
+        var p = (anchor - r.top) / r.height;
+        var pc = p < 0 ? 0 : p > 1 ? 1 : p;
+        /* Presence ramps over the first and last sixth of the journey. */
+        var a = p <= 0 || p >= 1 ? 0 : Math.min(1, Math.min(p, 1 - p) * 6);
+        lists[i].style.setProperty("--py", pc.toFixed(4));
+        lists[i].style.setProperty("--pa", a.toFixed(3));
+      }
+    }
+
+    addEventListener("scroll", function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    update();
+  }
+
   startTheme();
   if (!reduced) startPalette();
   startWaterfall();
   startNameFill();   /* after startWaterfall: it reads that canvas */
   startCloser();
   startScene();      /* after startCloser: it reads that canvas */
+  startTimelinePulse();
   startReveals();
   startChrome();
 
