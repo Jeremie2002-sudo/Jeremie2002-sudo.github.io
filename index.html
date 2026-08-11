@@ -755,7 +755,26 @@
     transform: scale(1.35);
   }
   .row:hover { border-bottom-color: rgb(var(--accent-rgb) / .18); }
-  .row dt { font-family: var(--mono); font-size: 11px; letter-spacing: .13em; color: var(--dim); padding-top: 8px; font-variant-numeric: tabular-nums; }
+  /* The year, set large. The spine and its nodes already gave this stretch
+     structure, but the dates were 11px mono sitting beside a 21px heading,
+     so nothing repeated hard enough to pull the eye down three consecutive
+     sections of chronology. A display-size numeral per entry is the rhythm
+     that was missing; the qualifier drops to a caption beneath it. */
+  .row dt { padding-top: 2px; }
+  .row dt b {
+    display: block;
+    font-family: var(--display); font-weight: 600;
+    font-size: clamp(26px, 3.2vw, 38px);
+    line-height: .95; letter-spacing: -.03em;
+    color: var(--dim); font-variant-numeric: tabular-nums;
+    transition: color .45s ease;
+  }
+  .row:hover dt b { color: var(--ember); }
+  .row dt span {
+    display: block; margin-top: 5px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--dim); opacity: .7;
+  }
   .row h4 { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.2vw, 21px); letter-spacing: -.022em; }
 
   /* "Current" badge. Two nested pulses on the same 2.8s clock: a live dot
@@ -1043,7 +1062,11 @@
     .visit { margin-top: 18px; }
 
     .row { grid-template-columns: minmax(0, 1fr); padding: 20px 0; gap: 2px; }
-    .row dt { padding-top: 0; margin-bottom: 6px; }
+    /* Year and qualifier go side by side on a phone — stacked, they cost a
+       whole extra row of height on every entry in three sections. */
+    .row dt { padding-top: 0; margin-bottom: 8px; display: flex; align-items: baseline; gap: 11px; }
+    .row dt b { font-size: 27px; }
+    .row dt span { margin-top: 0; }
     .row::before { top: 26px; }
     .rows { padding-left: 20px; }
     .skill { padding: 18px; }
@@ -1304,7 +1327,7 @@
 
     <dl class="rows">
       <div class="row rise">
-        <dt>2024 — 2026</dt>
+        <dt><b>2024</b><span>— 2026</span></dt>
         <dd>
           <h4>Genpact</h4>
           <div class="meta">Associate and Subject Matter Expert — Operations · New Delhi</div>
@@ -1326,7 +1349,7 @@
 
     <dl class="rows">
       <div class="row rise">
-        <dt>Jul — Aug 2023</dt>
+        <dt><b>2023</b><span>Jul — Aug</span></dt>
         <dd>
           <h4>Bhagwan Parshuram Institute of Technology, GGSIPU</h4>
           <div class="meta">Data Analytics Intern · New Delhi</div>
@@ -1334,7 +1357,7 @@
         </dd>
       </div>
       <div class="row rise">
-        <dt>Jul — Sep 2022</dt>
+        <dt><b>2022</b><span>Jul — Sep</span></dt>
         <dd>
           <h4>Defence Research and Development Organisation</h4>
           <div class="meta">Research and Development Intern · India</div>
@@ -1342,7 +1365,7 @@
         </dd>
       </div>
       <div class="row rise">
-        <dt>Sep — Oct 2020</dt>
+        <dt><b>2020</b><span>Sep — Oct</span></dt>
         <dd>
           <h4>AGIXURY</h4>
           <div class="meta">Web Development Intern · Remote</div>
@@ -1358,21 +1381,21 @@
 
     <dl class="rows">
       <div class="row rise">
-        <dt>2026 —</dt>
+        <dt><b>2026</b><span>Present</span></dt>
         <dd>
           <h4>Masters&rsquo; Union <span class="now"><i aria-hidden="true"></i>Current</span></h4>
           <div class="meta">PGP in Applied AI and Agentic Systems · Gurugram</div>
         </dd>
       </div>
       <div class="row rise">
-        <dt>2020 — 2024</dt>
+        <dt><b>2020</b><span>— 2024</span></dt>
         <dd>
           <h4>B.Tech, Electronics and Communication Engineering</h4>
           <div class="meta">Bhagwan Parshuram Institute of Technology, GGSIPU · CGPA 8.53 / 10</div>
         </dd>
       </div>
       <div class="row rise">
-        <dt>2018 — 2020</dt>
+        <dt><b>2018</b><span>— 2020</span></dt>
         <dd>
           <h4>Faith Academy Senior Secondary School, CBSE</h4>
           <div class="meta">Class XII 92.8% · Class X 94.2% · New Delhi</div>
