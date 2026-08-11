@@ -740,6 +740,55 @@
     display: inline-flex; align-items: center; gap: 9px; margin-top: 24px;
   }
 
+  /* === PIPELINE SCHEMATIC ===========================================
+     The Synapse agent loop as a wiring diagram with a pulse walking it.
+     Nodes on one straight wire so the motion is a translateX with dwells
+     — no motion-path dependency. The reject pulse runs on a cycle three
+     times the forward one's, so every third answer visibly gets sent
+     back from the critic: the project's thesis, animated.
+
+     Under reduced motion the global rule freezes both pulses; base
+     transforms park the forward one at the first node and hide the
+     reject, so the still frame is a clean labelled diagram. */
+  .pipe { margin-top: 24px; }
+  .pipe svg { display: block; width: 100%; max-width: 340px; height: auto; overflow: visible; }
+  .pipe .wire { stroke: var(--line); stroke-width: 1.5; }
+  .pipe .node rect {
+    fill: rgb(var(--accent-rgb) / .05);
+    stroke: rgb(var(--accent-rgb) / .3); stroke-width: 1;
+  }
+  .pipe text {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .12em;
+    text-transform: uppercase; fill: var(--soft); text-anchor: middle;
+  }
+  .pipe .pulse { fill: var(--ember); }
+  .pipe .fwd { transform: translateX(32px); animation: pipe-fwd 6.4s linear infinite; }
+  .pipe .rej { fill: var(--flare); opacity: 0; transform: translateX(266px); animation: pipe-rej 19.2s linear infinite; }
+  .pipe figcaption {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--dim); margin-top: 9px;
+  }
+  @keyframes pipe-fwd {
+    0%   { transform: translateX(32px); opacity: 0; }
+    4%   { opacity: 1; }
+    14%  { transform: translateX(32px); }
+    30%  { transform: translateX(112px); }
+    40%  { transform: translateX(112px); }
+    56%  { transform: translateX(188px); }
+    66%  { transform: translateX(188px); }
+    84%  { transform: translateX(266px); }
+    92%  { transform: translateX(266px); opacity: 1; }
+    97%  { opacity: 0; }
+    100% { transform: translateX(266px); opacity: 0; }
+  }
+  @keyframes pipe-rej {
+    0%, 84% { transform: translateX(266px); opacity: 0; }
+    86%     { transform: translateX(266px); opacity: 1; }
+    95%     { transform: translateX(188px); opacity: 1; }
+    98%     { transform: translateX(188px); opacity: 0; }
+    100%    { transform: translateX(188px); opacity: 0; }
+  }
+
   /* === EVIDENCE ======================================================
      Every project here was described and none was shown. For a page whose
      argument is "I make vague systems measurable", claiming a 157-test CI
@@ -1574,6 +1623,24 @@
               <span class="l sp" style="--i:8"></span>
               <span class="l" style="--i:9"><span class="q">[1] policy_v3.pdf  [2] notes.md</span></span>
             </div>
+          </figure>
+
+          <!-- The pipeline as a living schematic. A pulse walks the four
+               real stages, dwelling at each; every third cycle the critic
+               sends one back to draft — which is the project's whole
+               argument, animated. Decorative duplicate of information the
+               prose already carries, so hidden from assistive tech. -->
+          <figure class="pipe rise" aria-hidden="true">
+            <svg viewBox="0 0 300 46">
+              <path class="wire" d="M56 23H84M140 23H160M216 23H240"/>
+              <g class="node"><rect x="8" y="12" width="48" height="22" rx="7"/><text x="32" y="26">plan</text></g>
+              <g class="node"><rect x="84" y="12" width="56" height="22" rx="7"/><text x="112" y="26">retrieve</text></g>
+              <g class="node"><rect x="160" y="12" width="56" height="22" rx="7"/><text x="188" y="26">draft</text></g>
+              <g class="node"><rect x="240" y="12" width="52" height="22" rx="7"/><text x="266" y="26">critic</text></g>
+              <circle class="pulse fwd" cx="0" cy="23" r="2.6"/>
+              <circle class="pulse rej" cx="0" cy="23" r="2.6"/>
+            </svg>
+            <figcaption>one answer, four passes — the critic can send it back</figcaption>
           </figure>
 
           <div class="chips">
