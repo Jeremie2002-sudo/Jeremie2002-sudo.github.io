@@ -1344,11 +1344,14 @@
      head are silhouettes filled with the ground colour — they block the
      waterfall behind them, which is what makes the figure read as a body
      in the room rather than a wire diagram over the wallpaper. */
-  /* Torso depth ~26px against 8.5-10px limbs — the first cut was 34px
-     deep and read as a bell with sticks. */
-  .scene .limb { stroke-width: 8.5; }
-  .scene .leg { stroke-width: 10; }
-  .scene .foot { stroke-width: 6; }
+  /* Limb weights sized against the ~20px torso — thin enough to be limbs,
+     thick enough that the torso does not read as a different species. */
+  .scene .limb { stroke-width: 10; }
+  .scene .leg { stroke-width: 12; }
+  .scene .shin { stroke-width: 11; }
+  .scene .foot { stroke-width: 7; }
+  .scene .neck { stroke: currentColor; stroke-width: 7; }
+  .scene .hand { fill: currentColor; stroke: none; }
   /* One solid ink figure, not a dark torso with light sausage limbs — the
      first fill used the ground colour and the body read as a hole in the
      person. currentColor keeps it theme-true: a light figure on the dark
@@ -1370,9 +1373,9 @@
     text-anchor: middle; stroke: none;
   }
   .scene .sleeve { stroke: #7bb2dc; }
-  /* Proper cans: thicker band, a real ear cup with a rim that reads in
-     both themes. */
-  .scene .hp { stroke: rgb(var(--ground-rgb)); stroke-width: 3.4; }
+  /* Proper cans: the band arcs above the head outline in ink so it reads
+     against the background, and the cup keeps its rimmed ground fill. */
+  .scene .band { stroke: currentColor; stroke-width: 3; }
   .scene .pad { fill: rgb(var(--ground-rgb)); stroke: currentColor; stroke-width: 1.5; }
 
   /* The receiving station. The LED breathes on the SDR box, and the
@@ -1428,7 +1431,7 @@
   /* Typing is the forearm alone; everything else holds still. Steam runs
      long and offset so the two wisps never sync. The global reduced-motion
      rule kills all three, leaving a still drawing rather than nothing. */
-  .scene .fore { animation: scene-type .34s ease-in-out infinite alternate; }
+  .scene .fore, .scene .hand { animation: scene-type .34s ease-in-out infinite alternate; }
   .scene .steam { opacity: 0; animation: scene-steam 3.6s ease-in-out infinite; }
   .scene .s2 { animation-delay: 1.7s; }
   @keyframes scene-type { from { transform: translateY(0); } to { transform: translateY(1.6px); } }
@@ -2117,13 +2120,18 @@
             <path class="limb shin" d="M122 157L113 205"/>
             <path class="limb foot" d="M112 208h17"/>
             <g class="breathe">
+              <path class="neck" d="M87 81l2 8"/>
               <path class="torso" d="M90 87c6 3 9 10 10 20 1 9 0 19-3 27l-3 10-17 3c-2-13-2-28 2-41 2-7 6-11 11-19z"/>
-              <text class="ten" x="80" y="124" transform="rotate(-8 80 124)">10</text>
+              <text class="ten" x="84" y="120" transform="rotate(-8 84 120)">10</text>
               <circle class="head" cx="86" cy="73" r="11.5"/>
-              <path class="hp" d="M75 69a12 12 0 0 1 22 0"/>
-              <rect class="pad" x="91" y="64" width="7" height="15" rx="3.5"/>
+              <!-- Headphones over the hair, not carved into it: the band
+                 arcs above the head outline where it reads against the
+                 background, and the cup sits at the ear with a rim. -->
+              <path class="band" d="M74 70a12.5 12.5 0 0 1 24-1"/>
+              <rect class="pad" x="92" y="66" width="6" height="13" rx="3"/>
               <path class="limb sleeve" d="M90 102C102 114 112 120 122 126"/>
-              <path class="limb arm fore" d="M122 126C134 134 142 139 152 144"/>
+              <path class="limb arm fore" d="M122 126C134 134 142 139 150 143"/>
+              <circle class="hand" cx="153" cy="144" r="3.6"/>
             </g>
           </g>
           <!-- laptop: bezel filled with ground so the waterfall behind the
@@ -2155,7 +2163,10 @@
 
 <footer class="wrap">
   <span>David Jeremie Anand · New Delhi, India</span>
-  <span>Open to applied AI and forward-deployed roles</span>
+  <!-- The sign-off is the pitch: his two acts told as a training run, and
+       a claim no model can make — with the evidence panels above to back
+       it. AI-native vocabulary, no radio jargon. -->
+  <span>Trained on operations, fine-tuned on AI · zero hallucinations — everything here really happened</span>
 </footer>
 
 <script>
