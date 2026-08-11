@@ -1606,11 +1606,17 @@
     var MAX_CHIRPS = 2;
     var chirps = [], nextChirp = 2 + Math.random() * 4;
 
-    /* Bursts: a packet transmission. Fixed frequency, on for well under a
-       second, gone again. Most real traffic looks like this rather than
-       like a sweep, and nothing on this band did it — every signal here
-       either sat still and wobbled or slid all the way across. */
-    var bursts = [], nextBurst = 1 + Math.random() * 3;
+    /* Packet bursts were tried here and removed. The idea was sound — most
+       real traffic is short and fixed-frequency rather than a sweep — but
+       it does not survive this canvas. A burst's attack was written as 12%
+       of its life, which at 224 rows works out to 0.66 of a row for a short
+       one: there is no room to render a fade, so it hard-edges. Its centre
+       also landed at 0.72-0.83 on the colour ramp against a 0.19 floor, and
+       at 260 columns a narrowband signal is 1-2px wide before upscaling, so
+       it has no shoulders to soften it. Flat top, hard edges, four-fold
+       brightness jump: it read as a drawn rectangle, not as a signal.
+       Anything this brief and this narrow will. The chirps already put
+       traffic on the panel 96% of the time. */
 
     /* dt is passed rather than hardcoded so the seeding loop, which runs
        the same simulation without drawing, cannot drift out of step with
@@ -1631,21 +1637,6 @@
           a: .78 + Math.random() * .3
         });
         nextChirp = 4 + Math.random() * 13;
-      }
-
-      for (i = bursts.length - 1; i >= 0; i--) {
-        bursts[i].age += dt;
-        if (bursts[i].age > bursts[i].life) bursts.splice(i, 1);
-      }
-      nextBurst -= dt;
-      if (nextBurst <= 0) {
-        bursts.push({
-          age: 0, life: .22 + Math.random() * .5,
-          f: .06 + Math.random() * .88,
-          w: .004 + Math.random() * .005,
-          a: .7 + Math.random() * .45
-        });
-        nextBurst = .7 + Math.random() * 2.6;
       }
     }
 
@@ -1693,17 +1684,6 @@
           var env = Math.sin(p * Math.PI);
           var dc = k - pos;
           v += ch.a * env * Math.exp(-(dc * dc) / (2 * ch.w * ch.w));
-        }
-        for (var bi = 0; bi < bursts.length; bi++) {
-          var bu = bursts[bi];
-          /* Fast attack and release rather than a smooth bell: a packet
-             starts and stops abruptly, which is what distinguishes it from
-             a carrier. The short ramps only exist to keep the first and
-             last row from aliasing into a hard single-pixel edge. */
-          var bp = bu.age / bu.life;
-          var benv = bp < .12 ? bp / .12 : bp > .88 ? (1 - bp) / .12 : 1;
-          var dbf = k - bu.f;
-          v += bu.a * benv * Math.exp(-(dbf * dbf) / (2 * bu.w * bu.w));
         }
         /* Compress, then dim. Order matters: the linear version clamped
            first and returned before the scroll fade, so every saturated
@@ -1796,8 +1776,8 @@
 
     /* Seed the whole buffer so the first paint is already a full waterfall
        rather than an empty panel filling in — and run the traffic
-       simulation while seeding, so the hero opens on a band that already
-       has bursts and part-finished chirps in it rather than a suspiciously
+       simulation while seeding, so the hero opens on a band that may
+       already have a chirp part-way across it rather than a suspiciously
        clean frame that only comes alive once you have been watching. */
     for (var s = 0; s < ROWS; s++) { t += .040; updateChirp(.040); head = (head - 1 + ROWS) % ROWS; spectrum(rows[head]); }
     paint();
