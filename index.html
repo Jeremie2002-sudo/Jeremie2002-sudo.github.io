@@ -1538,7 +1538,7 @@
       { f: .85, w: .034, a: .62, wob: .046, ph: 5.9, dr:  .00010 }
     ];
 
-    var t = 0, raf = null, running = false, last = 0;
+    var t = 0, raf = null, running = false, last = 0, onScreen = true;
 
     /* Chirps: a transmitter sliding across the band. In a real waterfall
        this draws a bright diagonal streak, because each successive row
@@ -1595,7 +1595,13 @@
           var dc = k - pos;
           v += chirp.a * env * Math.exp(-(dc * dc) / (2 * chirp.w * chirp.w));
         }
-        out[x] = v > 1 ? 1 : v * (1 - s * .25);
+        /* Clamp first, then dim. Written the other way round, any pixel
+           whose energy saturated returned 1 and skipped the scroll fade
+           entirely — so scrolling dimmed the whole field *except* the
+           carrier cores, which are the parts the eye is actually on. With
+           eight carriers at these amplitudes, v exceeds 1 at every core. */
+        if (v > 1) v = 1;
+        out[x] = v * (1 - s * .25);
       }
     }
 
@@ -1625,9 +1631,10 @@
 
     function frame(ts) {
       if (!running) return;
-      /* ~36fps. With the lookup table the paint is cheap enough to afford
-         it, and the extra frames are what remove the last of the visible
-         stepping. */
+      /* 30fps, not the 36 this once claimed. A skip-gate can only ever
+         yield an integer division of the display refresh: on 60Hz, 16.7ms
+         fails the test and 33.3ms passes, so it fires every second frame.
+         120Hz lands on the same 33.3ms. 36 was never reachable this way. */
       if (ts - last > 27) {
         last = ts;
         t += .040;
@@ -1656,14 +1663,19 @@
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(function (es) {
         es.forEach(function (e) {
-          if (e.isIntersecting && !running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
-          else if (!e.isIntersecting && running) { running = false; cancelAnimationFrame(raf); }
+          onScreen = e.isIntersecting;
+          if (onScreen && !running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
+          else if (!onScreen && running) { running = false; cancelAnimationFrame(raf); }
         });
       }, { threshold: .01 }).observe(canvas);
     }
+    /* Returning to the tab must not restart a waterfall that is scrolled
+       out of view — that is precisely the waste the observer above exists
+       to prevent, and resuming without checking reintroduced it on every
+       tab switch for anyone below the hero. */
     document.addEventListener("visibilitychange", function () {
       if (document.hidden) { running = false; cancelAnimationFrame(raf); }
-      else if (!running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
+      else if (!running && onScreen) { running = true; last = 0; raf = requestAnimationFrame(frame); }
     });
   }
 
@@ -2376,7 +2388,7 @@
       { f: .80, w: .017, a: .86, wob: .028, ph: 4.9, dr: -.00011 }
     ];
 
-    var t = 0, raf = null, running = false, last = 0;
+    var t = 0, raf = null, running = false, last = 0, onScreen = false;
 
     function spectrum(out) {
       for (var x = 0; x < C; x++) {
@@ -2443,18 +2455,24 @@
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(function (es) {
         es.forEach(function (e) {
-          section.classList.toggle("awake", e.isIntersecting);
-          if (e.isIntersecting && !running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
-          else if (!e.isIntersecting && running) { running = false; cancelAnimationFrame(raf); }
+          onScreen = e.isIntersecting;
+          section.classList.toggle("awake", onScreen);
+          if (onScreen && !running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
+          else if (!onScreen && running) { running = false; cancelAnimationFrame(raf); }
         });
       }, { threshold: .04 }).observe(section);
     } else {
       section.classList.add("awake");
-      running = true; raf = requestAnimationFrame(frame);
+      onScreen = true; running = true; raf = requestAnimationFrame(frame);
     }
 
+    /* This used to pause on hide and never resume. An observer only fires
+       on a *change* of intersection, so if the closer was on screen when
+       the tab went away it stayed frozen on return until you scrolled it
+       out of view and back — a dead panel in the common case. */
     document.addEventListener("visibilitychange", function () {
       if (document.hidden) { running = false; cancelAnimationFrame(raf); }
+      else if (!running && onScreen) { running = true; last = 0; raf = requestAnimationFrame(frame); }
     });
   }
 
