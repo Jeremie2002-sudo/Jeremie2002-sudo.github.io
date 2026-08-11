@@ -820,7 +820,11 @@
 
   .row {
     position: relative;
-    display: grid; grid-template-columns: minmax(88px, 148px) minmax(0, 1fr);
+    /* 178px, up from 148. A full month range — "AUG 2024 — AUG 2026" — is
+       19 characters of tracked mono, which measures ~144px and wrapped in
+       the old column. Widening the whole date column keeps every entry's
+       caption on one line rather than special-casing the longest. */
+    display: grid; grid-template-columns: minmax(96px, 178px) minmax(0, 1fr);
     gap: 6px 34px; padding: 28px 0;
     border-bottom: 1px solid var(--line);
     transition: border-color .45s ease;
@@ -1478,7 +1482,7 @@
 
     <dl class="rows">
       <div class="row rise">
-        <dt><b>2024</b><span>To 2026</span></dt>
+        <dt><b>2024</b><span>Aug 2024 — Aug 2026</span></dt>
         <dd>
           <h4>Genpact</h4>
           <div class="meta">Associate and Subject Matter Expert — Operations · New Delhi</div>
@@ -1500,7 +1504,7 @@
 
     <dl class="rows">
       <div class="row rise">
-        <dt><b>2023</b><span>Jul — Aug</span></dt>
+        <dt><b>2023</b><span>Jul — Aug 2023</span></dt>
         <dd>
           <h4>Bhagwan Parshuram Institute of Technology, GGSIPU</h4>
           <div class="meta">Data Analytics Intern · New Delhi</div>
@@ -1508,7 +1512,7 @@
         </dd>
       </div>
       <div class="row rise">
-        <dt><b>2022</b><span>Jul — Sep</span></dt>
+        <dt><b>2022</b><span>Jul — Sep 2022</span></dt>
         <dd>
           <h4>Defence Research and Development Organisation</h4>
           <div class="meta">Research and Development Intern · India</div>
@@ -1516,7 +1520,7 @@
         </dd>
       </div>
       <div class="row rise">
-        <dt><b>2020</b><span>Sep — Oct</span></dt>
+        <dt><b>2020</b><span>Sep — Oct 2020</span></dt>
         <dd>
           <h4>AGIXURY</h4>
           <div class="meta">Web Development Intern · Remote</div>
