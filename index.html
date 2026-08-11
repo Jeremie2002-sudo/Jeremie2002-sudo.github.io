@@ -2044,6 +2044,34 @@
       }
     }
 
+    /* Transmit. Clicking the hero keys a chirp at that frequency — the
+       streak grows out of the exact column you touched, which is the one
+       gesture that proves the waterfall is being computed live rather
+       than looping a video. Slightly hotter and shorter than the ambient
+       traffic, so your transmission stands out from the band's. User
+       chirps bypass MAX_CHIRPS (an unresponsive tap reads as broken) but
+       cap at six so mashing cannot flood the spectrum sum. */
+    function transmit(k) {
+      if (k < .03) k = .03; else if (k > .97) k = .97;
+      var to = k + (k < .5 ? 1 : -1) * (.2 + Math.random() * .32);
+      if (chirps.length >= 6) chirps.shift();
+      chirps.push({
+        age: 0, life: 2.1 + Math.random() * 1.2,
+        from: k, to: to < .03 ? .03 : to > .97 ? .97 : to,
+        w: .010 + Math.random() * .004,
+        a: .95 + Math.random() * .25
+      });
+    }
+
+    if (!reduced) {
+      var hero = document.querySelector(".hero");
+      if (hero) hero.addEventListener("click", function (e) {
+        /* Links in the hero still navigate; everything else transmits. */
+        if (e.target && e.target.closest && e.target.closest("a, button")) return;
+        transmit(e.clientX / innerWidth);
+      });
+    }
+
     function spectrum(out) {
       var s = window.__heroScroll || 0;
       /* Receiver noise is not independent per bin. Adjacent FFT bins share
