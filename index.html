@@ -1567,29 +1567,67 @@
        equivalent to something moving through the scene — and unlike a
        drawn vehicle it belongs here.
 
-       One runs at a time, on a randomised gap, so the hero never settles
-       into a loop you can predict. */
-    var chirp = null, nextChirp = 6 + Math.random() * 7;
+       Up to two run at once, on a randomised gap, so the hero never settles
+       into a loop you can predict.
 
-    function updateChirp() {
-      /* Same per-frame delta as t. At the old 26fps x .055 and the new
-         36fps x .040 the wall-clock rate is within a percent, so chirps
-         keep the cadence they had rather than speeding up with the frame
-         rate. */
-      if (chirp) {
-        chirp.age += .040;
-        if (chirp.age > chirp.life) { chirp = null; nextChirp = 7 + Math.random() * 9; }
-      } else {
-        nextChirp -= .040;
-        if (nextChirp <= 0) {
-          var up = Math.random() < .5;
-          chirp = {
-            age: 0, life: 3.4 + Math.random() * 2.6,
-            from: up ? .08 : .92, to: up ? .92 : .08,
-            w: .009 + Math.random() * .006,
-            a: .78 + Math.random() * .3
-          };
-        }
+       The gap was widened carefully rather than by feel, because the naive
+       reading of it is wrong. A chirp is only *active* 28% of the time at
+       the old settings, which suggests most visitors miss it — but the
+       panel holds 224 rows, about 7.5 seconds of history, so a trace stays
+       on screen long after the transmitter has gone. Simulated over the
+       history window, the old settings already put a chirp somewhere on the
+       panel 81% of the time. The first attempt at fixing a problem that
+       size overshot to 100% coverage with two chirps live 70% of the time,
+       which is a busy band, not a livelier one.
+
+       4-17 lands at 96% coverage and 45% active. Two coexist about 0.2% of
+       the time — the gap timer restarts on spawn rather than on expiry, so
+       the short tail of the gap occasionally overlaps the 3.4-6.0 lifetime.
+       Rare enough to stay an event; without that tail MAX_CHIRPS would
+       never engage at all. */
+    var MAX_CHIRPS = 2;
+    var chirps = [], nextChirp = 2 + Math.random() * 4;
+
+    /* Bursts: a packet transmission. Fixed frequency, on for well under a
+       second, gone again. Most real traffic looks like this rather than
+       like a sweep, and nothing on this band did it — every signal here
+       either sat still and wobbled or slid all the way across. */
+    var bursts = [], nextBurst = 1 + Math.random() * 3;
+
+    /* dt is passed rather than hardcoded so the seeding loop, which runs
+       the same simulation without drawing, cannot drift out of step with
+       the animation — and so changing the frame rate is one edit. */
+    function updateChirp(dt) {
+      var i;
+      for (i = chirps.length - 1; i >= 0; i--) {
+        chirps[i].age += dt;
+        if (chirps[i].age > chirps[i].life) chirps.splice(i, 1);
+      }
+      nextChirp -= dt;
+      if (nextChirp <= 0 && chirps.length < MAX_CHIRPS) {
+        var up = Math.random() < .5;
+        chirps.push({
+          age: 0, life: 3.4 + Math.random() * 2.6,
+          from: up ? .08 : .92, to: up ? .92 : .08,
+          w: .009 + Math.random() * .006,
+          a: .78 + Math.random() * .3
+        });
+        nextChirp = 4 + Math.random() * 13;
+      }
+
+      for (i = bursts.length - 1; i >= 0; i--) {
+        bursts[i].age += dt;
+        if (bursts[i].age > bursts[i].life) bursts.splice(i, 1);
+      }
+      nextBurst -= dt;
+      if (nextBurst <= 0) {
+        bursts.push({
+          age: 0, life: .22 + Math.random() * .5,
+          f: .06 + Math.random() * .88,
+          w: .004 + Math.random() * .005,
+          a: .7 + Math.random() * .45
+        });
+        nextBurst = .7 + Math.random() * 2.6;
       }
     }
 
@@ -1628,14 +1666,26 @@
           var amp = car.a * (.58 + .42 * Math.sin(t * .9 + car.ph * 1.3));
           v += amp * Math.exp(-(d * d) / (2 * car.w * car.w));
         }
-        if (chirp) {
-          var p = chirp.age / chirp.life;
+        for (var ci = 0; ci < chirps.length; ci++) {
+          var ch = chirps[ci];
+          var p = ch.age / ch.life;
           /* Ease the sweep and fade it in and out at the ends, so it
              arrives and leaves rather than blinking on. */
-          var pos = chirp.from + (chirp.to - chirp.from) * (p * p * (3 - 2 * p));
+          var pos = ch.from + (ch.to - ch.from) * (p * p * (3 - 2 * p));
           var env = Math.sin(p * Math.PI);
           var dc = k - pos;
-          v += chirp.a * env * Math.exp(-(dc * dc) / (2 * chirp.w * chirp.w));
+          v += ch.a * env * Math.exp(-(dc * dc) / (2 * ch.w * ch.w));
+        }
+        for (var bi = 0; bi < bursts.length; bi++) {
+          var bu = bursts[bi];
+          /* Fast attack and release rather than a smooth bell: a packet
+             starts and stops abruptly, which is what distinguishes it from
+             a carrier. The short ramps only exist to keep the first and
+             last row from aliasing into a hard single-pixel edge. */
+          var bp = bu.age / bu.life;
+          var benv = bp < .12 ? bp / .12 : bp > .88 ? (1 - bp) / .12 : 1;
+          var dbf = k - bu.f;
+          v += bu.a * benv * Math.exp(-(dbf * dbf) / (2 * bu.w * bu.w));
         }
         /* Compress, then dim. Order matters: the linear version clamped
            first and returned before the scroll fade, so every saturated
@@ -1678,7 +1728,7 @@
       if (ts - last > 27) {
         last = ts;
         t += .040;
-        updateChirp();
+        updateChirp(.040);
         head = (head - 1 + ROWS) % ROWS;
         spectrum(rows[head]);
         paint();
@@ -1688,7 +1738,11 @@
 
     /* Seed the whole buffer so the first paint is already a full
        waterfall rather than an empty panel filling in. */
-    for (var s = 0; s < ROWS; s++) { t += .040; head = (head - 1 + ROWS) % ROWS; spectrum(rows[head]); }
+    /* Run the traffic simulation while seeding too, so the hero opens on a
+       band that already has bursts and part-finished chirps in it. Seeding
+       without it produced a suspiciously clean opening frame, with traffic
+       only starting once you had been watching for a few seconds. */
+    for (var s = 0; s < ROWS; s++) { t += .040; updateChirp(.040); head = (head - 1 + ROWS) % ROWS; spectrum(rows[head]); }
     paint();
 
     /* Repaint on demand so a theme switch recolours the existing data
