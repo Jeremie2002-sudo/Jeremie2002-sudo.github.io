@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <!-- Without this, mobile browsers lay the page out at a virtual ~980px and
      zoom out to fit — so every max-width media query below (820, 680, 640,
@@ -1980,6 +1983,8 @@
     .closer-inner::before, .closer::after { display: none !important; }
   }
 </style>
+</head>
+<body>
 
 <div class="progress" id="progress" aria-hidden="true"></div>
 <canvas id="shader" aria-hidden="true"></canvas>
@@ -4868,3 +4873,5 @@
   requestAnimationFrame(function () { document.documentElement.classList.add("lit"); });
 })();
 </script>
+</body>
+</html>
