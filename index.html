@@ -303,15 +303,16 @@
      the theme toggle's corner and never intercepts the pointer. */
   #voyager {
     position: fixed; right: clamp(18px, 5vw, 64px); top: 0;
-    width: 44px; z-index: 1; pointer-events: none;
+    width: 58px; z-index: 1; pointer-events: none;
     opacity: 0; transition: opacity .7s ease;
     will-change: transform;
   }
   #voyager.on { opacity: .8; }
   #voyager svg { display: block; width: 100%; height: auto; color: var(--dim); }
   #voyager rect, #voyager path {
-    stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round;
+    stroke: currentColor; stroke-width: 1.4; fill: none; stroke-linecap: round;
   }
+  #voyager circle { stroke: currentColor; stroke-width: 1.4; fill: none; }
   #voyager .vtrail {
     stroke: var(--ember); stroke-width: 1.4;
     stroke-dasharray: 1.5 6; opacity: .55;
@@ -320,12 +321,19 @@
   /* When the real ISS is inside its own visibility footprint of Delhi,
      the drawing admits what it is. */
   #voyager.iss svg { color: var(--ember); }
-  #voyager.iss::after {
-    content: "iss · overhead now";
-    position: absolute; top: 100%; left: 50%;
-    transform: translateX(-50%); margin-top: 5px;
-    font-family: var(--mono); font-size: 9px; letter-spacing: .18em;
-    text-transform: uppercase; color: var(--ember); white-space: nowrap;
+  /* The nameplate: always on once the tracker has a fix, right-aligned
+     to the satellite so long place names grow into the page instead of
+     off the viewport's right edge. */
+  #voytag {
+    position: absolute; top: 100%; right: 0; margin-top: 5px;
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--dim); white-space: nowrap;
+    text-align: right;
+  }
+  #voyager.iss #voytag { color: var(--ember); }
+  #voyager .vlight {
+    fill: var(--ember); stroke: none;
+    animation: scene-led 3s ease-in-out infinite;
   }
   @media (max-width: 680px) { #voyager { display: none; } }
 
@@ -2059,12 +2067,24 @@
 </div>
 
 <div id="voyager" aria-hidden="true">
-  <svg viewBox="0 0 44 70">
-    <rect x="16" y="4" width="11" height="8" rx="1.5"/>
-    <path d="M3 6h11v4H3zM29 6h11v4H29z"/>
-    <path d="M21 12v4"/>
-    <path class="vtrail" d="M21.5 18V66"/>
+  <svg viewBox="0 0 64 84">
+    <!-- truss -->
+    <path d="M4 14H60"/>
+    <!-- solar arrays, celled -->
+    <rect x="2" y="4" width="16" height="20" rx="1"/>
+    <path d="M7 4v20M12 4v20"/>
+    <rect x="46" y="4" width="16" height="20" rx="1"/>
+    <path d="M51 4v20M56 4v20"/>
+    <!-- module stack, dish, radiators -->
+    <rect x="26" y="9" width="12" height="10" rx="2"/>
+    <rect x="29" y="2" width="6" height="7" rx="2"/>
+    <circle cx="32" cy="24" r="2.5"/>
+    <path d="M32 26v5M24 21l-5 6M40 21l5 6"/>
+    <circle class="vlight" cx="32" cy="12" r="1.6"/>
+    <path class="vtrail" d="M32 32V78"/>
   </svg>
+  <!-- live nameplate: filled by the ISS tracker, wherever it is -->
+  <div id="voytag" hidden></div>
 </div>
 
 <header class="hero" id="top">
@@ -4718,7 +4738,17 @@
         })
         .then(function (r) { if (!r.ok) throw 0; return r.json(); })
         .then(function (c) {
-          if (window.__iss) window.__iss.place = placeFrom(c.timezone_id, c.country_code);
+          if (!window.__iss) return;
+          window.__iss.place = placeFrom(c.timezone_id, c.country_code);
+          /* The nameplate rides the satellite full-time once we have a
+             fix — overhead gets the special line. */
+          var tag = document.getElementById("voytag");
+          if (tag) {
+            tag.textContent = window.__iss.over
+              ? "iss · overhead now"
+              : "iss · over " + (window.__iss.place || "open water");
+            tag.hidden = false;
+          }
         })["catch"](function () { /* sky unavailable — stay a drawing */ });
     }
     check();
