@@ -4467,6 +4467,37 @@
       el.scrollIntoView({ behavior: "smooth" });
     }
 
+    /* Completion targets and command history. */
+    var CMDS = ["help", "goto", "scan", "transmit", "hello", "theme",
+                "resume", "hire", "log", "source", "73", "sudo", "clear", "exit"];
+    var SECS = ["top", "about", "work", "experience", "internships",
+                "education", "skills", "contact"];
+    var hist = [], hIdx = 0;
+
+    /* The self-driving tour: glide stop to stop, the dial sweeping as
+       the page moves, ending at the desk. Any human input aborts it —
+       the visitor's hand always outranks the autopilot. */
+    var scanTimer = null;
+    function scanAbort() {
+      clearTimeout(scanTimer); scanTimer = null;
+      removeEventListener("wheel", scanAbort);
+      removeEventListener("touchstart", scanAbort);
+      removeEventListener("keydown", scanAbort);
+    }
+    function scanTour() {
+      var i = 0;
+      addEventListener("wheel", scanAbort, { passive: true });
+      addEventListener("touchstart", scanAbort, { passive: true });
+      addEventListener("keydown", scanAbort);
+      (function step() {
+        var el = document.getElementById(SECS[i]);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+        i++;
+        if (i < SECS.length) scanTimer = setTimeout(step, 2300);
+        else scanAbort();
+      })();
+    }
+
     function exec(raw) {
       raw = raw.replace(/^\s+|\s+$/g, "");
       if (!raw) return;
@@ -4475,10 +4506,41 @@
       var cmd = (sp < 0 ? raw : raw.slice(0, sp)).toLowerCase();
       var arg = sp < 0 ? "" : raw.slice(sp + 1).replace(/^\s+/, "");
       if (cmd === "help") {
+        print("scan              drive the whole page for me", true);
         print("goto top|work|experience|skills|contact", true);
         print("transmit <word>   write it on the waterfall", true);
         print("hello             signal the desk", true);
-        print("theme dark|light  ·  resume  ·  73  ·  clear  ·  exit", true);
+        print("hire              open a channel", true);
+        print("log · source · theme dark|light · resume · 73 · clear · exit", true);
+      } else if (cmd === "scan") {
+        print("scanning the band — touch anything to abort", true);
+        close();
+        scanTour();
+      } else if (cmd === "hire") {
+        print("opening a channel…", true);
+        window.location.href = "mailto:jerryanand10@gmail.com?subject="
+          + encodeURIComponent("Let's talk — found you on the band");
+      } else if (cmd === "sudo") {
+        print("nice try — this is my portfolio", true);
+      } else if (cmd === "source") {
+        print("this page is open source — its whole build history is public:", true);
+        print("github.com/Jeremie2002-sudo/Jeremie2002-sudo.github.io", true);
+        window.open("https://github.com/Jeremie2002-sudo/Jeremie2002-sudo.github.io",
+          "_blank", "noopener");
+      } else if (cmd === "log") {
+        print("fetching…", true);
+        fetch("https://api.github.com/repos/Jeremie2002-sudo/Jeremie2002-sudo.github.io/commits?per_page=5")
+          .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+          .then(function (list) {
+            for (var li = 0; li < list.length; li++) {
+              var m = list[li].commit;
+              print(m.author.date.slice(0, 10) + "  "
+                + m.message.split("\n")[0].slice(0, 46), true);
+            }
+          })
+          /* Bracket notation: catch is reserved in the ES3-era parsers
+             some old tooling still runs, and costs nothing here. */
+          ["catch"](function () { print("github is quiet — try again later", true); });
       } else if (cmd === "goto") {
         go(arg === "top" ? "top" : arg);
       } else if (cmd === "theme") {
@@ -4528,7 +4590,30 @@
       }
     });
     tin.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") { exec(tin.value); tin.value = ""; }
+      if (e.key === "Enter") {
+        if (tin.value.replace(/\s/g, "")) { hist.push(tin.value); }
+        hIdx = hist.length;
+        exec(tin.value); tin.value = "";
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (hIdx > 0) { hIdx--; tin.value = hist[hIdx]; }
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (hIdx < hist.length - 1) { hIdx++; tin.value = hist[hIdx]; }
+        else { hIdx = hist.length; tin.value = ""; }
+      } else if (e.key === "Tab") {
+        /* Complete the command, or a goto target after one. */
+        e.preventDefault();
+        var v = tin.value, sp2 = v.indexOf(" ");
+        if (sp2 < 0 && v) {
+          for (var ci = 0; ci < CMDS.length; ci++)
+            if (CMDS[ci].indexOf(v.toLowerCase()) === 0) { tin.value = CMDS[ci] + " "; break; }
+        } else if (sp2 > 0 && v.slice(0, sp2).toLowerCase() === "goto") {
+          var pre = v.slice(sp2 + 1).toLowerCase();
+          for (var si = 0; si < SECS.length; si++)
+            if (SECS[si].indexOf(pre) === 0) { tin.value = "goto " + SECS[si]; break; }
+        }
+      }
     });
 
     /* The nav button is the visible door — and the only one on a phone,
