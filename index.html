@@ -2751,6 +2751,19 @@
        the pointer's frequency, fading out 1.4s after the hand stops. */
     var curK = -1, curT = 0;
 
+    /* Hero physics: a carrier can be grabbed and dragged to a new
+       frequency, and holding the pointer down anywhere else charges a
+       transmission — the longer the hold, the bigger the chirp on
+       release. Mouse and pen only; on touch, down-and-move is scrolling
+       and must stay scrolling. */
+    var dragCar = null, dragMoved = false;
+    var chargeK = -1, chargeT0 = 0, suppressClick = false;
+
+    function carrierCentre(car) {
+      var c0 = car.f + Math.sin(t * .6 + car.ph) * car.wob + car.dr * t * 40;
+      return ((c0 % 1) + 1) % 1;
+    }
+
     /* Reused every row rather than reallocated — this runs 30x a second.
        nSm doubles as the previous row's noise, which is what gives the
        floor its vertical streak. */
@@ -2875,17 +2888,75 @@
     if (!reduced) {
       var hero = document.querySelector(".hero");
       if (hero) hero.addEventListener("click", function (e) {
+        /* A completed drag or charge already did its job — the click
+           that follows pointerup must not also fire a tap-chirp. */
+        if (suppressClick) { suppressClick = false; return; }
         /* Links, buttons and the write-box do their own jobs;
            everywhere else transmits. */
         if (e.target && e.target.closest && e.target.closest("a, button, input, .wf-write")) return;
         transmit(e.clientX / innerWidth);
       });
 
+      if (hero) hero.addEventListener("pointerdown", function (e) {
+        if (e.pointerType === "touch") return;
+        if (e.target && e.target.closest && e.target.closest("a, button, input, .wf-write")) return;
+        var k = e.clientX / innerWidth;
+        /* Near a carrier: grab it. Anywhere else: start charging. */
+        for (var ci = 0; ci < carriers.length; ci++) {
+          var dd = Math.abs(carrierCentre(carriers[ci]) - k);
+          if (dd > .5) dd = 1 - dd;
+          if (dd < .022) { dragCar = carriers[ci]; dragMoved = false; return; }
+        }
+        chargeK = k; chargeT0 = performance.now();
+      });
+
       if (hero) hero.addEventListener("pointermove", function (e) {
         /* Touch drags are scrolling, not pointing. */
         if (e.pointerType === "touch") return;
-        curK = e.clientX / innerWidth;
+        var k = e.clientX / innerWidth;
+        curK = k;
         curT = performance.now();
+        if (dragCar) {
+          /* Move the carrier's base so its wobbling centre lands under
+             the pointer, clamped clear of the band edges. */
+          dragCar.f += k - carrierCentre(dragCar);
+          if (dragCar.f < .04) dragCar.f = .04;
+          else if (dragCar.f > .96) dragCar.f = .96;
+          dragMoved = true;
+        }
+      });
+
+      function endPointer() {
+        if (dragCar) {
+          if (dragMoved) suppressClick = true;
+          dragCar = null;
+          return;
+        }
+        if (chargeK >= 0) {
+          var held = (performance.now() - chargeT0) / 1000;
+          chargeK = -1;
+          /* A quick tap falls through to the ordinary click-transmit;
+             a real hold releases a chirp sized by the charge. */
+          if (held >= .25) {
+            var kk = curK < 0 ? .5 : curK;
+            if (held > 2.5) held = 2.5;
+            if (chirps.length >= 6) chirps.shift();
+            chirps.push({
+              age: 0, life: 2.2 + held * .8,
+              from: kk,
+              to: Math.min(.97, Math.max(.03, kk + (kk < .5 ? 1 : -1) * (.18 + held * .12))),
+              w: .010 + held * .0022,
+              a: .9 + held * .45,
+              hot: true
+            });
+            suppressClick = true;
+          }
+        }
+      }
+      if (hero) hero.addEventListener("pointerup", endPointer);
+      if (hero) hero.addEventListener("pointercancel", endPointer);
+      if (hero) hero.addEventListener("pointerleave", function () {
+        dragCar = null; chargeK = -1;
       });
 
       var wfin = document.getElementById("wfin");
@@ -2956,6 +3027,16 @@
         if (ca > 0) {
           var cd = k - curK;
           v += ca * Math.exp(-(cd * cd) / (2 * .006 * .006));
+        }
+        /* The charge, building visibly under the held pointer: energy
+           and width both grow with the hold, so the release reads as
+           letting go of something you built. */
+        if (chargeK >= 0) {
+          var chAge = (nowMs - chargeT0) / 1000;
+          if (chAge > 2.5) chAge = 2.5;
+          var qd = k - chargeK;
+          var qw = .010 + chAge * .004;
+          v += (.35 + chAge * .55) * Math.exp(-(qd * qd) / (2 * qw * qw));
         }
         for (var ci = 0; ci < chirps.length; ci++) {
           var ch = chirps[ci];
