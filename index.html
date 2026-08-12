@@ -1979,22 +1979,23 @@
             the question that actually blocks a merge. Cheap deterministic checks run first
             and short-circuit the paid LLM-as-judge calls.
           </p>
-          <!-- Condensed from the run the README itself documents — real
-               case names, real pass rates, real REGRESSED semantics. -->
+          <!-- A real run, captured 12 Aug 2026: baseline recorded on the
+               repo's offline demo, one canned response changed to simulate
+               a behaviour shift, and PromptDrift caught it — exit 1.
+               Condensed for width; every value is from the actual output. -->
           <figure class="evi rise">
-            <figcaption><b></b> promptdrift · run <em>from the readme</em></figcaption>
+            <figcaption><b></b> promptdrift · run <em>real capture</em></figcaption>
             <div class="evi-body">
               <span class="l" style="--i:0"><span class="q">$</span> promptdrift run suite.yaml</span>
-              <span class="l" style="--i:1"><span class="q">support-triage · llama3.2 · 6 cases</span></span>
+              <span class="l" style="--i:1"><span class="q">offline-demo · mock · 4 cases</span></span>
               <span class="l sp" style="--i:2"></span>
-              <span class="l" style="--i:3">  <span class="ok">✓</span>  4 passed</span>
-              <span class="l" style="--i:4">  <span class="hl">~</span>  refund-request   <span class="hl">100% → 67%</span></span>
-              <span class="l" style="--i:5">  <span class="no">✗</span>  vague-complaint  <span class="hl">100% → 33%</span></span>
-              <span class="l sp" style="--i:6"></span>
-              <span class="l" style="--i:7"><span class="no">REGRESSED</span> — expected OTHER,</span>
-              <span class="l" style="--i:8">            got 'ACCOUNT'</span>
-              <span class="l sp" style="--i:9"></span>
-              <span class="l" style="--i:10">  <span class="k">FAIL 5/6 · exit 1 · merge blocked</span></span>
+              <span class="l" style="--i:3">  <span class="ok">✓</span>  3 passed</span>
+              <span class="l" style="--i:4">  <span class="no">✗</span>  billing  <span class="hl">100% → 0%</span></span>
+              <span class="l sp" style="--i:5"></span>
+              <span class="l" style="--i:6"><span class="no">REGRESSED</span> — expected 'BILLING',</span>
+              <span class="l" style="--i:7">            got 'OTHER'</span>
+              <span class="l sp" style="--i:8"></span>
+              <span class="l" style="--i:9">  <span class="k">FAIL 3/4 · exit 1 · merge blocked</span></span>
             </div>
           </figure>
 
@@ -2023,18 +2024,23 @@
                listwise rerank, synthesizer draft, critic) — the query and
                documents are invented, hence the label. -->
           <figure class="evi rise">
-            <figcaption><b></b> synapse · reasoning trace <em>illustrative</em></figcaption>
+            <!-- A real critic run, captured 12 Aug 2026: the repo's actual
+                 CRITIC_SYSTEM prompt against llama3.2 locally, given two
+                 excerpts and a draft with two planted violations. It caught
+                 both. Condensed; the verdicts are the model's own. -->
+            <figcaption><b></b> synapse · critic <em>real capture · llama3.2</em></figcaption>
             <div class="evi-body">
               <span class="l" style="--i:0"><span class="q">query</span>  what changed in Q3 policy?</span>
-              <span class="l" style="--i:1"><span class="q">plan</span>   2 sub-questions</span>
-              <span class="l" style="--i:2"><span class="q">fused</span>  bm25 + faiss → rrf → rerank</span>
-              <span class="l sp" style="--i:3"></span>
-              <span class="l" style="--i:4"><span class="q">draft</span>  retention now 180 days <span class="ok">[1]</span></span>
-              <span class="l" style="--i:5">       deletion window 30 days <span class="ok">[2]</span></span>
-              <span class="l" style="--i:6"><span class="k">critic</span> <span class="no">⚠ "all regions" unsupported</span></span>
-              <span class="l" style="--i:7">       <span class="q">claim removed from answer</span></span>
-              <span class="l sp" style="--i:8"></span>
-              <span class="l" style="--i:9"><span class="q">[1] policy_v3.pdf  [2] notes.md</span></span>
+              <span class="l sp" style="--i:1"></span>
+              <span class="l" style="--i:2"><span class="q">draft</span>  retention now 365 days <span class="ok">[1]</span></span>
+              <span class="l" style="--i:3">       applies to all regions <span class="ok">[1]</span></span>
+              <span class="l sp" style="--i:4"></span>
+              <span class="l" style="--i:5"><span class="k">critic</span> <span class="no">✗ not supported — [1]</span></span>
+              <span class="l" style="--i:6">       <span class="no">says 180, not 365</span></span>
+              <span class="l" style="--i:7">       <span class="no">✗ "all regions" — no excerpt</span></span>
+              <span class="l" style="--i:8">       <span class="q">→ sent back to draft</span></span>
+              <span class="l sp" style="--i:9"></span>
+              <span class="l" style="--i:10"><span class="q">[1] policy_v3.pdf  [2] notes.md</span></span>
             </div>
           </figure>
 
@@ -2078,20 +2084,21 @@
             LLM to do arithmetic.
           </p>
           <figure class="evi rise">
-            <figcaption><b></b> ledgr · tool call <em>illustrative</em></figcaption>
-            <!-- get_totals is the assistant's real tool (finance_ai/
-                 assistant.py), and the dining question is the README's own
-                 example — the amount is invented, hence the label. -->
+            <figcaption><b></b> ledgr · tool call <em>real capture</em></figcaption>
+            <!-- A real run, captured 12 Aug 2026: the repo's sample CSV fed
+                 through its own keyword categoriser, then the assistant's
+                 actual get_totals — 79.32 across 3 transactions is what the
+                 real function returned for July 2026. -->
             <div class="evi-body">
               <span class="l" style="--i:0"><span class="q">user</span>   dining spend last month?</span>
               <span class="l sp" style="--i:1"></span>
               <span class="l" style="--i:2"><span class="k">tool</span>   get_totals(</span>
               <span class="l" style="--i:3">         start="2026-07-01",</span>
               <span class="l" style="--i:4">         end="2026-07-31",</span>
-              <span class="l" style="--i:5">         category="Dining")</span>
-              <span class="l" style="--i:6">       <span class="hl">→ expenses 12,840.00</span></span>
+              <span class="l" style="--i:5">         category="Food &amp; Dining")</span>
+              <span class="l" style="--i:6">       <span class="hl">→ expenses 79.32 · 3 rows</span></span>
               <span class="l sp" style="--i:7"></span>
-              <span class="l" style="--i:8"><span class="q">reply</span>  ₹12,840 on dining in July</span>
+              <span class="l" style="--i:8"><span class="q">reply</span>  79.32 on dining in July</span>
               <span class="l" style="--i:9"><span class="q">       the database did the maths</span></span>
             </div>
           </figure>
