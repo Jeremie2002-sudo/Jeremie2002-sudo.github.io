@@ -267,6 +267,26 @@
     color: var(--ember); font-variant-numeric: tabular-nums;
     opacity: .8; margin-right: 6px;
   }
+  /* The terminal button reads as a prompt, coloured to be found. */
+  .termbtn {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em;
+    text-transform: uppercase; cursor: pointer;
+    color: var(--ember);
+    background: rgb(var(--accent-rgb) / .08);
+    border: 1px solid rgb(var(--accent-rgb) / .45);
+    border-radius: 999px; padding: 7px 13px;
+    transition: background .3s ease, border-color .3s ease;
+  }
+  .termbtn b { font-weight: 600; letter-spacing: 0; }
+  .termbtn:hover, .termbtn:focus-visible {
+    background: rgb(var(--accent-rgb) / .16);
+    border-color: rgb(var(--accent-rgb) / .8);
+    outline: none;
+  }
+  @media (max-width: 460px) { .termbtn .lbl { display: none; } }
+  /* At 360 the who-mark plus icon button plus Contact ran the row a few
+     pixels over; one type step on the name buys the room back. */
+  @media (max-width: 380px) { nav .who { font-size: 10px; } }
   @media (max-width: 640px) { nav .set a:not(:last-child), .freq { display: none; } }
 
   /* The scroll companion. Fixed on the right edge, translated down the
@@ -560,22 +580,34 @@
     stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
   }
 
-  /* The waterfall write-box: one quiet underlined field, styled like an
-     instrument input rather than a form. */
-  .wf-write { margin-top: 18px; }
+  /* The waterfall write-box: the third pill in the hero row, dressed
+     exactly like the buttons beside it. Sized generously past its
+     placeholder — the first cut used 24ch against a letter-spaced
+     24-character placeholder and clipped the last letters. */
+  .wf-write { display: flex; }
   .wf-write input {
-    font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
-    background: transparent; color: var(--soft);
-    border: 0; border-bottom: 1px solid var(--line);
-    padding: 6px 2px; width: 24ch; outline: none;
-    transition: border-color .3s ease;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .06em;
+    background: rgb(var(--ground-rgb) / .35);
+    backdrop-filter: blur(8px);
+    color: var(--soft);
+    border: 1px solid var(--line); border-radius: 999px;
+    /* Inputs are border-box by UA default, so the width must carry the
+       padding too — 28ch here left only ~157px of content for a 186px
+       placeholder and clipped it mid-word. */
+    padding: 11px 18px; width: 34ch; outline: none;
+    transition: border-color .35s ease, background .35s ease;
   }
-  .wf-write input:focus { border-color: rgb(var(--accent-rgb) / .7); }
-  .wf-write input::placeholder { color: var(--dim); opacity: .85; }
+  .wf-write input:focus {
+    border-color: rgb(var(--accent-rgb) / .7);
+    background: rgb(var(--accent-rgb) / .06);
+  }
+  .wf-write input::placeholder { color: var(--dim); opacity: .9; }
   @media (max-width: 680px) {
     /* 16px, non-negotiable: anything smaller makes iOS zoom the page
-       when the field is focused. */
-    .wf-write input { font-size: 16px; width: 20ch; }
+       when the field is focused. Width goes fluid so the placeholder
+       always fits. */
+    .wf-write { flex: 1 1 100%; }
+    .wf-write input { font-size: 16px; width: 100%; max-width: 36ch; }
   }
   @media (max-width: 680px) { .hero-act { margin-top: 20px; } .hero-act a { padding: 10px 15px; font-size: 12px; } }
 
@@ -1852,6 +1884,12 @@
     <a href="#work">Work</a>
     <a href="#experience">Experience</a>
     <a href="#contact">Contact</a>
+    <!-- The terminal's front door. The backtick shortcut stays for the
+         people who try it unprompted; this is for everyone else, and it
+         is the only way in on a phone. -->
+    <button class="termbtn" id="termbtn" type="button" aria-haspopup="dialog">
+      <b>`_</b><span class="lbl"> terminal</span>
+    </button>
   </span>
 </nav>
 
@@ -1901,15 +1939,15 @@
     <p class="hero-act fade">
       <a href="mailto:jerryanand10@gmail.com">jerryanand10@gmail.com</a>
       <a href="/David_Jeremie_Anand_Resume.pdf" download>Résumé <svg class="arr" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v8M2.8 6.7 6 10l3.2-3.3"/></svg></a>
-    </p>
-
-    <!-- The guestbook nobody else has: a short word, spelled into the
-         falling band in spectral energy. Client-side only — the word
-         exists solely on the visitor's own screen. -->
-    <p class="wf-write fade">
-      <input id="wfin" maxlength="10" autocomplete="off" spellcheck="false"
-             placeholder="write on the waterfall ↵"
-             aria-label="Write a short word onto the waterfall">
+      <!-- The guestbook nobody else has: a short word, spelled into the
+           falling band in spectral energy. Client-side only — the word
+           exists solely on the visitor's own screen. Third pill in the
+           row, beside the résumé, where it can be seen. -->
+      <span class="wf-write">
+        <input id="wfin" maxlength="10" autocomplete="off" spellcheck="false"
+               placeholder="write on the waterfall ↵"
+               aria-label="Write a short word onto the waterfall">
+      </span>
     </p>
 
     <p class="cue fade"><b></b> Scroll</p>
@@ -4313,6 +4351,13 @@
     });
     tin.addEventListener("keydown", function (e) {
       if (e.key === "Enter") { exec(tin.value); tin.value = ""; }
+    });
+
+    /* The nav button is the visible door — and the only one on a phone,
+       where there is no backtick to press. */
+    var btn = document.getElementById("termbtn");
+    if (btn) btn.addEventListener("click", function () {
+      if (term.hidden) open(); else close();
     });
   }
 
