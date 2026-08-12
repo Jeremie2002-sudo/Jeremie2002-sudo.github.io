@@ -4642,55 +4642,6 @@
   }
 
   /* ==================================================================
-     NAME DECODE
-     The letters of the name resolve out of scrambled glyphs on the same
-     clock as the carriers locking — the page decodes its own callsign.
-     Left to right, each character settling at its own moment; the width
-     jitter while glyphs shuffle is part of the effect, and it is over in
-     under three seconds. Skipped under reduced motion.
-     ================================================================== */
-
-  function startNameDecode() {
-    if (reduced) return;
-    var spans = document.querySelectorAll("h1 .ln > span");
-    if (!spans.length) return;
-    var GLYPHS = "#%&$X+=<>/\\*01";
-    var jobs = [];
-    var total = 0;
-    for (var i = 0; i < spans.length; i++) {
-      var txt = spans[i].textContent;
-      jobs.push({ el: spans[i], txt: txt, offset: total });
-      total += txt.length;
-    }
-    var deadlines = [];
-    for (var j = 0; j < jobs.length; j++) {
-      var dl = [];
-      for (var cch = 0; cch < jobs[j].txt.length; cch++) {
-        dl.push(500 + (jobs[j].offset + cch) * (2100 / total) + Math.random() * 140);
-      }
-      deadlines.push(dl);
-    }
-    var t0 = performance.now();
-    var iv = setInterval(function () {
-      var el2 = performance.now() - t0;
-      var done = true;
-      for (var j2 = 0; j2 < jobs.length; j2++) {
-        var outStr = "";
-        for (var c2 = 0; c2 < jobs[j2].txt.length; c2++) {
-          var real = jobs[j2].txt.charAt(c2);
-          if (real === " " || el2 >= deadlines[j2][c2]) outStr += real;
-          else {
-            outStr += GLYPHS.charAt((Math.random() * GLYPHS.length) | 0);
-            done = false;
-          }
-        }
-        jobs[j2].el.textContent = outStr;
-      }
-      if (done) clearInterval(iv);
-    }, 55);
-  }
-
-  /* ==================================================================
      TERMINAL
      Quake-style: backtick toggles, Escape closes, commands drive the
      site's own machinery rather than duplicating navigation chrome.
@@ -4878,7 +4829,6 @@
   startTheme();
   if (!reduced) startPalette();
   startWaterfall();
-  startNameDecode();
   startNameFill();   /* after startWaterfall: it reads that canvas */
   startCloser();
   startScene();      /* after startCloser: it reads that canvas */
