@@ -4573,8 +4573,9 @@
     var voytagEl = document.getElementById("voytag");
     var marqEl = document.querySelector(".marquee");
     /* Everything the nameplate must yield to besides the vignettes:
-       the glass tiles of the bento and the toolkit. */
-    var tiles = document.querySelectorAll(".cell, .skill");
+       the glass tiles of the bento and toolkit, and the metric stats
+       with their sparklines — reported crossing "25%" on the way down. */
+    var tiles = document.querySelectorAll(".cell, .skill, .metric");
     var closerEl = document.querySelector(".closer");
     var journeys = document.querySelectorAll(".grad, .vig");
 
