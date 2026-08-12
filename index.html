@@ -4572,6 +4572,9 @@
     var voy = document.getElementById("voyager");
     var voytagEl = document.getElementById("voytag");
     var marqEl = document.querySelector(".marquee");
+    /* Everything the nameplate must yield to besides the vignettes:
+       the glass tiles of the bento and the toolkit. */
+    var tiles = document.querySelectorAll(".cell, .skill");
     var closerEl = document.querySelector(".closer");
     var journeys = document.querySelectorAll(".grad, .vig");
 
@@ -4622,6 +4625,13 @@
              little below it. */
           if (voyR && gr.left < voyR.right + 8 && gr.right > voyR.right - 190
             && gr.top < voyR.bottom + 34 && gr.bottom > voyR.top) labelHit = true;
+        }
+      }
+      if (voyR && !labelHit) {
+        for (var ti = 0; ti < tiles.length; ti++) {
+          var tr = tiles[ti].getBoundingClientRect();
+          if (tr.left < voyR.right + 8 && tr.right > voyR.right - 190
+            && tr.top < voyR.bottom + 34 && tr.bottom > voyR.top) { labelHit = true; break; }
         }
       }
       if (voytagEl) voytagEl.style.opacity = labelHit ? "0" : "";
