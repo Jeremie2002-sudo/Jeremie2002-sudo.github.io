@@ -1712,6 +1712,54 @@
      long and offset so the two wisps never sync. The global reduced-motion
      rule kills all three, leaving a still drawing rather than nothing. */
   .scene .fore, .scene .hand { animation: scene-type .34s ease-in-out infinite alternate; }
+
+  /* The sip. Every 7-10 seconds (JS timer) the typing pauses and the
+     forearm rotates about the elbow, hand rising to chin height, then
+     returns. The class swaps the animation for one 2.2s gesture; the
+     hand mirrors the arm tip's arc with a matched translate. */
+  .scene .fore { transform-box: fill-box; transform-origin: 0% 0%; }
+  .scene .hand { transform-box: fill-box; transform-origin: center; }
+  .scene svg.sip .fore { animation: scene-sip-arm 2.2s ease-in-out 1; }
+  .scene svg.sip .hand { animation: scene-sip-hand 2.2s ease-in-out 1; }
+  @keyframes scene-sip-arm {
+    0%, 100% { transform: rotate(0); }
+    38%, 62% { transform: rotate(-70deg); }
+  }
+  @keyframes scene-sip-hand {
+    0%, 100% { transform: translate(0, 0); }
+    38%, 62% { transform: translate(-3px, -40px); }
+  }
+
+  /* A visitor's hello reaches the desk: the figure straightens for a
+     beat — breathing pauses, back lifts — then settles. */
+  .scene svg.hey .breathe {
+    animation: none;
+    transform: translateY(-3.5px);
+    transition: transform .4s ease;
+  }
+
+  /* The cat. Asleep, breathing from the floor up. */
+  .scene .cat {
+    opacity: .75;
+    transform-box: fill-box; transform-origin: 50% 100%;
+    animation: cat-breathe 3.4s ease-in-out infinite alternate;
+  }
+  .scene .catbody { fill: currentColor; stroke: none; }
+  .scene .cattail { stroke-width: 4; }
+  .scene .catear { stroke-width: 2; }
+  @keyframes cat-breathe { from { transform: scaleY(1); } to { transform: scaleY(1.05); } }
+
+  /* Sun by day, moon by night — the theme toggle is the weather. */
+  .sky-day { display: none; }
+  .sky-night { display: block; }
+  :root[data-theme="light"] .sky-day { display: block; }
+  :root[data-theme="light"] .sky-night { display: none; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .sky-day { display: block; }
+    :root:not([data-theme="dark"]) .sky-night { display: none; }
+  }
+  .scene .star { fill: currentColor; stroke: none; animation: cons-shimmer 3.6s ease-in-out infinite; }
+  .scene .st2 { animation-delay: -1.6s; }
   .scene .steam { opacity: 0; animation: scene-steam 3.6s ease-in-out infinite; }
   .scene .s2 { animation-delay: 1.7s; }
   @keyframes scene-type { from { transform: translateY(0); } to { transform: translateY(1.6px); } }
@@ -2602,6 +2650,23 @@
           <path class="set" d="M244 134h14v14h-14zM258 137c7 0 7 9 0 9"/>
           <path class="steam s1" d="M248 128c-3-5 3-8 0-13"/>
           <path class="steam s2" d="M255 126c-3-4 3-7 0-12"/>
+          <!-- the cat, asleep under the desk, breathing -->
+          <g class="cat">
+            <path class="catbody" d="M180 208c0-8 7-13 15-13 9 0 16 5 16 10 0 4-3 6-8 6h-17c-4 0-6-1-6-3z"/>
+            <path class="cattail" d="M209 209c8 2 13-2 13-8"/>
+            <path class="catear" d="M186 197l2-6 5 4"/>
+          </g>
+          <!-- the sky over the little world: sun by day, moon and stars
+               by night, switched by the page theme -->
+          <g class="sky-day" aria-hidden="true">
+            <circle cx="40" cy="36" r="7"/>
+            <path d="M40 24v-4M40 48v4M28 36h-4M52 36h4M31 27l-3-3M49 45l3 3M49 27l3-3M31 45l-3 3"/>
+          </g>
+          <g class="sky-night" aria-hidden="true">
+            <path d="M46 27a9 9 0 1 0 7 15 8 8 0 1 1-7-15z"/>
+            <circle class="star" cx="24" cy="30" r="1.4"/>
+            <circle class="star st2" cx="58" cy="44" r="1.2"/>
+          </g>
         </svg>
         <canvas id="scene-screen" aria-hidden="true"></canvas>
         <!-- The laptop is a doorway. Click the screen and it answers. -->
@@ -4241,6 +4306,22 @@
       if (document.hidden) { running = false; cancelAnimationFrame(raf); }
       else if (!running && onScreen) { running = true; last = 0; raf = requestAnimationFrame(frame); }
     });
+
+    /* The sip: every 7-10 seconds, per the spec, and only while the
+       scene is actually on screen — a gesture nobody sees is battery
+       spent on nothing. */
+    if (!reduced) {
+      var sceneSvg = document.querySelector(".scene svg");
+      if (sceneSvg) (function sipLoop() {
+        setTimeout(function () {
+          if (onScreen && !document.hidden) {
+            sceneSvg.classList.add("sip");
+            setTimeout(function () { sceneSvg.classList.remove("sip"); }, 2300);
+          }
+          sipLoop();
+        }, 7000 + Math.random() * 3000);
+      })();
+    }
   }
 
   /* ==================================================================
@@ -4268,6 +4349,13 @@
       cooling = true;
       if (window.__signalClose) window.__signalClose();
       if (done) done.hidden = false;
+      /* He notices: the figure straightens for a beat as the word
+         appears on the band behind him. */
+      var svg2 = document.querySelector(".scene svg");
+      if (svg2) {
+        svg2.classList.add("hey");
+        setTimeout(function () { svg2.classList.remove("hey"); }, 1900);
+      }
       setTimeout(function () { cooling = false; }, 2600);
     });
 
