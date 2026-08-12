@@ -896,6 +896,8 @@
     text-transform: uppercase; fill: var(--soft); text-anchor: middle;
   }
   .pipe .pulse { fill: var(--ember); }
+  .pipe .node { pointer-events: auto; cursor: pointer; }
+  .pipe .node:hover rect { stroke: rgb(var(--accent-rgb) / .7); }
   .pipe .fwd { transform: translateX(32px); animation: pipe-fwd 6.4s linear infinite; }
   .pipe .rej { fill: var(--flare); opacity: 0; transform: translateX(266px); animation: pipe-rej 19.2s linear infinite; }
   .pipe figcaption {
@@ -4391,6 +4393,34 @@
   }
 
   /* ==================================================================
+     PIPELINE NODES
+     Click a stage and the pulse launches from it: the animation restarts
+     with a negative delay equal to that node's position in the loop.
+     ================================================================== */
+
+  function startPipe() {
+    var pipe = document.querySelector(".pipe svg");
+    if (!pipe) return;
+    var fwd = pipe.querySelector(".fwd");
+    if (!fwd) return;
+    /* Keyframe offsets of each node's dwell start, in seconds of the
+       6.4s cycle: 0%, 30%, 56%, 84%. */
+    var starts = [0, 1.92, 3.584, 5.376];
+    pipe.addEventListener("click", function (e) {
+      var g = e.target && e.target.closest ? e.target.closest(".node") : null;
+      if (!g) return;
+      var nodes = pipe.querySelectorAll(".node");
+      var idx = -1;
+      for (var i = 0; i < nodes.length; i++) if (nodes[i] === g) idx = i;
+      if (idx < 0) return;
+      fwd.style.animation = "none";
+      void fwd.getBoundingClientRect();
+      fwd.style.animation = "";
+      fwd.style.animationDelay = "-" + starts[idx] + "s";
+    });
+  }
+
+  /* ==================================================================
      NAME DECODE
      The letters of the name resolve out of scrambled glyphs on the same
      clock as the carriers locking — the page decodes its own callsign.
@@ -4634,6 +4664,7 @@
   startSceneScreen();
   startTerminal();
   startTimelinePulse();
+  startPipe();
   /* Not under reduced motion: with transitions globally disabled the
      replay would blink the panel rather than re-run it. */
   if (!reduced) startEviReplay();
