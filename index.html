@@ -2482,8 +2482,8 @@
           <p class="sc-sub">contact's on the left. this does something
             no other website lets you do:</p>
           <button class="sc-send" type="button">▸ transmit a hello</button>
-          <p class="sc-done" hidden>your signal is on the waterfall behind
-            the desk — look. he'll hear it.</p>
+          <p class="sc-done" hidden>look at the waterfall behind the desk —
+            it's spelling it out for you.</p>
           <button class="scene-x" type="button" aria-label="Close">×</button>
         </div>
       </div>
@@ -3695,19 +3695,41 @@
     var t = 0, raf = null, running = false, last = 0, onScreen = false;
     var nRaw = new Float32Array(C), nSm = new Float32Array(C);
 
-    /* One transient chirp, keyed from the laptop's contact card: the
-       visitor's hello, swept across the band behind the scene. Fast
-       attack like the hero's hot chirps — they caused it, it answers
-       immediately. */
-    var sig = null;
+    /* HELLO, spelled into the spectrogram. Radio operators have drawn
+       text into waterfalls for decades (Hellschreiber); here the word is
+       rasterised once into a bitmap mask, then injected row by row as
+       energy — so it emerges from the top of the band and scrolls down
+       like any real transmission. Contrast comes free from the theme
+       ramps: maximum energy is pale ember on the dark ground and near-
+       black ink on paper. Bottom row first, so the word reads top-down
+       as it scrolls. */
+    var stampMask = null, stampW = 96, stampH = 12, stampRow = -1, stampX0 = 0;
+    function buildStamp() {
+      var c = document.createElement("canvas");
+      c.width = stampW; c.height = stampH;
+      var g = c.getContext("2d");
+      if (!g) return false;
+      /* 10px with 2px tracking, measured and centred — the first raster
+         drew at 11px against an 11px canvas and clipped the O into a
+         blob, sitting off-centre in its own box. */
+      g.font = "bold 10px Consolas, Menlo, monospace";
+      try { g.letterSpacing = "2px"; } catch (e) { /* older engines */ }
+      g.textBaseline = "top";
+      g.fillStyle = "#fff";
+      g.fillText("HELLO", (stampW - g.measureText("HELLO").width) / 2, 1);
+      var d = g.getImageData(0, 0, stampW, stampH).data;
+      stampMask = [];
+      for (var y = 0; y < stampH; y++) {
+        var mrow = new Float32Array(stampW);
+        for (var mx = 0; mx < stampW; mx++) mrow[mx] = d[(y * stampW + mx) * 4 + 3] > 120 ? 1 : 0;
+        stampMask.push(mrow);
+      }
+      return true;
+    }
     window.__signalClose = function () {
-      var up = Math.random() < .5;
-      sig = {
-        t0: t, life: 2.6,
-        from: up ? .12 + Math.random() * .15 : .72 + Math.random() * .15,
-        to: up ? .68 + Math.random() * .2 : .1 + Math.random() * .2,
-        w: .013, a: 1.15
-      };
+      if (!stampMask && !buildStamp()) return;
+      stampRow = stampH - 1;
+      stampX0 = ((C - stampW) / 2) | 0;
     };
 
     function spectrum(out) {
@@ -3731,18 +3753,15 @@
           var amp = car.a * (.6 + .4 * Math.sin(t * .8 + car.ph * 1.2));
           v += amp * Math.exp(-(d * d) / (2 * car.w * car.w));
         }
-        if (sig) {
-          var sp2 = (t - sig.t0) / sig.life;
-          if (sp2 >= 1) { sig = null; }
-          else {
-            var spos = sig.from + (sig.to - sig.from) * (sp2 * sp2 * (3 - 2 * sp2));
-            var senv = Math.min(sp2 / .05, 1) * Math.min((1 - sp2) / .3, 1);
-            var sd = k - spos;
-            v += sig.a * senv * Math.exp(-(sd * sd) / (2 * sig.w * sig.w));
-          }
+        if (stampRow >= 0) {
+          var sx = x - stampX0;
+          if (sx >= 0 && sx < stampW && stampMask[stampRow][sx]) v += 1.35;
         }
         out[x] = compress(v);
       }
+      /* One mask row per waterfall row: the word takes stampH steps to
+         fully emerge, then is done until the next hello. */
+      if (stampRow >= 0) stampRow--;
     }
 
     /* Transparent at both ends, full through the middle. The waterfall
