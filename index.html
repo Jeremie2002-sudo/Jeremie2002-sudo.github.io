@@ -8,6 +8,8 @@
 
 <title>David Jeremie Anand — Applied AI &amp; Agentic Systems</title>
 <meta name="description" content="Applied AI and agentic systems engineer. Two years turning tangled operations into measurable results, now building AI systems backed by tests and evaluation.">
+<!-- Structured data: how search engines know this page is a person. -->
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","name":"David Jeremie Anand","url":"https://davidjeremieanand.com/","jobTitle":"Applied AI Engineer","address":{"@type":"PostalAddress","addressLocality":"New Delhi","addressCountry":"IN"},"alumniOf":"Bhagwan Parshuram Institute of Technology, GGSIPU","sameAs":["https://github.com/Jeremie2002-sudo","https://www.linkedin.com/in/david-jeremie-anand/"]}</script>
 <meta name="theme-color" content="#05070B" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#F6F4F1" media="(prefers-color-scheme: light)">
 
@@ -1929,6 +1931,40 @@
     #waterfall { opacity: .8 !important; transform: none !important; }
     #glow, .grain { display: none; }
   }
+
+  /* === PRINT ========================================================
+     Recruiters print. On paper the site becomes a clean typographic
+     document: no canvases, no figures, no chrome — the story and the
+     evidence panels, black on white. The gradient surname must fall
+     back to solid ink: background-clip text with a transparent color
+     prints as nothing at all. */
+  @media print {
+    nav, .theme, .progress, #voyager, #term, .grain, #shader, #motes,
+    .cue, .wf-write, .scene, .vig, .grad, .marquee, #wf-layer, #glow,
+    .lockping, .pipe, .constellation, .sky-day, .sky-night,
+    #wf-close-layer, .scene-card, .scene-open { display: none !important; }
+    html, body { background: #fff !important; color: #111 !important; }
+    body { font-size: 11pt; }
+    .hero { min-height: 0; padding: 0 0 14pt; }
+    h1 .accent {
+      background: none !important;
+      -webkit-background-clip: initial !important; background-clip: initial !important;
+      color: #111 !important;
+    }
+    main section, .rise, .fade, .evi .l, .hero-inner {
+      opacity: 1 !important; transform: none !important; filter: none !important;
+    }
+    section { padding-block: 10pt; }
+    .cell-in, .skill, .evi {
+      background: #fff !important; border-color: #ccc !important;
+      backdrop-filter: none !important;
+    }
+    .evi-body, .evi figcaption { color: #333 !important; }
+    a { color: #111 !important; text-decoration: none; }
+    .spark { display: none; }
+    .closer { padding: 10pt 0; margin: 0; }
+    .closer-inner::before, .closer::after { display: none !important; }
+  }
 </style>
 
 <div class="progress" id="progress" aria-hidden="true"></div>
@@ -2721,6 +2757,8 @@
        above to back it. -->
   <span>Zero hallucinations — everything here really happened</span>
   <span class="thint">` opens the terminal</span>
+  <!-- Filled by the GitHub events API: proof the repos breathe. -->
+  <span id="fresh" hidden></span>
 </footer>
 
 <script>
@@ -4508,6 +4546,39 @@
   }
 
   /* ==================================================================
+     FRESHNESS
+     "last shipped n days ago" in the footer, from the newest PushEvent
+     on his public GitHub activity. Session-cached; silent on failure —
+     an empty span is better than an error where a receipt should be.
+     ================================================================== */
+
+  function startFresh() {
+    var el = document.getElementById("fresh");
+    if (!el || !window.fetch) return;
+    function show(iso) {
+      var days = Math.floor((Date.now() - new Date(iso).getTime()) / 864e5);
+      el.textContent = "last shipped "
+        + (days < 1 ? "today" : days === 1 ? "yesterday" : days + " days ago")
+        + " · github";
+      el.hidden = false;
+    }
+    var c = null;
+    try { c = sessionStorage.getItem("dja-fresh"); } catch (e) {}
+    if (c) { show(c); return; }
+    fetch("https://api.github.com/users/Jeremie2002-sudo/events/public?per_page=30")
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (evs) {
+        for (var i = 0; i < evs.length; i++) {
+          if (evs[i].type === "PushEvent") {
+            try { sessionStorage.setItem("dja-fresh", evs[i].created_at); } catch (e) {}
+            show(evs[i].created_at);
+            return;
+          }
+        }
+      })["catch"](function () { /* quiet */ });
+  }
+
+  /* ==================================================================
      PIPELINE NODES
      Click a stage and the pulse launches from it: the animation restarts
      with a negative delay equal to that node's position in the loop.
@@ -4780,6 +4851,7 @@
   startTerminal();
   startTimelinePulse();
   startPipe();
+  startFresh();
   /* Not under reduced motion: with transitions globally disabled the
      replay would blink the panel rather than re-run it. */
   if (!reduced) startEviReplay();
