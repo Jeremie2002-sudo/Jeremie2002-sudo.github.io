@@ -290,6 +290,34 @@
   }
   @media (max-width: 680px) { #voyager { display: none; } }
 
+  /* The command palette, in the site's own instrument styling. */
+  #term {
+    position: fixed; left: 50%; top: 14%; transform: translateX(-50%);
+    width: min(540px, 92vw); z-index: 40;
+    background: rgb(var(--ground-rgb) / .97);
+    border: 1px solid rgb(var(--accent-rgb) / .45);
+    border-radius: 12px; padding: 14px 16px;
+    font-family: var(--mono); font-size: 12.5px;
+    box-shadow: 0 24px 60px -20px rgb(0 0 0 / .6);
+  }
+  #term .tlog {
+    max-height: 220px; overflow-y: auto;
+    color: var(--soft); white-space: pre-wrap;
+    margin-bottom: 10px; line-height: 1.55;
+  }
+  #term .tlog .dim { color: var(--dim); }
+  #term .tline {
+    display: flex; gap: 8px; align-items: center;
+    border-top: 1px solid var(--line); padding-top: 10px; margin: 0;
+  }
+  #term .tline span { color: var(--ember); }
+  #term input {
+    flex: 1; background: transparent; border: 0; outline: none;
+    color: var(--ember); font: inherit; letter-spacing: .04em;
+  }
+  .thint { opacity: .7; }
+  @media (max-width: 680px) { .thint { display: none; } }
+
   /* Theme toggle. Fixed rather than living inside the nav, because the nav
      stays hidden across the whole hero — which is exactly where someone
      decides the page is too bright or too dark. */
@@ -1832,6 +1860,14 @@
      you follow down the page — and fading out as the closer arrives,
      where the scene's own satellite is already streaming to the desk.
      Same drawing as that one, so they read as the same object. -->
+<!-- The terminal. Backtick opens it; engineers will find it in the first
+     minute and stay five more. Commands drive the site's own machinery:
+     transmit writes on the waterfall, hello signals the desk. -->
+<div id="term" role="dialog" aria-label="Command palette" hidden>
+  <div class="tlog" id="tlog"><div class="dim">terminal — type help</div></div>
+  <p class="tline"><span>&gt;</span><input id="tin" autocomplete="off" spellcheck="false" aria-label="Terminal command"></p>
+</div>
+
 <div id="voyager" aria-hidden="true">
   <svg viewBox="0 0 44 70">
     <rect x="16" y="4" width="11" height="8" rx="1.5"/>
@@ -2533,6 +2569,7 @@
   <!-- The sign-off is a claim no model can make, with the evidence panels
        above to back it. -->
   <span>Zero hallucinations — everything here really happened</span>
+  <span class="thint">` opens the terminal</span>
 </footer>
 
 <script>
@@ -4186,6 +4223,99 @@
     update();
   }
 
+  /* ==================================================================
+     TERMINAL
+     Quake-style: backtick toggles, Escape closes, commands drive the
+     site's own machinery rather than duplicating navigation chrome.
+     ================================================================== */
+
+  function startTerminal() {
+    var term = document.getElementById("term");
+    var tin = document.getElementById("tin");
+    var tlog = document.getElementById("tlog");
+    if (!term || !tin || !tlog) return;
+
+    function print(s, dim) {
+      var d = document.createElement("div");
+      if (dim) d.className = "dim";
+      d.textContent = s;
+      tlog.appendChild(d);
+      tlog.scrollTop = 1e9;
+    }
+    function open() { term.hidden = false; tin.focus(); }
+    function close() { term.hidden = true; tin.blur(); }
+    function go(id) {
+      var el = document.getElementById(id);
+      if (!el) { print("no such section — try help", true); return; }
+      close();
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+
+    function exec(raw) {
+      raw = raw.replace(/^\s+|\s+$/g, "");
+      if (!raw) return;
+      print("> " + raw);
+      var sp = raw.indexOf(" ");
+      var cmd = (sp < 0 ? raw : raw.slice(0, sp)).toLowerCase();
+      var arg = sp < 0 ? "" : raw.slice(sp + 1).replace(/^\s+/, "");
+      if (cmd === "help") {
+        print("goto top|work|experience|skills|contact", true);
+        print("transmit <word>   write it on the waterfall", true);
+        print("hello             signal the desk", true);
+        print("theme dark|light  ·  resume  ·  73  ·  clear  ·  exit", true);
+      } else if (cmd === "goto") {
+        go(arg === "top" ? "top" : arg);
+      } else if (cmd === "theme") {
+        var root = document.documentElement;
+        var cur = root.dataset.theme
+          || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        if ((arg === "dark" || arg === "light") && arg !== cur) {
+          var b = document.getElementById("theme");
+          if (b) b.click();
+        }
+        print("theme: " + (arg || cur), true);
+      } else if (cmd === "transmit") {
+        if (window.__stampHero && window.__stampHero(arg)) {
+          print("on the band — look up", true);
+          go("top");
+        } else print("give me a word: transmit hi", true);
+      } else if (cmd === "hello") {
+        if (window.__signalClose) window.__signalClose();
+        print("signal sent to the desk", true);
+        go("contact");
+      } else if (cmd === "resume" || cmd === "résumé") {
+        var a = document.querySelector("a[download]");
+        if (a) { a.click(); print("résumé — downloading", true); }
+      } else if (cmd === "73") {
+        print("73 — best regards, de DJA", true);
+      } else if (cmd === "clear") {
+        tlog.innerHTML = "";
+      } else if (cmd === "exit" || cmd === "q") {
+        close();
+      } else {
+        print("unknown — try help", true);
+      }
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "`") {
+        var tag = e.target && e.target.tagName;
+        /* Backtick toggles from anywhere except other text fields —
+           typing a backtick into the waterfall write-box should not
+           yank the terminal open. From its own input it closes. */
+        if (e.target === tin) { e.preventDefault(); close(); return; }
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        e.preventDefault();
+        if (term.hidden) open(); else close();
+      } else if (e.key === "Escape" && !term.hidden) {
+        close();
+      }
+    });
+    tin.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { exec(tin.value); tin.value = ""; }
+    });
+  }
+
   startTheme();
   if (!reduced) startPalette();
   startWaterfall();
@@ -4193,6 +4323,7 @@
   startCloser();
   startScene();      /* after startCloser: it reads that canvas */
   startSceneScreen();
+  startTerminal();
   startTimelinePulse();
   /* Not under reduced motion: with transitions globally disabled the
      replay would blink the panel rather than re-run it. */
