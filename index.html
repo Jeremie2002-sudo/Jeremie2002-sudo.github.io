@@ -602,6 +602,27 @@
     background: rgb(var(--accent-rgb) / .06);
   }
   .wf-write input::placeholder { color: var(--dim); opacity: .9; }
+
+  /* Signal lock: one radial ping across the band, and the eyebrow
+     briefly confirms it. Class and element are both one-shot, added and
+     removed by the frame loop. */
+  .lockping {
+    position: absolute; left: 50%; top: 42%;
+    width: 14px; height: 14px; margin: -7px;
+    border-radius: 50%; border: 1.5px solid var(--ember);
+    opacity: 0; pointer-events: none; z-index: 1;
+    animation: lockping 1.4s ease-out forwards;
+  }
+  @keyframes lockping {
+    0%   { opacity: .85; transform: scale(1); }
+    100% { opacity: 0; transform: scale(38); }
+  }
+  .hero.locked .eyebrow::after {
+    content: " · locked";
+    color: var(--ember);
+    animation: lockfade 2.9s ease forwards;
+  }
+  @keyframes lockfade { 0%, 55% { opacity: 1; } 100% { opacity: 0; } }
   @media (max-width: 680px) {
     /* 16px, non-negotiable: anything smaller makes iOS zoom the page
        when the field is focused. Width goes fluid so the placeholder
@@ -2856,8 +2877,10 @@
        other website — their word, falling down the page's own signal. */
     var hMask = null, hMaskW = 0, hMaskH = 12, hRow = -1, hX0 = 0;
     window.__stampHero = function (text) {
+      /* 12, not 10: the input still caps visitors at 10, but the page's
+         own WELCOME BACK needs the extra two. */
       text = String(text || "").toUpperCase().replace(/\s+/g, " ")
-        .replace(/^ | $/g, "").slice(0, 10);
+        .replace(/^ | $/g, "").slice(0, 12);
       if (!text) return false;
       var c = document.createElement("canvas");
       var g = c.getContext("2d");
@@ -2958,6 +2981,16 @@
       if (hero) hero.addEventListener("pointerleave", function () {
         dragCar = null; chargeK = -1;
       });
+
+      /* The band remembers. Second visit onwards, it says so — spelled
+         in the visitor's own private localStorage-gated greeting, timed
+         to land just after the lock ping. */
+      try {
+        if (localStorage.getItem("dja-seen")) {
+          setTimeout(function () { window.__stampHero("WELCOME BACK"); }, 4300);
+        }
+        localStorage.setItem("dja-seen", "1");
+      } catch (e) { /* private mode — no memory, no greeting */ }
 
       var wfin = document.getElementById("wfin");
       if (wfin) wfin.addEventListener("keydown", function (e) {
@@ -3133,9 +3166,24 @@
        advances a few rows instead of trying to replay hundreds. */
     var STEP_MS = 1000 / 30, acc = 0;
 
+    var pinged = false;
     function frame(ts) {
       if (!running) return;
       if (born === null) born = performance.now();
+      /* The moment the last carrier locks: one radial ping crosses the
+         band and the eyebrow briefly reads locked. Once per visit. */
+      if (!pinged && (performance.now() - born) / 1000 > 3.1) {
+        pinged = true;
+        var hEl = document.querySelector(".hero");
+        if (hEl) {
+          hEl.classList.add("locked");
+          var ping = document.createElement("i");
+          ping.className = "lockping";
+          hEl.appendChild(ping);
+          setTimeout(function () { ping.remove(); }, 1600);
+          setTimeout(function () { hEl.classList.remove("locked"); }, 3200);
+        }
+      }
       if (!last) { last = ts; acc = 0; raf = requestAnimationFrame(frame); return; }
       var dt = ts - last;
       last = ts;
@@ -4343,6 +4391,55 @@
   }
 
   /* ==================================================================
+     NAME DECODE
+     The letters of the name resolve out of scrambled glyphs on the same
+     clock as the carriers locking — the page decodes its own callsign.
+     Left to right, each character settling at its own moment; the width
+     jitter while glyphs shuffle is part of the effect, and it is over in
+     under three seconds. Skipped under reduced motion.
+     ================================================================== */
+
+  function startNameDecode() {
+    if (reduced) return;
+    var spans = document.querySelectorAll("h1 .ln > span");
+    if (!spans.length) return;
+    var GLYPHS = "#%&$X+=<>/\\*01";
+    var jobs = [];
+    var total = 0;
+    for (var i = 0; i < spans.length; i++) {
+      var txt = spans[i].textContent;
+      jobs.push({ el: spans[i], txt: txt, offset: total });
+      total += txt.length;
+    }
+    var deadlines = [];
+    for (var j = 0; j < jobs.length; j++) {
+      var dl = [];
+      for (var cch = 0; cch < jobs[j].txt.length; cch++) {
+        dl.push(500 + (jobs[j].offset + cch) * (2100 / total) + Math.random() * 140);
+      }
+      deadlines.push(dl);
+    }
+    var t0 = performance.now();
+    var iv = setInterval(function () {
+      var el2 = performance.now() - t0;
+      var done = true;
+      for (var j2 = 0; j2 < jobs.length; j2++) {
+        var outStr = "";
+        for (var c2 = 0; c2 < jobs[j2].txt.length; c2++) {
+          var real = jobs[j2].txt.charAt(c2);
+          if (real === " " || el2 >= deadlines[j2][c2]) outStr += real;
+          else {
+            outStr += GLYPHS.charAt((Math.random() * GLYPHS.length) | 0);
+            done = false;
+          }
+        }
+        jobs[j2].el.textContent = outStr;
+      }
+      if (done) clearInterval(iv);
+    }, 55);
+  }
+
+  /* ==================================================================
      TERMINAL
      Quake-style: backtick toggles, Escape closes, commands drive the
      site's own machinery rather than duplicating navigation chrome.
@@ -4445,6 +4542,7 @@
   startTheme();
   if (!reduced) startPalette();
   startWaterfall();
+  startNameDecode();
   startNameFill();   /* after startWaterfall: it reads that canvas */
   startCloser();
   startScene();      /* after startCloser: it reads that canvas */
