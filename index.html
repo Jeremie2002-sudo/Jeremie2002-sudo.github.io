@@ -1932,6 +1932,20 @@
     #glow, .grain { display: none; }
   }
 
+  /* === THEME WIPE ===================================================
+     The new theme sweeps out of the toggle button as a circle. The old
+     snapshot holds still underneath; only the incoming layer animates,
+     clipped from the button's centre (set as --vtx/--vty at click time)
+     to past the furthest corner. */
+  ::view-transition-old(root) { animation: none; }
+  ::view-transition-new(root) {
+    animation: theme-wipe .55s ease-in both;
+  }
+  @keyframes theme-wipe {
+    from { clip-path: circle(0 at var(--vtx, 100%) var(--vty, 0%)); }
+    to   { clip-path: circle(160vmax at var(--vtx, 100%) var(--vty, 0%)); }
+  }
+
   /* === PRINT ========================================================
      Recruiters print. On paper the site becomes a clean typographic
      document: no canvases, no figures, no chrome — the story and the
@@ -4090,7 +4104,7 @@
         (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     }
 
-    btn.addEventListener("click", function () {
+    function applyTheme() {
       var next = current() === "dark" ? "light" : "dark";
       root.dataset.theme = next;
       try { localStorage.setItem("theme", next); } catch (e) { /* private mode */ }
@@ -4108,6 +4122,20 @@
       if (window.__repaintCloser) window.__repaintCloser();
       if (window.__refreshMotes) window.__refreshMotes();
       if (window.__shaderTint) window.__shaderTint();
+    }
+
+    btn.addEventListener("click", function () {
+      /* The switch as a circle of the new theme expanding from the
+         button itself. View Transitions where available; everywhere
+         else, the instant swap this always was. */
+      if (document.startViewTransition && !reduced) {
+        var r = btn.getBoundingClientRect();
+        root.style.setProperty("--vtx", (r.left + r.width / 2) + "px");
+        root.style.setProperty("--vty", (r.top + r.height / 2) + "px");
+        document.startViewTransition(applyTheme);
+      } else {
+        applyTheme();
+      }
     });
 
     /* Follow the OS only while the visitor has not chosen for themselves. */

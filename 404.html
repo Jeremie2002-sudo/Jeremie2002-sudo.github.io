@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<!-- The page for URLs that don't exist: static, a callsign that never
+     resolves, and the way back to the band. Self-contained on purpose —
+     a 404 must not depend on anything else loading. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Signal lost — David Jeremie Anand</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+  :root { --ground: #05070B; --ink: #F2F5F9; --dim: #7C8B9E; --ember: #FFB454; }
+  @media (prefers-color-scheme: light) {
+    :root { --ground: #F6F4F1; --ink: #14171C; --dim: #4B5563; --ember: #A55C08; }
+  }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: Consolas, Menlo, monospace;
+    display: grid; place-items: center; text-align: center;
+  }
+  canvas {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    opacity: .16; pointer-events: none;
+  }
+  main { position: relative; padding: 24px; }
+  p.eyebrow {
+    font-size: 11px; letter-spacing: .3em; text-transform: uppercase;
+    color: var(--ember); margin-bottom: 18px;
+  }
+  h1 {
+    font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+    font-size: clamp(40px, 9vw, 92px); font-weight: 700;
+    letter-spacing: -.03em; line-height: 1; margin-bottom: 18px;
+  }
+  p.sub { color: var(--dim); font-size: 13.5px; line-height: 1.7; margin-bottom: 34px; }
+  a {
+    display: inline-block; text-decoration: none;
+    font-size: 12.5px; letter-spacing: .1em;
+    color: var(--ember); border: 1px solid var(--ember);
+    border-radius: 999px; padding: 12px 24px;
+    transition: background .3s ease;
+  }
+  a:hover { background: rgb(255 180 84 / .12); }
+  @media (prefers-reduced-motion: reduce) { canvas { display: none; } }
+</style>
+<canvas id="n" aria-hidden="true"></canvas>
+<main>
+  <p class="eyebrow">404 · no carrier</p>
+  <h1>Signal lost.</h1>
+  <p class="sub">This frequency carries nothing — the page you tuned to<br>
+     doesn't exist, or has drifted off the band.</p>
+  <a href="/">⟵ retune to davidjeremieanand.com</a>
+</main>
+<script>
+(function () {
+  "use strict";
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var c = document.getElementById("n");
+  var g = c.getContext("2d");
+  if (!g) return;
+  c.width = 160; c.height = 100;
+  var img = g.createImageData(160, 100);
+  var d = img.data;
+  var light = matchMedia("(prefers-color-scheme: light)").matches;
+  function frame() {
+    for (var i = 0; i < d.length; i += 4) {
+      var v = (Math.random() * 255) | 0;
+      d[i] = d[i + 1] = d[i + 2] = light ? 255 - v / 2 : v;
+      d[i + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+  }
+  frame();
+  setInterval(frame, 90);
+})();
+</script>
