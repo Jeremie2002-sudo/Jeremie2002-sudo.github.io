@@ -1758,8 +1758,20 @@
     :root:not([data-theme="dark"]) .sky-day { display: block; }
     :root:not([data-theme="dark"]) .sky-night { display: none; }
   }
-  .scene .star { fill: currentColor; stroke: none; animation: cons-shimmer 3.6s ease-in-out infinite; }
+  .scene .star, .vig .star, .grad .star { fill: currentColor; stroke: none; animation: cons-shimmer 3.6s ease-in-out infinite; }
   .scene .st2 { animation-delay: -1.6s; }
+
+  /* The Genpact door swings open as the walker arrives — the shared
+     scroll tick flips .arrived at 95% of the approach. */
+  .vig .door, .vig .door-open { transition: opacity .5s ease; }
+  .vig .door-open { fill: rgb(var(--accent-rgb) / .15); opacity: 0; }
+  .vig.arrived .door { opacity: 0; }
+  .vig.arrived .door-open { opacity: 1; }
+
+  /* Hover the graduate and he catches the cap: the static in-hand pose
+     outranks the scroll-driven throw for as long as the pointer stays. */
+  .grad .cap { transition: transform .55s cubic-bezier(.16, .86, .24, 1); }
+  .grad svg:hover .cap { transform: translate(-14px, 24px) rotate(-160deg); }
   .scene .steam { opacity: 0; animation: scene-steam 3.6s ease-in-out infinite; }
   .scene .s2 { animation-delay: 1.7s; }
   @keyframes scene-type { from { transform: translateY(0); } to { transform: translateY(1.6px); } }
@@ -2033,6 +2045,8 @@
     <div class="vig rise d2" aria-hidden="true">
       <svg viewBox="0 0 160 190">
         <path class="set" d="M20 176H140"/>
+        <g class="sky-day" aria-hidden="true"><circle cx="24" cy="22" r="5"/><path d="M24 13v-3M24 31v3M15 22h-3M33 22h3M18 16l-2-2M30 28l2 2M30 16l2-2M18 28l-2 2"/></g>
+        <g class="sky-night" aria-hidden="true"><path d="M28 15a6.5 6.5 0 1 0 5 11 6 6 0 1 1-5-11z"/><circle class="star" cx="14" cy="18" r="1.1"/></g>
         <g class="vfig">
           <path class="limb pant" d="M70 120L67 171"/>
           <path class="limb pant" d="M81 120L85 171"/>
@@ -2111,6 +2125,8 @@
     <div class="vig rise d2" aria-hidden="true">
       <svg viewBox="0 0 160 190">
         <path class="set" d="M20 176H140"/>
+        <g class="sky-day" aria-hidden="true"><circle cx="24" cy="22" r="5"/><path d="M24 13v-3M24 31v3M15 22h-3M33 22h3M18 16l-2-2M30 28l2 2M30 16l2-2M18 28l-2 2"/></g>
+        <g class="sky-night" aria-hidden="true"><path d="M28 15a6.5 6.5 0 1 0 5 11 6 6 0 1 1-5-11z"/><circle class="star" cx="14" cy="18" r="1.1"/></g>
         <!-- The whole easel slides in from the right as the wires draw. -->
         <g class="board">
           <path d="M98 74h44v38H98z"/>
@@ -2314,10 +2330,13 @@
     <div class="vig rise d2" aria-hidden="true">
       <svg viewBox="0 0 160 190">
         <path class="set" d="M20 176H140"/>
+        <g class="sky-day" aria-hidden="true"><circle cx="24" cy="22" r="5"/><path d="M24 13v-3M24 31v3M15 22h-3M33 22h3M18 16l-2-2M30 28l2 2M30 16l2-2M18 28l-2 2"/></g>
+        <g class="sky-night" aria-hidden="true"><path d="M28 15a6.5 6.5 0 1 0 5 11 6 6 0 1 1-5-11z"/><circle class="star" cx="14" cy="18" r="1.1"/></g>
         <text class="sign" x="116" y="45">GENPACT</text>
         <path d="M92 176V52h48v124"/>
         <path class="set win" d="M100 62h8v8h-8zM114 62h8v8h-8zM128 62h8v8h-8zM100 78h8v8h-8zM114 78h8v8h-8zM128 78h8v8h-8zM100 94h8v8h-8zM114 94h8v8h-8zM128 94h8v8h-8zM100 110h8v8h-8zM114 110h8v8h-8zM128 110h8v8h-8zM100 126h8v8h-8zM114 126h8v8h-8zM128 126h8v8h-8z"/>
         <path class="door" d="M108 150h18v26h-18z"/>
+        <path class="door-open" d="M108 150l-13-7v26l13 7z"/>
         <g class="vfig walk">
           <path class="limb pant" d="M56 120L45 170"/>
           <path class="limb pant" d="M64 120L75 167"/>
@@ -2356,6 +2375,8 @@
     <div class="vig rise d2" aria-hidden="true">
       <svg viewBox="0 0 160 190">
         <path class="set" d="M20 176H140"/>
+        <g class="sky-day" aria-hidden="true"><circle cx="24" cy="22" r="5"/><path d="M24 13v-3M24 31v3M15 22h-3M33 22h3M18 16l-2-2M30 28l2 2M30 16l2-2M18 28l-2 2"/></g>
+        <g class="sky-night" aria-hidden="true"><path d="M28 15a6.5 6.5 0 1 0 5 11 6 6 0 1 1-5-11z"/><circle class="star" cx="14" cy="18" r="1.1"/></g>
         <g class="vfig walk">
           <path class="limb pant" d="M72 120L61 170"/>
           <path class="limb pant" d="M80 120L91 167"/>
@@ -2411,6 +2432,8 @@
     <div class="grad rise d2" aria-hidden="true">
       <svg viewBox="0 0 160 190">
         <path class="set" d="M20 176H140"/>
+        <g class="sky-day" aria-hidden="true"><circle cx="24" cy="22" r="5"/><path d="M24 13v-3M24 31v3M15 22h-3M33 22h3M18 16l-2-2M30 28l2 2M30 16l2-2M18 28l-2 2"/></g>
+        <g class="sky-night" aria-hidden="true"><path d="M28 15a6.5 6.5 0 1 0 5 11 6 6 0 1 1-5-11z"/><circle class="star" cx="14" cy="18" r="1.1"/></g>
         <g class="gfig">
           <path class="limb" d="M70 118L66 170"/>
           <path class="limb" d="M82 118L88 170"/>
@@ -2486,6 +2509,8 @@
     <div class="vig rise d2" aria-hidden="true">
       <svg viewBox="0 0 160 190">
         <path class="set" d="M20 176H140"/>
+        <g class="sky-day" aria-hidden="true"><circle cx="24" cy="22" r="5"/><path d="M24 13v-3M24 31v3M15 22h-3M33 22h3M18 16l-2-2M30 28l2 2M30 16l2-2M18 28l-2 2"/></g>
+        <g class="sky-night" aria-hidden="true"><path d="M28 15a6.5 6.5 0 1 0 5 11 6 6 0 1 1-5-11z"/><circle class="star" cx="14" cy="18" r="1.1"/></g>
         <g class="vfig">
           <path class="limb" d="M71 120L68 171"/>
           <path class="limb" d="M82 120L86 171"/>
@@ -4460,6 +4485,8 @@
           var gp = (innerHeight * .92 - gr.top) / (innerHeight * .5);
           if (gp < 0) gp = 0; else if (gp > 1) gp = 1;
           journeys[j].style.setProperty("--vp", gp.toFixed(3));
+          /* Arrival threshold — currently only the Genpact door listens. */
+          journeys[j].classList[gp > .95 ? "add" : "remove"]("arrived");
         }
       }
       var anchor = innerHeight * .42;
