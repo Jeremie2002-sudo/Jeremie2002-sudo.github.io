@@ -329,6 +329,14 @@
     font-family: var(--mono); font-size: 8.5px; letter-spacing: .16em;
     text-transform: uppercase; color: var(--dim); white-space: nowrap;
     text-align: right;
+    /* A grounded badge, not floating glyphs — and it fades out entirely
+       whenever the scroll tick sees it crossing a vignette or the
+       marquee, so it never fights other text for the same pixels. */
+    background: rgb(var(--ground-rgb) / .88);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 4px 9px;
+    transition: opacity .3s ease;
   }
   #voyager.iss #voytag { color: var(--ember); }
   #voyager .vlight {
@@ -4562,6 +4570,8 @@
     var ticking = false;
 
     var voy = document.getElementById("voyager");
+    var voytagEl = document.getElementById("voytag");
+    var marqEl = document.querySelector(".marquee");
     var closerEl = document.querySelector(".closer");
     var journeys = document.querySelectorAll(".grad, .vig");
 
@@ -4579,11 +4589,19 @@
          off to the scene's satellite once the closer is arriving. Not
          under reduced motion — it is a drifting decoration, not a
          position readout like the dial. */
+      var voyR = null, labelHit = false;
       if (voy && !reduced) {
         voy.style.transform = "translateY(" + Math.round(innerHeight * (.12 + .62 * sp)) + "px)";
         var ct = closerEl ? closerEl.getBoundingClientRect().top : 1 / 0;
         if (ct < innerHeight * .85) voy.classList.remove("on");
         else voy.classList.add("on");
+        voyR = voy.getBoundingClientRect();
+        /* The marquee band spans the full width — the nameplate always
+           yields to it. */
+        if (marqEl) {
+          var mr = marqEl.getBoundingClientRect();
+          if (mr.top < voyR.bottom + 30 && mr.bottom > voyR.top) labelHit = true;
+        }
       }
       /* Every journey vignette scrubs with the scroll: --vp runs 0 to 1
          while the figure climbs from 92% to 42% of the viewport. The cap
@@ -4599,8 +4617,14 @@
           journeys[j].style.setProperty("--vp", gp.toFixed(3));
           /* Arrival threshold — currently only the Genpact door listens. */
           journeys[j].classList[gp > .95 ? "add" : "remove"]("arrived");
+          /* The ISS nameplate yields to any vignette it would cross —
+             the label zone reaches ~180px left of the satellite and a
+             little below it. */
+          if (voyR && gr.left < voyR.right + 8 && gr.right > voyR.right - 190
+            && gr.top < voyR.bottom + 34 && gr.bottom > voyR.top) labelHit = true;
         }
       }
+      if (voytagEl) voytagEl.style.opacity = labelHit ? "0" : "";
       var anchor = innerHeight * .42;
       for (var i = 0; i < lists.length; i++) {
         var r = lists[i].getBoundingClientRect();
