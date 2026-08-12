@@ -4683,6 +4683,22 @@
       return 6371 * 2 * Math.asin(Math.sqrt(a));
     }
 
+    /* Name the ground below from the timezone the API reports for the
+       subpoint. A timezone city is deliberately hedged as "region" —
+       honest about its precision. */
+    function placeFrom(tz, cc) {
+      if (!tz) return null;
+      if (tz.indexOf("Etc/") === 0) return "open ocean";
+      var parts = tz.split("/");
+      if (cc && cc !== "??") {
+        return parts[parts.length - 1].replace(/_/g, " ") + " region, " + cc;
+      }
+      if (parts[0] === "Pacific") return "the Pacific";
+      if (parts[0] === "Atlantic") return "the Atlantic";
+      if (parts[0] === "Indian") return "the Indian Ocean";
+      return "open water";
+    }
+
     function check() {
       fetch("https://api.wheretheiss.at/v1/satellites/25544")
         .then(function (r) { if (!r.ok) throw 0; return r.json(); })
@@ -4692,10 +4708,17 @@
           window.__iss = {
             lat: d.latitude, lon: d.longitude,
             alt: Math.round(d.altitude), vel: Math.round(d.velocity),
-            km: Math.round(km), over: over
+            km: Math.round(km), over: over, place: null
           };
           var voy = document.getElementById("voyager");
           if (voy) voy.classList[over ? "add" : "remove"]("iss");
+          /* Second hop: what's beneath it, wherever on Earth that is. */
+          return fetch("https://api.wheretheiss.at/v1/coordinates/"
+            + d.latitude.toFixed(2) + "," + d.longitude.toFixed(2));
+        })
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (c) {
+          if (window.__iss) window.__iss.place = placeFrom(c.timezone_id, c.country_code);
         })["catch"](function () { /* sky unavailable — stay a drawing */ });
     }
     check();
@@ -4830,8 +4853,8 @@
       } else if (cmd === "iss") {
         if (window.__iss) {
           var z = window.__iss;
-          print("ISS · " + z.lat.toFixed(1) + "° " + z.lon.toFixed(1) + "° · "
-            + z.alt + "km up · " + z.vel + " km/h", true);
+          print("ISS · over " + (z.place || (z.lat.toFixed(1) + "° " + z.lon.toFixed(1) + "°"))
+            + " · " + z.alt + "km up · " + z.vel + " km/h", true);
           print(z.km + "km from New Delhi — overhead: " + (z.over ? "YES — check the satellite" : "no"), true);
         } else {
           print("no fix yet — the sky is loading", true);
