@@ -2792,7 +2792,12 @@
      pixel, which buys back resolution. More rows is what actually reads as
      smoother: each row is a thinner slice, so the downward scroll steps in
      finer increments instead of visibly jumping. */
-  var COLS = 260, ROWS = 224;
+  /* Doubled from 260x224. The self-blit made resolution nearly free —
+     per frame the CPU paints one row, not the field — so the upscale
+     drops from ~5.5x to ~2.8x and the threads sharpen while the bloom
+     survives. Row rate doubles to 60/s with the per-row timestep halved,
+     keeping every wall-clock speed exactly what it was. */
+  var COLS = 520, ROWS = 448;
 
   /* Two ramps, because a spectrogram has to invert with the ground.
      On black, high energy glows toward a pale ember (magma). On paper,
@@ -3019,7 +3024,9 @@
        any short text rasterised to a mask and injected into the hero band
        row by row. The one thing a visitor can do here that exists on no
        other website — their word, falling down the page's own signal. */
-    var hMask = null, hMaskW = 0, hMaskH = 12, hRow = -1, hX0 = 0;
+    /* Mask scaled with the doubled band: 19px type in a 22-row mask
+       keeps written words the same size on screen as before. */
+    var hMask = null, hMaskW = 0, hMaskH = 22, hRow = -1, hX0 = 0;
     window.__stampHero = function (text) {
       /* 12, not 10: the input still caps visitors at 10, but the page's
          own WELCOME BACK needs the extra two. */
@@ -3030,15 +3037,15 @@
       var g = c.getContext("2d");
       if (!g) return false;
       c.height = hMaskH; c.width = 10;
-      g.font = "bold 10px Consolas, Menlo, monospace";
-      try { g.letterSpacing = "2px"; } catch (e) {}
-      var tw = Math.ceil(g.measureText(text).width) + 8;
-      c.width = Math.min(tw, 220);
+      g.font = "bold 19px Consolas, Menlo, monospace";
+      try { g.letterSpacing = "4px"; } catch (e) {}
+      var tw = Math.ceil(g.measureText(text).width) + 12;
+      c.width = Math.min(tw, 440);
       /* setting width reset the context state */
-      g.font = "bold 10px Consolas, Menlo, monospace";
-      try { g.letterSpacing = "2px"; } catch (e) {}
+      g.font = "bold 19px Consolas, Menlo, monospace";
+      try { g.letterSpacing = "4px"; } catch (e) {}
       g.textBaseline = "top"; g.fillStyle = "#fff";
-      g.fillText(text, 4, 1);
+      g.fillText(text, 6, 2);
       var d = g.getImageData(0, 0, c.width, hMaskH).data;
       hMaskW = c.width;
       hMask = [];
@@ -3308,7 +3315,7 @@
        The rate is unchanged at 60Hz, so this is a correctness fix rather
        than a visible one. dt is capped so returning from a stalled tab
        advances a few rows instead of trying to replay hundreds. */
-    var STEP_MS = 1000 / 30, acc = 0;
+    var STEP_MS = 1000 / 60, acc = 0;
 
     var pinged = false;
     function frame(ts) {
@@ -3335,8 +3342,8 @@
       acc += dt;
       while (acc >= STEP_MS) {
         acc -= STEP_MS;
-        t += .040;
-        updateChirp(.040);
+        t += .020;
+        updateChirp(.020);
         head = (head - 1 + ROWS) % ROWS;
         spectrum(rows[head]);
         step();
@@ -3349,7 +3356,7 @@
        simulation while seeding, so the hero opens on a band that may
        already have a chirp part-way across it rather than a suspiciously
        clean frame that only comes alive once you have been watching. */
-    for (var s = 0; s < ROWS; s++) { t += .040; updateChirp(.040); head = (head - 1 + ROWS) % ROWS; spectrum(rows[head]); }
+    for (var s = 0; s < ROWS; s++) { t += .020; updateChirp(.020); head = (head - 1 + ROWS) % ROWS; spectrum(rows[head]); }
     paint();
 
     /* Repaint on demand so a theme switch recolours the existing data
