@@ -15,7 +15,7 @@ this site with confidence; nothing here is mocked.
 
 ## Projects
 
-- firstline — an AI first line of support. Agentic ops-queue triage (root causes,
+- FirstLine — an AI first line of support. Agentic ops-queue triage (root causes,
   SLA clocks, escalation judgment, incident clustering, RCA drafts) on a seeded
   simulator with hidden ground truth, so every shift ends in a real scorecard.
   The eval numbers on this site are from actual runs: local llama3.2 scored 81.4
