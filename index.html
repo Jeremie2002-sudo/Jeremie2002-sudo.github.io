@@ -638,20 +638,8 @@
   }
   .wf-write input::placeholder { color: var(--dim); opacity: .9; }
 
-  /* Signal lock: one radial ping across the band, and the eyebrow
-     briefly confirms it. Class and element are both one-shot, added and
-     removed by the frame loop. */
-  .lockping {
-    position: absolute; left: 50%; top: 42%;
-    width: 14px; height: 14px; margin: -7px;
-    border-radius: 50%; border: 1.5px solid var(--ember);
-    opacity: 0; pointer-events: none; z-index: 1;
-    animation: lockping 1.4s ease-out forwards;
-  }
-  @keyframes lockping {
-    0%   { opacity: .85; transform: scale(1); }
-    100% { opacity: 0; transform: scale(38); }
-  }
+  /* Signal lock: the eyebrow briefly confirms it. (The radial ping was
+     removed — no ripple on page open.) */
   .hero.locked .eyebrow::after {
     content: " · locked";
     color: var(--ember);
@@ -1781,7 +1769,6 @@
   }
   .scene .catbody { fill: currentColor; stroke: none; }
   .scene .cattail { stroke-width: 4; }
-  .scene .catear { stroke-width: 2; }
   @keyframes cat-breathe { from { transform: scaleY(1); } to { transform: scaleY(1.05); } }
 
   /* Sun by day, moon by night — the theme toggle is the weather. */
@@ -1988,7 +1975,7 @@
   @media print {
     nav, .theme, .progress, #voyager, #term, .grain, #shader, #motes,
     .cue, .wf-write, .scene, .vig, .grad, .marquee, #wf-layer, #glow,
-    .lockping, .pipe, .constellation, .sky-day, .sky-night,
+    .pipe, .constellation, .sky-day, .sky-night,
     #wf-close-layer, .scene-card, .scene-open { display: none !important; }
     html, body { background: #fff !important; color: #111 !important; }
     body { font-size: 11pt; }
@@ -2815,11 +2802,16 @@
           <path class="set" d="M244 134h14v14h-14zM258 137c7 0 7 9 0 9"/>
           <path class="steam s1" d="M248 128c-3-5 3-8 0-13"/>
           <path class="steam s2" d="M255 126c-3-4 3-7 0-12"/>
-          <!-- the cat, asleep under the desk, breathing -->
+          <!-- the cat, asleep under the desk, breathing. A round loaf with
+               two proper triangular ears and the tail wrapped along the
+               floor in front — the three things that stop it reading as
+               a rat (which the old pointy-eared, tail-up version did). -->
           <g class="cat">
-            <path class="catbody" d="M180 208c0-8 7-13 15-13 9 0 16 5 16 10 0 4-3 6-8 6h-17c-4 0-6-1-6-3z"/>
-            <path class="cattail" d="M209 209c8 2 13-2 13-8"/>
-            <path class="catear" d="M186 197l2-6 5 4"/>
+            <ellipse class="catbody" cx="199" cy="203" rx="14" ry="8"/>
+            <circle class="catbody" cx="185" cy="201.5" r="6.5"/>
+            <path class="catbody" d="M180 198 L181.5 190.5 L186 195.5 Z"/>
+            <path class="catbody" d="M186 195 L190.5 189.5 L192.5 197 Z"/>
+            <path class="cattail" d="M212 204c4 3 0 6-6 6h-16"/>
           </g>
           <!-- the sky over the little world: sun by day, moon and stars
                by night, switched by the page theme -->
@@ -3411,17 +3403,14 @@
     function frame(ts) {
       if (!running) return;
       if (born === null) born = performance.now();
-      /* The moment the last carrier locks: one radial ping crosses the
-         band and the eyebrow briefly reads locked. Once per visit. */
+      /* The moment the last carrier locks the eyebrow briefly reads
+         locked. Once per visit. (The radial ping that used to fire here
+         was removed at David's request — no ripple on page open.) */
       if (!pinged && (performance.now() - born) / 1000 > 3.1) {
         pinged = true;
         var hEl = document.querySelector(".hero");
         if (hEl) {
           hEl.classList.add("locked");
-          var ping = document.createElement("i");
-          ping.className = "lockping";
-          hEl.appendChild(ping);
-          setTimeout(function () { ping.remove(); }, 1600);
           setTimeout(function () { hEl.classList.remove("locked"); }, 3200);
         }
       }
