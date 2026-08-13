@@ -2253,7 +2253,50 @@
 
       <article class="cell feature rise" data-tilt>
         <div class="cell-in">
-          <div class="cell-top"><span class="num">01</span><span class="stack">Python · asyncio · pytest · GitHub Actions</span></div>
+          <div class="cell-top"><span class="num">01</span><span class="stack">Python · FastAPI · Ollama/Groq · pytest</span></div>
+          <h3>firstline <em>— An AI First Line of Support</em></h3>
+          <p>
+            I worked an ops queue for two years. firstline is that job rebuilt as an
+            agent: it triages a live incident queue — root causes, SLA clocks,
+            escalation judgment, RCA drafts — on a simulated ops floor that knows the
+            truth behind every ticket it generates.
+          </p>
+          <p>
+            Which means the agent can be <b>graded</b>, not vibed about. Every shift
+            ends in a scorecard — triage accuracy, missed P0s, escalation precision —
+            because the simulator holds hidden ground truth the agent never sees.
+          </p>
+          <!-- A real eval, captured 13 Aug 2026: the fog scenario (misleading
+               reported severities) run headless on the deterministic rules
+               backend and on local llama3.2 via Ollama, seed 7. Every number
+               is from out/ollama_fog.json / the rules matrix. 17 escalations,
+               9 warranted, 8 not — counted from the run's own event log. -->
+          <figure class="evi rise">
+            <figcaption><b></b> firstline · eval <em>real capture</em></figcaption>
+            <div class="evi-body">
+              <span class="l" style="--i:0"><span class="q">$</span> firstline run --scenario fog --seed 7</span>
+              <span class="l" style="--i:1"><span class="q">35 tickets · severities lie · shift 480m</span></span>
+              <span class="l sp" style="--i:2"></span>
+              <span class="l" style="--i:3">  rules     triage 1.000 · esc-prec 1.000 · <span class="ok">100.0</span></span>
+              <span class="l" style="--i:4">  llama3.2  triage 0.857 · esc-prec 0.529 · <span class="hl">81.4</span></span>
+              <span class="l sp" style="--i:5"></span>
+              <span class="l" style="--i:6"><span class="no">the 3B cried wolf</span> — 17 escalations, 8 needless</span>
+              <span class="l" style="--i:7">  <span class="k">0 missed P0s on either backend</span></span>
+            </div>
+          </figure>
+
+          <div class="chips">
+            <span class="chip hot">768-test CI</span>
+            <span class="chip">Live shift dashboard</span>
+            <span class="chip">Ollama · Groq · offline rules</span>
+          </div>
+          <a class="visit" href="https://github.com/Jeremie2002-sudo/firstline" target="_blank" rel="noopener">View repository <i>&#8599;</i></a>
+        </div>
+      </article>
+
+      <article class="cell rise" data-tilt>
+        <div class="cell-in">
+          <div class="cell-top"><span class="num">02</span><span class="stack">Python · asyncio · pytest · GitHub Actions</span></div>
           <h3>PromptDrift <em>— Prompt Regression Testing</em></h3>
           <p>
             You tweak a prompt to fix one bad case, it works, you ship it — and three other
@@ -2297,7 +2340,7 @@
 
       <article class="cell rise" data-tilt>
         <div class="cell-in">
-          <div class="cell-top"><span class="num">02</span><span class="stack">FastAPI · FAISS</span></div>
+          <div class="cell-top"><span class="num">03</span><span class="stack">FastAPI · FAISS</span></div>
           <h3>Synapse <em>— Agentic RAG Assistant</em></h3>
           <p>
             BM25 and FAISS fused through Reciprocal Rank Fusion with LLM listwise reranking,
@@ -2359,7 +2402,7 @@
 
       <article class="cell rise" data-tilt>
         <div class="cell-in">
-          <div class="cell-top"><span class="num">03</span><span class="stack">Flask · SQLite · Docker</span></div>
+          <div class="cell-top"><span class="num">04</span><span class="stack">Flask · SQLite · Docker</span></div>
           <h3>Ledgr <em>— AI Finance Manager</em></h3>
           <p>
             A full-stack finance tracker with dashboards, budgets and CSV import/export, plus
@@ -2400,7 +2443,7 @@
 
       <article class="cell wide rise" data-tilt>
         <div class="cell-in">
-          <div class="cell-top"><span class="num">04</span><span class="stack">SDR · RF and wireless systems</span></div>
+          <div class="cell-top"><span class="num">05</span><span class="stack">SDR · RF and wireless systems</span></div>
           <h3>Wireless Temperature Detection <em>— HackRF One</em></h3>
           <p>
             An RF prototype that pulls remotely transmitted temperature signals out of the air

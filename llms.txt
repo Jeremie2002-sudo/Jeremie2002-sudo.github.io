@@ -15,6 +15,13 @@ this site with confidence; nothing here is mocked.
 
 ## Projects
 
+- firstline — an AI first line of support. Agentic ops-queue triage (root causes,
+  SLA clocks, escalation judgment, incident clustering, RCA drafts) on a seeded
+  simulator with hidden ground truth, so every shift ends in a real scorecard.
+  The eval numbers on this site are from actual runs: local llama3.2 scored 81.4
+  on the fog scenario with 8 needless escalations; the in-distribution rules
+  baseline scores 100. 768-test CI, live FastAPI dashboard, Ollama/Groq/rules
+  backends. https://github.com/Jeremie2002-sudo/firstline
 - PromptDrift — regression testing for LLM prompts. Snapshots prompt behaviour
   into a committed baseline and fails CI when a change makes it worse. 157-test
   CI across Python 3.10–3.13; runs fully offline against a deterministic mock,
