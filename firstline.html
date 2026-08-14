@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FirstLine, a case study — David Jeremie Anand</title>
+<meta name="description" content="How I rebuilt my old ops job as an AI agent, and built the exam that grades it: hidden ground truth, SLA clocks, and what crash-testing Llama 3.2 revealed.">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://davidjeremieanand.com/firstline.html">
+<meta property="og:title" content="FirstLine — an AI first line of support">
+<meta property="og:description" content="An ops-triage agent graded against hidden ground truth. 100% escalation recall at 21% precision — safety by crying wolf, measured.">
+<meta property="og:image" content="https://davidjeremieanand.com/og.jpg">
+<meta property="og:url" content="https://davidjeremieanand.com/firstline.html">
+<meta property="og:type" content="article">
+
+<!-- Same no-flash theme trick as the front page: apply the saved choice
+     before first paint. -->
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
+    } catch (e) { /* storage blocked; fall back to the OS preference */ }
+  })();
+</script>
+
+<style>
+  /* Tokens lifted from the front page so this reads as the same site. */
+  :root {
+    --void: #F6F4F1; --deep: #EEEAE5; --raised: #E6E1DA;
+    --ink: #14171C; --soft: #4B5563; --dim: #656C78; --line: #DCD6CE;
+    --ember: #A55C08; --flare: #B8401D; --wine: #7A1F3D;
+    --display: system-ui, -apple-system, "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+    --measure: 62ch;
+    --edge: clamp(20px, 5vw, 68px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --void: #05070B; --deep: #0A0E16; --raised: #10151F;
+      --ink: #F2F5FA; --soft: #C3CEDD; --dim: #7C8B9E; --line: #1A2231;
+      --ember: #FFB454; --flare: #FF7A4A; --wine: #8E2F52;
+    }
+  }
+  :root[data-theme="dark"] {
+    --void: #05070B; --deep: #0A0E16; --raised: #10151F;
+    --ink: #F2F5FA; --soft: #C3CEDD; --dim: #7C8B9E; --line: #1A2231;
+    --ember: #FFB454; --flare: #FF7A4A; --wine: #8E2F52;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--void); color: var(--ink);
+    font-family: var(--serif); font-size: 17px; line-height: 1.65;
+    padding: 0 var(--edge) 90px;
+  }
+  .col { max-width: var(--measure); margin: 0 auto; }
+
+  .crumbs {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+    text-transform: uppercase; padding: 26px 0 60px;
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .crumbs a { color: var(--dim); text-decoration: none; }
+  .crumbs a:hover { color: var(--ember); }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--ember); margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 800; letter-spacing: -.02em;
+    font-size: clamp(34px, 6vw, 54px); line-height: 1.04; text-wrap: balance;
+    margin-bottom: 18px;
+  }
+  .stand { color: var(--soft); font-size: 19px; margin-bottom: 10px; }
+  .byline { font-family: var(--mono); font-size: 11.5px; color: var(--dim); margin-bottom: 54px; }
+
+  h2 {
+    font-family: var(--display); font-weight: 700; letter-spacing: -.01em;
+    font-size: 24px; margin: 52px 0 14px; text-wrap: balance;
+  }
+  p { margin-bottom: 14px; }
+  p + p { text-indent: 0; }
+  strong { color: var(--ink); }
+  a { color: var(--ember); }
+
+  ul { margin: 0 0 14px 20px; }
+  li { margin-bottom: 8px; }
+  li::marker { color: var(--ember); }
+
+  .panel {
+    background: var(--deep); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; margin: 22px 0; font-family: var(--mono);
+    font-size: 12.5px; line-height: 1.8; overflow-x: auto; color: var(--soft);
+  }
+  .panel .k { color: var(--ember); }
+  .panel .no { color: var(--flare); }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 22px 0;
+    font-family: var(--mono); font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+  th { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+  td.hot { color: var(--ember); font-weight: 700; }
+  .tablewrap { overflow-x: auto; }
+
+  .pull {
+    border-left: 2px solid var(--ember); padding: 4px 0 4px 20px;
+    margin: 26px 0; color: var(--soft); font-style: italic; font-size: 18px;
+  }
+
+  .cta {
+    display: flex; gap: 26px; flex-wrap: wrap; margin-top: 56px;
+    padding-top: 26px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  }
+  .cta a { text-decoration: none; }
+  .foot { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-top: 60px; }
+</style>
+</head>
+<body>
+<div class="col">
+
+  <nav class="crumbs">
+    <a href="/">&#8592; davidjeremieanand.com</a>
+    <a href="/notes.html">field notes</a>
+  </nav>
+
+  <p class="eyebrow">Case study</p>
+  <h1>FirstLine — an AI first line of support</h1>
+  <p class="stand">I worked in ops queues for two years. Then I rebuilt the job as an
+  agent — and built the exam that grades it, because an agent you can't measure is
+  just a demo.</p>
+  <p class="byline">Built and shipped 13 August 2026 · Python · FastAPI · Ollama / Groq ·
+  768 tests · <a href="https://firstline-oxqj.onrender.com">live</a></p>
+
+  <h2>The problem</h2>
+  <p>At Genpact I worked in a high-volume operations queue: tickets arriving all shift,
+  SLA clocks on every one, root-cause analysis when things repeated, escalation calls
+  when something was above my pay grade. That job is exactly what people now want AI
+  agents to do — and almost every ops-agent project I've seen proves itself with a
+  demo: point it at a few tickets, watch it label them, applaud.</p>
+  <p>A demo can't answer the questions that decide whether you'd let an agent near a
+  real queue. Does it miss critical tickets? Does it escalate wisely, or does it dump
+  its judgment calls on humans? What happens on the bad days — the surge, the cascade,
+  the shift where the reported severities are wrong? Those are measurement questions,
+  and answering them was the point of building FirstLine.</p>
+
+  <h2>The trick: an ops floor that knows the answers</h2>
+  <p>FirstLine's core is a <strong>simulator with hidden ground truth</strong>. It
+  generates a realistic eight-hour shift of tickets from fifteen incident archetypes I
+  lived with — cert expiries, bad deploys, DNS failures, payment-gateway timeouts,
+  security breaches — written the way tickets actually read: customers describe
+  symptoms, monitoring quotes metrics. Because the simulator writes each ticket, it
+  knows the true root cause, the true priority, and whether escalation is genuinely
+  required. The agent never sees any of that.</p>
+  <p>Which means every shift can end in a <strong>scorecard instead of an opinion</strong>:
+  triage accuracy against truth, priority accuracy, missed P0s, escalation precision
+  and recall, incident-clustering accuracy, SLA breaches — and one composite score
+  where a missed P0 costs ten points, because on a real floor a dropped critical
+  ticket is the fireable offense.</p>
+  <p>Everything is seeded: same scenario, same seed, byte-identical shift and event
+  log, on any machine. Runs are comparable, bugs are reproducible, and experiments
+  are science instead of anecdotes.</p>
+
+  <h2>How a shift works</h2>
+  <ul>
+    <li><strong>The agent</strong> decides four things per ticket — root cause,
+    priority, escalate?, resolvable now? — through a strict-JSON contract, one ticket
+    per model call. Any unparseable reply falls back to a deterministic rules engine
+    for that ticket only.</li>
+    <li><strong>The engine</strong> delivers tickets in five-minute ticks, runs SLA
+    warning and breach clocks, clusters same-cause tickets into incidents inside a
+    90-minute window, and has the agent draft an RCA when an incident closes.</li>
+    <li><strong>The brains are swappable</strong>: a deterministic rules baseline,
+    local Llama&nbsp;3.2 via Ollama, or hosted models via Groq — same agent, same exam,
+    different mind.</li>
+    <li><strong>A live dashboard</strong> shows the queue being worked: priority
+    columns, SLA countdown chips, incidents with their RCAs, and the scorecard
+    updating mid-shift.</li>
+  </ul>
+
+  <h2>What the harness caught</h2>
+  <div class="tablewrap">
+  <table>
+    <tr><th>scenario</th><th>backend</th><th>triage acc</th><th>esc. precision</th><th>esc. recall</th><th>missed P0</th><th>score</th></tr>
+    <tr><td>calm_tuesday</td><td>rules</td><td>1.000</td><td>1.000</td><td>1.000</td><td>0</td><td class="hot">100.0</td></tr>
+    <tr><td>fog</td><td>rules</td><td>1.000</td><td>1.000</td><td>1.000</td><td>0</td><td class="hot">100.0</td></tr>
+    <tr><td>calm_tuesday</td><td>llama3.2 (3B)</td><td>0.556</td><td>0.000</td><td>1.000</td><td>0</td><td class="hot">70.2</td></tr>
+    <tr><td>fog</td><td>llama3.2 (3B)</td><td>0.857</td><td>0.529</td><td>0.900</td><td>0</td><td class="hot">81.4</td></tr>
+    <tr><td>mixed_shift</td><td>llama3.2 (3B)</td><td>0.564</td><td>0.212</td><td>1.000</td><td>0</td><td class="hot">69.3</td></tr>
+  </table>
+  </div>
+  <p class="pull">The model never missed a critical ticket — but only by escalating
+  five tickets for every one that needed a human. Safety by crying wolf, measured.</p>
+  <p>That's the headline finding, and it's one a demo can never surface. Perfect
+  escalation recall with 21% precision is an agent that is technically safe and
+  operationally useless — it has simply moved the queue onto the senior team, and
+  I've been on the floor where that noise becomes alert fatigue. Three more findings
+  from the same runs:</p>
+  <ul>
+    <li><strong>It under-commits.</strong> The 3B model marked only 30–51% of tickets
+    resolvable, against the baseline's 71–100% — most of the queue left parked in
+    limbo.</li>
+    <li><strong>Lying severity labels barely hurt it.</strong> Its best score came on
+    <em>fog</em>, the scenario where reported severities are wrong half the time —
+    evidence it reads the symptom text rather than trusting the label.</li>
+    <li><strong>Formatting is a solved problem; judgment isn't.</strong> 117 model
+    calls produced 117 parseable strict-JSON decisions. Zero fallbacks. The schema
+    held; the decisions are what needed the exam.</li>
+  </ul>
+  <p>One honest caveat, stated before anyone asks: the rules baseline scores 100
+  because it is graded on its home turf — it knows the archetype taxonomy the
+  simulator generates from. It exists as a determinism anchor and an honest ceiling,
+  not a triumph. And the same fog shift, same seed, scores an identical 100.0 on my
+  laptop and on the live deployment — reproducibility, verified across machines.</p>
+
+  <h2>Decisions I'd defend</h2>
+  <ul>
+    <li><strong>Simulate, don't scrape.</strong> Real queues have no answer key and
+    plenty of confidentiality. A simulator gives perfect labels for free — and my two
+    years in the queue are what the archetypes encode. (A CSV importer triages real
+    exports; those runs just can't be scored.)</li>
+    <li><strong>One ticket per call.</strong> Small models hold a tight schema
+    reliably at that granularity, and the blast radius of one bad reply is one
+    ticket, not a shift.</li>
+    <li><strong>Weight the scorecard like the job.</strong> Mislabeling a P3 wastes
+    minutes; missing a P0 is the 2 a.m. pager. Ten points per missed P0 is the cost
+    structure of the actual floor.</li>
+    <li><strong>Measure escalation precision at all.</strong> Escalating is spending
+    a human. An agent graded only on recall learns to cry wolf — which is precisely
+    what happened, which is precisely the point of the metric.</li>
+  </ul>
+
+  <h2>What's next</h2>
+  <p>Multi-seed runs with confidence intervals instead of single-shift cells;
+  few-shot examples per archetype (the model fragments cross-service cascades —
+  cluster accuracy 0.333 on mixed_shift); an escalation budget in the prompt so the
+  agent economises humans; and frontier-model rows in the table alongside the local
+  3B. Each one is a single eval run away from being a number — that's what the
+  harness is for.</p>
+
+  <div class="cta">
+    <a href="https://firstline-oxqj.onrender.com">Run a shift live &#8599;</a>
+    <a href="https://github.com/Jeremie2002-sudo/firstline">Read the code &#8599;</a>
+    <a href="/">Back to the site &#8594;</a>
+  </div>
+
+  <p class="foot">David Jeremie Anand · New Delhi · every number on this page comes
+  from a committed run capture in the repo's docs/runs/.</p>
+
+</div>
+</body>
+</html>
