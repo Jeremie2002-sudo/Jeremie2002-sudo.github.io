@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ledgr, a case study — David Jeremie Anand</title>
+<meta name="description" content="An AI finance manager where the model never does arithmetic: four tools over real data, compute-then-narrate summaries, and a fallback path for every AI feature.">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://davidjeremieanand.com/ledgr.html">
+<meta property="og:title" content="Ledgr — the assistant that refuses to do arithmetic">
+<meta property="og:description" content="Tool-calling over real transactions, a 5-round cap, and graceful degradation so the whole app runs with zero API keys.">
+<meta property="og:image" content="https://davidjeremieanand.com/og.jpg">
+<meta property="og:url" content="https://davidjeremieanand.com/ledgr.html">
+<meta property="og:type" content="article">
+
+<!-- Same no-flash theme trick as the front page: apply the saved choice
+     before first paint. -->
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
+    } catch (e) { /* storage blocked; fall back to the OS preference */ }
+  })();
+</script>
+
+<style>
+  /* Pages glide into each other where the browser supports it. */
+  @view-transition { navigation: auto; }
+
+  /* Tokens lifted from the front page so this reads as the same site. */
+  :root {
+    --void: #F6F4F1; --deep: #EEEAE5; --raised: #E6E1DA;
+    --ink: #14171C; --soft: #4B5563; --dim: #656C78; --line: #DCD6CE;
+    --ember: #A55C08; --flare: #B8401D; --wine: #7A1F3D;
+    --display: system-ui, -apple-system, "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+    --measure: 62ch;
+    --edge: clamp(20px, 5vw, 68px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --void: #05070B; --deep: #0A0E16; --raised: #10151F;
+      --ink: #F2F5FA; --soft: #C3CEDD; --dim: #7C8B9E; --line: #1A2231;
+      --ember: #FFB454; --flare: #FF7A4A; --wine: #8E2F52;
+    }
+  }
+  :root[data-theme="dark"] {
+    --void: #05070B; --deep: #0A0E16; --raised: #10151F;
+    --ink: #F2F5FA; --soft: #C3CEDD; --dim: #7C8B9E; --line: #1A2231;
+    --ember: #FFB454; --flare: #FF7A4A; --wine: #8E2F52;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--void); color: var(--ink);
+    font-family: var(--serif); font-size: 17px; line-height: 1.65;
+    padding: 0 var(--edge) 90px;
+  }
+  .col { max-width: var(--measure); margin: 0 auto; }
+
+  .crumbs {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+    text-transform: uppercase; padding: 26px 0 60px;
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .crumbs a { color: var(--dim); text-decoration: none; }
+  .crumbs a:hover { color: var(--ember); }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--ember); margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 800; letter-spacing: -.02em;
+    font-size: clamp(34px, 6vw, 54px); line-height: 1.04; text-wrap: balance;
+    margin-bottom: 18px;
+  }
+  .stand { color: var(--soft); font-size: 19px; margin-bottom: 10px; }
+  .byline { font-family: var(--mono); font-size: 11.5px; color: var(--dim); margin-bottom: 54px; }
+
+  h2 {
+    font-family: var(--display); font-weight: 700; letter-spacing: -.01em;
+    font-size: 24px; margin: 52px 0 14px; text-wrap: balance;
+  }
+  p { margin-bottom: 14px; }
+  p + p { text-indent: 0; }
+  strong { color: var(--ink); }
+  a { color: var(--ember); }
+
+  ul { margin: 0 0 14px 20px; }
+  li { margin-bottom: 8px; }
+  li::marker { color: var(--ember); }
+
+  .panel {
+    background: var(--deep); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; margin: 22px 0; font-family: var(--mono);
+    font-size: 12.5px; line-height: 1.8; overflow-x: auto; color: var(--soft);
+  }
+  .panel .k { color: var(--ember); }
+  .panel .no { color: var(--flare); }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 22px 0;
+    font-family: var(--mono); font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+  th { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+  td.hot { color: var(--ember); font-weight: 700; }
+  .tablewrap { overflow-x: auto; }
+
+  .pull {
+    border-left: 2px solid var(--ember); padding: 4px 0 4px 20px;
+    margin: 26px 0; color: var(--soft); font-style: italic; font-size: 18px;
+  }
+
+  .cta {
+    display: flex; gap: 26px; flex-wrap: wrap; margin-top: 56px;
+    padding-top: 26px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  }
+  .cta a { text-decoration: none; }
+  .foot { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-top: 60px; }
+</style>
+</head>
+<body>
+<div class="col">
+
+  <nav class="crumbs">
+    <a href="/">&#8592; davidjeremieanand.com</a>
+    <a href="/synapse.html">next: synapse</a>
+  </nav>
+
+  <p class="eyebrow">Case study</p>
+  <h1>Ledgr — the assistant that refuses to do arithmetic</h1>
+  <p class="stand">A personal finance manager where the AI never invents a number:
+  every figure it cites comes from code running against real data, every AI feature
+  has a non-AI fallback, and the whole app works with zero API keys.</p>
+  <p class="byline">Python · Flask · SQLite · OpenAI / Ollama · 61 tests ·
+  <a href="https://ai-finance-manager-wh10.onrender.com">live</a></p>
+
+  <h2>The problem</h2>
+  <p>Ask a chatbot "how much did I spend on food last month?" and it will give you a
+  confident answer — a made-up one, because language models are unreliable at
+  arithmetic and have no idea what's in your bank account. That failure mode is why
+  most "AI finance" demos fall apart the moment you check their numbers against the
+  source.</p>
+  <p>Ledgr is my answer to that: a self-hosted money tracker where you load your
+  transactions, an AI sorts them into categories, writes you a plain-English
+  spending summary, and answers questions about your money — under one hard rule.
+  <strong>The model is never allowed to calculate anything.</strong> It can only
+  report numbers my code actually computed.</p>
+
+  <h2>How a question gets answered</h2>
+  <p>The core of the project is <strong>finance_ai/assistant.py</strong>. When you
+  ask a question, the model isn't handed your transactions — it's handed four
+  <strong>tools</strong>. The model decides which to call and with what arguments;
+  my code executes them against the data in pandas and feeds the results back; the
+  loop runs at most five rounds before it bails with "try a more specific
+  question." That cap exists because an unbounded loop with a confused model burns
+  money and hangs the request.</p>
+  <div class="panel">
+    <span class="k">TOOLS</span> = get_totals · get_spending_by_category ·
+    search_transactions · get_largest_transactions<br>
+    <span class="k">MAX_TOOL_ROUNDS</span> = 5
+    <span class="no">&#8592; bounded, on purpose</span><br>
+    loop: model picks tool &#8594; my code runs it on real data &#8594; result goes
+    back &#8594; model answers
+  </div>
+  <p>This is <strong>function calling, not RAG</strong> — there's no embedding or
+  retrieval index anywhere. The README calls it "similar to a tiny RAG-over-SQL
+  setup" as an analogy, but the tools actually query a pandas DataFrame, and the
+  honest term is tool-calling. I'd rather make that distinction myself than have an
+  interviewer make it for me.</p>
+  <p>The rest of the flow is deliberately boring: <strong>app.py</strong> is a
+  single Flask app holding every page route and JSON endpoint;
+  <strong>finance_ai/db.py</strong> wraps a plain SQLite file with two tables and
+  parameterized queries; <strong>finance_ai/categorize.py</strong> asks the LLM to
+  pick one of 12 fixed categories per transaction;
+  <strong>finance_ai/insights.py</strong> writes the monthly summary. A Chart.js
+  dashboard, a transactions table with CSV export, and a chat UI sit on top.</p>
+
+  <h2>Compute, then narrate</h2>
+  <p>The summary feature splits one job into two along the line of what each side is
+  good at. In insights.py, pandas computes every hard number — income,
+  expenses, net, top-5 categories — and the LLM's only task is turning that stats
+  dict into three to five sentences of prose with savings suggestions. Deterministic
+  code for numbers, model for language. The model narrates; it never calculates.</p>
+  <p class="pull">The assistant's dollar figures match the dashboard exactly —
+  not because the model is careful, but because it was never given the chance
+  to be careless.</p>
+
+  <h2>Degrade to a dumber version, never to an error page</h2>
+  <p>Every AI feature in Ledgr has a non-AI path underneath it. If no backend is
+  configured — or an LLM call throws — categorization falls back to a keyword rule
+  table in categorize.py ("starbucks" &#8594; Food &amp; Dining), the
+  summary becomes a formatted stats readout, and the assistant returns a friendly
+  setup message. One check — is_configured() in llm_config.py — gates every AI
+  path, and the entire app is usable with zero API keys — degraded, never
+  broken.</p>
+  <p>The backend itself is swappable in <strong>finance_ai/llm_config.py</strong>:
+  OpenAI's gpt-4o-mini, or a free local model via Ollama's
+  OpenAI-compatible endpoint. Because Ollama mimics OpenAI's API shape, the switch
+  is two environment variables — the rest of the code never knows which brain is
+  live. That kills the portfolio-project failure mode where the demo dies the day
+  the API credit runs out.</p>
+
+  <h2>Decisions I'd defend</h2>
+  <ul>
+    <li><strong>Tools over prompt-stuffing.</strong> Pasting the transaction history
+    into the prompt means token cost scales with history size, and the model still
+    hallucinates arithmetic. Tools keep answers grounded and let the model pick its
+    own filters instead of me pre-guessing which subset it needs.</li>
+    <li><strong>Assume the model misbehaves; fail soft.</strong> llama3.2 sometimes
+    sends a number as the string "5", so a coercion helper (_as_int) cleans junk
+    arguments, and malformed tool calls are returned <em>to the model</em> as error
+    results so it can self-correct instead of the request failing with a 500.</li>
+    <li><strong>Threads for the bulk import.</strong> 125 transactions at roughly a
+    second per LLM call is 2+ minutes serial — past the 90-second gunicorn timeout.
+    A 10-worker thread pool makes it about 10x faster, and threads are the right
+    tool because the bottleneck is network waiting, not CPU.</li>
+    <li><strong>SQLite over Postgres.</strong> One user, one writer, tiny data.
+    SQLite is a file — trivially portable, trivially testable (every test gets its
+    own temp file via an env var), and mountable on a Docker volume. Postgres here
+    would be resume-driven complexity.</li>
+    <li><strong>Tests that never touch the network.</strong> An autouse fixture in
+    tests/conftest.py strips all LLM env vars before every test — plus a scrub at
+    collection time, because app.py loads .env at import and a developer's real key
+    would silently turn fallback tests into live API calls. CI needs no secrets.</li>
+  </ul>
+
+  <h2>Honest numbers</h2>
+  <div class="tablewrap">
+  <table>
+    <tr><th>what</th><th>count</th></tr>
+    <tr><td>tests collected by pytest</td><td class="hot">61</td></tr>
+    <tr><td>tests the README claims</td><td>58</td></tr>
+    <tr><td>assistant tools</td><td>4</td></tr>
+    <tr><td>max tool rounds per chat</td><td>5</td></tr>
+    <tr><td>fixed categories</td><td>12</td></tr>
+    <tr><td>concurrent categorization workers</td><td>10</td></tr>
+    <tr><td>sample transactions (~4 months)</td><td>125</td></tr>
+  </table>
+  </div>
+  <p>Yes, that first pair is a discrepancy: the suite collects 61 tests but the
+  README says 58 — a stale undercount from before I added three argument-coercion
+  tests, and I should bump it. I'd rather publish the mismatch than round it away.
+  CI is a single job — ruff plus pytest on Python 3.12, on every push — not a
+  version matrix, so I won't call it one.</p>
+
+  <h2>Limitations, stated plainly</h2>
+  <ul>
+    <li><strong>No authentication.</strong> It's deliberately single-user for
+    local and demo use, and the README says so up front. Flask-Login or an auth
+    proxy is the first thing I'd add before real multi-tenant use.</li>
+    <li><strong>No caching of categorization calls.</strong> The same
+    "STARBUCKS #1234" gets re-asked every import; a description&#8594;category
+    cache table would cut most calls. Documented, not hidden.</li>
+    <li><strong>Tools filter in pandas, not SQL.</strong> The assistant reloads
+    the full DataFrame per chat request — fine at hundreds of rows; at millions
+    I'd push the tool functions down into parameterized SQL, and db.py already
+    has the filtered-query shape for that.</li>
+    <li><strong>CSV dates are barely validated.</strong> A malformed date that
+    pandas doesn't flag can silently break date filtering; a normalization pass
+    on import is the fix.</li>
+  </ul>
+
+  <h2>What's next</h2>
+  <p>The cache table for repeat categorizations, date normalization on CSV import,
+  and pushing the assistant's tools down into SQL — each one already scoped above,
+  because the limitations list is the roadmap. After that, auth, if this ever grows
+  past one user. Ledgr is meant to stay small enough to explain end to end — as a
+  learner, that was part of the point of building it.</p>
+
+  <p>One demo caveat before you click: the live instance runs on Render's free
+  tier, which sleeps — the first load can take about a minute to wake — and the
+  SQLite data resets on every redeploy. So the demo flow is simply: wait for the
+  wake-up, hit <strong>"Load sample data,"</strong> and watch 125 transactions get
+  categorized live.</p>
+
+  <div class="cta">
+    <a href="https://ai-finance-manager-wh10.onrender.com">Live demo &#8599;</a>
+    <a href="https://github.com/Jeremie2002-sudo/ai-finance-manager">Read the code &#8599;</a>
+    <a href="/">Back to the site &#8594;</a>
+  </div>
+
+  <p class="foot">David Jeremie Anand · New Delhi · every number on this page is
+  counted from the repo, including the one the README gets wrong.</p>
+
+</div>
+</body>
+</html>

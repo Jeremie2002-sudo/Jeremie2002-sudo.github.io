@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synapse, a case study — David Jeremie Anand</title>
+<meta name="description" content="An agentic RAG document assistant where retrieval does the heavy lifting: hybrid BM25 + FAISS with rank fusion, a listwise LLM rerank, and a critic that checks every claim before the user sees it.">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://davidjeremieanand.com/synapse.html">
+<meta property="og:title" content="Synapse — an agentic RAG document assistant">
+<meta property="og:description" content="Hybrid retrieval, a listwise rerank, and a critic pass that verifies every claim against the sources — with the whole pipeline inspectable in a reasoning trace.">
+<meta property="og:image" content="https://davidjeremieanand.com/og.jpg">
+<meta property="og:url" content="https://davidjeremieanand.com/synapse.html">
+<meta property="og:type" content="article">
+
+<!-- Same no-flash theme trick as the front page: apply the saved choice
+     before first paint. -->
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
+    } catch (e) { /* storage blocked; fall back to the OS preference */ }
+  })();
+</script>
+
+<style>
+  /* Pages glide into each other where the browser supports it. */
+  @view-transition { navigation: auto; }
+
+  /* Tokens lifted from the front page so this reads as the same site. */
+  :root {
+    --void: #F6F4F1; --deep: #EEEAE5; --raised: #E6E1DA;
+    --ink: #14171C; --soft: #4B5563; --dim: #656C78; --line: #DCD6CE;
+    --ember: #A55C08; --flare: #B8401D; --wine: #7A1F3D;
+    --display: system-ui, -apple-system, "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+    --measure: 62ch;
+    --edge: clamp(20px, 5vw, 68px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --void: #05070B; --deep: #0A0E16; --raised: #10151F;
+      --ink: #F2F5FA; --soft: #C3CEDD; --dim: #7C8B9E; --line: #1A2231;
+      --ember: #FFB454; --flare: #FF7A4A; --wine: #8E2F52;
+    }
+  }
+  :root[data-theme="dark"] {
+    --void: #05070B; --deep: #0A0E16; --raised: #10151F;
+    --ink: #F2F5FA; --soft: #C3CEDD; --dim: #7C8B9E; --line: #1A2231;
+    --ember: #FFB454; --flare: #FF7A4A; --wine: #8E2F52;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--void); color: var(--ink);
+    font-family: var(--serif); font-size: 17px; line-height: 1.65;
+    padding: 0 var(--edge) 90px;
+  }
+  .col { max-width: var(--measure); margin: 0 auto; }
+
+  .crumbs {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+    text-transform: uppercase; padding: 26px 0 60px;
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .crumbs a { color: var(--dim); text-decoration: none; }
+  .crumbs a:hover { color: var(--ember); }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--ember); margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 800; letter-spacing: -.02em;
+    font-size: clamp(34px, 6vw, 54px); line-height: 1.04; text-wrap: balance;
+    margin-bottom: 18px;
+  }
+  .stand { color: var(--soft); font-size: 19px; margin-bottom: 10px; }
+  .byline { font-family: var(--mono); font-size: 11.5px; color: var(--dim); margin-bottom: 54px; }
+
+  h2 {
+    font-family: var(--display); font-weight: 700; letter-spacing: -.01em;
+    font-size: 24px; margin: 52px 0 14px; text-wrap: balance;
+  }
+  p { margin-bottom: 14px; }
+  p + p { text-indent: 0; }
+  strong { color: var(--ink); }
+  a { color: var(--ember); }
+
+  ul { margin: 0 0 14px 20px; }
+  li { margin-bottom: 8px; }
+  li::marker { color: var(--ember); }
+
+  .panel {
+    background: var(--deep); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; margin: 22px 0; font-family: var(--mono);
+    font-size: 12.5px; line-height: 1.8; overflow-x: auto; color: var(--soft);
+  }
+  .panel .k { color: var(--ember); }
+  .panel .no { color: var(--flare); }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 22px 0;
+    font-family: var(--mono); font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+  th { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+  td.hot { color: var(--ember); font-weight: 700; }
+  .tablewrap { overflow-x: auto; }
+
+  .pull {
+    border-left: 2px solid var(--ember); padding: 4px 0 4px 20px;
+    margin: 26px 0; color: var(--soft); font-style: italic; font-size: 18px;
+  }
+
+  .cta {
+    display: flex; gap: 26px; flex-wrap: wrap; margin-top: 56px;
+    padding-top: 26px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  }
+  .cta a { text-decoration: none; }
+  .foot { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-top: 60px; }
+</style>
+</head>
+<body>
+<div class="col">
+
+  <nav class="crumbs">
+    <a href="/">&#8592; davidjeremieanand.com</a>
+    <a href="/ledgr.html">ledgr, a case study</a>
+  </nav>
+
+  <p class="eyebrow">Case study</p>
+  <h1>Synapse — an agentic RAG document assistant</h1>
+  <p class="stand">Upload a document, ask it questions, and get answers built only
+  from its pages — with a citation on every claim, a critic that checks the draft
+  before you see it, and a trace that shows the whole pipeline's work.</p>
+  <p class="byline">Python · FastAPI · FAISS + BM25 · Ollama / Groq ·
+  31 tests · <a href="https://synapse-3zxr.onrender.com">live</a></p>
+
+  <h2>The problem</h2>
+  <p>Ask an LLM about a document it hasn't read and it will answer anyway — fluently,
+  confidently, and sometimes from thin air. Retrieval-augmented generation is the
+  standard fix: find the relevant passages first, then tell the model to answer from
+  those and nothing else. But most RAG demos treat retrieval as a solved step — one
+  vector search, top few results, straight into the prompt — and that's exactly where
+  they quietly fail. Vector search whiffs on exact terms like invoice numbers and
+  names; keyword search misses paraphrases; and whatever slips through, the model
+  happily narrates over the gaps.</p>
+  <p>Synapse was my attempt to take the retrieval problem seriously and to make every
+  stage of the answer auditable. Retrieval quality, not the model, is where RAG lives
+  or dies — which is why three of the seven backend modules are retrieval stages.</p>
+
+  <h2>How a question moves through it</h2>
+  <p>Ingestion first: <strong>loaders.py</strong> reads PDFs page-by-page (keeping
+  page numbers for citations), <strong>chunker.py</strong> slices the text into
+  ~1600-character chunks along paragraph boundaries with a 200-character overlap so
+  facts straddling a boundary survive intact, and each chunk lands in three places —
+  its text in sqlite, its embedding in a FAISS vector index, and its words in a BM25
+  keyword index.</p>
+  <p>When a question arrives at <strong>/api/chat</strong>, the orchestrator
+  (<strong>orchestrator.py</strong>, about 140 lines) runs four LLM roles in
+  sequence, streaming progress to the browser as server-sent events:</p>
+  <ul>
+    <li><strong>Planner</strong> — breaks the question into up to 3 sub-questions,
+    so a compound question gets researched in parts.</li>
+    <li><strong>Retrieval</strong> — per sub-question, BM25 and FAISS search in
+    parallel, get fused, get reranked (next section).</li>
+    <li><strong>Synthesizer</strong> — drafts an answer using only the retrieved
+    excerpts, with a [1]-style citation on each claim. The prompt forbids outside
+    knowledge outright.</li>
+    <li><strong>Critic</strong> — a separate call at temperature 0 whose only job is
+    to re-read the draft against the sources and list unsupported claims. A final
+    pass fixes them, and that corrected answer is what streams to the user.</li>
+  </ul>
+  <p>Every stage is visible in the UI: click "Show reasoning trace" and you get the
+  planner's sub-questions, the exact chunks retrieved for each, the pre-critique
+  draft, and the critic's actual review text. It is not one prompt — it's a
+  plan–retrieve–draft–critique pipeline, and you can watch it think.</p>
+
+  <h2>The retrieval funnel</h2>
+  <div class="panel">
+<span class="k">stage 1</span>  FAISS vector search + BM25 keyword search, in parallel — <span class="k">20</span> candidates each<br>
+<span class="k">stage 2</span>  Reciprocal Rank Fusion merges the two lists       — top <span class="k">12</span> survive<br>
+<span class="k">stage 3</span>  listwise LLM rerank, all 12 judged in one call    — top <span class="k">5</span> become evidence
+  </div>
+  <p>Each stage exists because the one before it has a known blind spot. Embeddings
+  catch paraphrases ("firing" matches "termination") but fumble exact tokens; BM25
+  nails exact terms but misses rewordings — so run both. Their scores live on
+  incomparable scales (a cosine of 0.83 versus a BM25 of 14.2 means nothing), so
+  RRF ignores raw scores entirely and scores each chunk by its rank position in each
+  list — a chunk ranked well by <em>both</em> retrievers floats to the top. And rank
+  fusion is still just similarity math: it can rank a lexically-similar but
+  off-topic passage highly. So the last word goes to an LLM that sees all 12
+  candidates at once and outputs an ordering — one cheap call over short previews,
+  and it can spot what similarity scores can't.</p>
+  <p class="pull">Retrieval quality, not the model, is where RAG lives or dies.
+  If the right passage isn't in the evidence, no prompt can save the answer.</p>
+
+  <h2>Decisions I'd defend</h2>
+  <ul>
+    <li><strong>A critic pass instead of one big prompt.</strong> Hallucination is
+    <em>the</em> failure mode of RAG. A dedicated temperature-0 call that checks each
+    draft claim against the excerpts catches unsupported claims before the user sees
+    them. It costs an extra LLM call per answer; I decided grounded-with-receipts was
+    worth more than fast.</li>
+    <li><strong>Parse-and-fallback everywhere LLM output is structured.</strong>
+    Models don't reliably emit clean JSON. If the planner's output won't parse, the
+    original query becomes the single sub-question; if the reranker's ordering won't
+    parse, the fused order stands — and any candidate the model forgot to rank gets
+    re-appended so nothing silently disappears. The system degrades to a plain RAG
+    pipeline instead of crashing, and those fallback paths are what most of my
+    orchestrator and reranker tests actually cover.</li>
+    <li><strong>Rebuild BM25 from sqlite on every upload.</strong> At
+    personal-document scale the rebuild takes milliseconds, and rebuilding from the
+    chunks table means the keyword index can never drift out of sync with the source
+    of truth. Persisting it would add an invalidation problem for zero real gain.</li>
+    <li><strong>Pluggable model backends.</strong> I develop against Ollama — free,
+    local, no key — but free hosts can't run an Ollama daemon. One LLM-client
+    interface and env-var factories mean the deployed demo swaps to Groq for
+    generation and Hugging Face for embeddings with zero code changes.</li>
+    <li><strong>Memory shapes the query, never the evidence.</strong> Sessions keep
+    the last 6 turns, but the planner may use history only to resolve references —
+    turning "why is that better?" into a standalone question. Every factual claim
+    still has to come from the retrieved excerpts.</li>
+  </ul>
+
+  <h2>Honest numbers</h2>
+  <div class="tablewrap">
+  <table>
+    <tr><th>what</th><th>number</th><th>where it lives</th></tr>
+    <tr><td>retrieval funnel</td><td class="hot">20 &#8594; 12 &#8594; 5</td><td>config.py</td></tr>
+    <tr><td>chunk size / overlap</td><td>1600 / 200 chars</td><td>chunker.py</td></tr>
+    <tr><td>planner cap</td><td>3 sub-questions</td><td>config.py</td></tr>
+    <tr><td>session memory</td><td>last 6 turns</td><td>routes.py</td></tr>
+    <tr><td>rate limits</td><td>20 chats, 10 uploads /hr/IP</td><td>rate_limit.py</td></tr>
+    <tr><td>tests</td><td class="hot">31 across 7 files</td><td>pytest, no model needed</td></tr>
+    <tr><td>eval dataset</td><td class="no">2 cases — a stub</td><td>eval/dataset.json</td></tr>
+  </table>
+  </div>
+  <p>All 31 tests run instantly with no model installed, because every LLM call is
+  faked — the fallback paths are the thing under test. CI is a single job on
+  Python 3.12 running pytest on every push. And the eval harness deserves a plain
+  sentence: it's real and runnable — an LLM judge scores each answer 1–5 on
+  faithfulness — but the shipped dataset is 2 stub cases, so I don't quote a
+  hit-rate or a faithfulness score, because I haven't earned one yet.</p>
+
+  <h2>Limitations, stated plainly</h2>
+  <ul>
+    <li><strong>Sessions and rate limits are in-process dicts.</strong> A restart
+    wipes conversations, and a multi-instance deploy would break both. Deliberate for
+    a single-instance free-tier demo; the fix is Redis, and the comment in
+    rate_limit.py says exactly that.</li>
+    <li><strong>It doesn't scale.</strong> FAISS runs a flat brute-force index and
+    BM25 rebuilds fully on every upload — right-sized for personal documents, wrong
+    past tens of thousands of chunks.</li>
+    <li><strong>The judge grades its own author.</strong> The eval judge is the same
+    model that wrote the answer — a self-grading bias. The harness architecture is
+    what I wanted to learn; a real eval needs a bigger dataset and a different
+    judge.</li>
+    <li><strong>It's slow on purpose.</strong> Every answer is four-plus sequential
+    LLM calls — plan, rerank, draft, critique, final. I traded latency for
+    verifiability, and the streamed status lines keep the wait legible.</li>
+    <li><strong>No auth, open CORS, plaintext sqlite.</strong> Fine for a demo, not
+    multi-user production. The rate limiter is the only abuse protection, because
+    the real asset at risk was my free API quota.</li>
+  </ul>
+
+  <h2>What's next</h2>
+  <p>A real eval dataset, so faithfulness and hit-rate become numbers instead of
+  claims — the harness is already built and waiting. Then latency: skip the planner
+  for obviously simple questions and parallelize sub-question retrieval. Then the
+  scaling list in order — Redis for sessions, an HNSW index, an incremental keyword
+  index. Each is a known fix for a limitation I've already written down above.</p>
+
+  <p>One note before you click: the live demo runs on Render's free tier, which
+  sleeps when idle — the first load can take a minute to wake — and uploaded
+  documents reset whenever the instance restarts. Bring a small PDF and re-upload
+  if it's gone.</p>
+
+  <div class="cta">
+    <a href="https://synapse-3zxr.onrender.com">Try it live &#8599;</a>
+    <a href="https://github.com/Jeremie2002-sudo/synapse">Read the code &#8599;</a>
+    <a href="/">Back to the site &#8594;</a>
+  </div>
+
+  <p class="foot">David Jeremie Anand · New Delhi · every number on this page comes
+  from config.py, the test suite, or the prompts in the repo — nothing measured is
+  claimed that wasn't run.</p>
+
+</div>
+</body>
+</html>
