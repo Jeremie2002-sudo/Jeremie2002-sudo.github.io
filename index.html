@@ -182,7 +182,9 @@
      effect. Hidden entirely on touch, where there is no pointer to
      replace, and the native cursor is only suppressed once ours exists. */
   .cur-ring, .cur-dot {
-    position: fixed; top: 0; left: 0; z-index: 40;
+    /* Above everything, including the globe card (60) and terminal (40):
+       a cursor that vanishes behind a panel is a bug, not depth. */
+    position: fixed; top: 0; left: 0; z-index: 90;
     pointer-events: none; border-radius: 50%;
     transform: translate3d(-100px, -100px, 0);
     will-change: transform;
@@ -308,7 +310,9 @@
      the theme toggle's corner and never intercepts the pointer. */
   #voyager {
     position: fixed; right: clamp(18px, 5vw, 64px); top: 0;
-    width: 58px; z-index: 1; pointer-events: none;
+    /* Above the z1 .wrap sections (whose transparent bodies were eating
+       the nameplate's clicks), below the nav at 11. */
+    width: 58px; z-index: 10; pointer-events: none;
     opacity: 0; transition: opacity .7s ease;
     will-change: transform;
   }
