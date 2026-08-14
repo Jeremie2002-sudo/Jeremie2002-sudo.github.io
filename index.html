@@ -1804,6 +1804,21 @@
   .scene .star, .vig .star, .grad .star { fill: currentColor; stroke: none; animation: cons-shimmer 3.6s ease-in-out infinite; }
   .scene .st2 { animation-delay: -1.6s; }
 
+  /* Delhi's actual weather, drawn into the vignette skies. Rain is a set
+     of diagonal dashed strokes whose dashes march downward; cloud is one
+     still outline parked near the sun or moon. Injected by startWeather()
+     only when Open-Meteo says so — on a clear day none of this exists. */
+  .vig .sky-rain line {
+    stroke: currentColor; stroke-width: 1.1; opacity: .34;
+    stroke-dasharray: 5 11;
+    animation: vig-rain 1.15s linear infinite;
+  }
+  @keyframes vig-rain { to { stroke-dashoffset: -16; } }
+  .vig .sky-cloud path {
+    stroke: currentColor; fill: none; stroke-width: 1.6;
+    stroke-linecap: round; opacity: .4;
+  }
+
   /* The Genpact door swings open as the walker arrives — the shared
      scroll tick flips .arrived at 95% of the approach. */
   .vig .door, .vig .door-open { transition: opacity .5s ease; }
@@ -3946,6 +3961,70 @@
   }
 
   /* ==================================================================
+     WEATHER
+     When it rains in Delhi it rains in the vignettes. Open-Meteo's
+     current conditions (free, no key), cached six hours; on any failure
+     the skies simply stay clear — absence is the fallback.
+     ================================================================== */
+
+  function startWeather() {
+    var KEY = "wx-delhi", TTL = 6 * 3600 * 1000;
+    function classify(code) {
+      if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95) return "rain";
+      if (code === 2 || code === 3 || code === 45 || code === 48) return "cloud";
+      return "clear";
+    }
+    function paint(kind) {
+      if (kind === "clear") return;
+      var NS = "http://www.w3.org/2000/svg";
+      var vigs = document.querySelectorAll(".vig svg");
+      for (var i = 0; i < vigs.length; i++) {
+        var svg = vigs[i];
+        if (kind === "rain") {
+          var g = document.createElementNS(NS, "g");
+          g.setAttribute("class", "sky-rain");
+          g.setAttribute("aria-hidden", "true");
+          for (var r = 0; r < 5; r++) {
+            var ln = document.createElementNS(NS, "line");
+            var x = 16 + r * 26 + (i * 7) % 11;
+            ln.setAttribute("x1", x); ln.setAttribute("y1", 10);
+            ln.setAttribute("x2", x - 7); ln.setAttribute("y2", 40);
+            ln.style.animationDelay = (-(r * .23 + i * .31) % 1.15) + "s";
+            g.appendChild(ln);
+          }
+          var t = document.createElementNS(NS, "title");
+          t.textContent = "it is raining in Delhi right now";
+          g.appendChild(t);
+          svg.appendChild(g);
+        } else {
+          var c = document.createElementNS(NS, "g");
+          c.setAttribute("class", "sky-cloud");
+          c.setAttribute("aria-hidden", "true");
+          var p = document.createElementNS(NS, "path");
+          p.setAttribute("d", "M40 24c1-6 10-7 12-2 6-2 10 3 7 7-2 3-17 3-19-1z");
+          var t2 = document.createElementNS(NS, "title");
+          t2.textContent = "overcast in Delhi right now";
+          c.appendChild(p); c.appendChild(t2);
+          svg.appendChild(c);
+        }
+      }
+    }
+    try {
+      var hit = JSON.parse(localStorage.getItem(KEY) || "null");
+      if (hit && Date.now() - hit.t < TTL) { paint(classify(hit.code)); return; }
+    } catch (e) { /* storage blocked: fall through to a fresh fetch */ }
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=28.61&longitude=77.21&current=weather_code")
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var code = j && j.current && j.current.weather_code;
+        if (typeof code !== "number") return;
+        try { localStorage.setItem(KEY, JSON.stringify({ code: code, t: Date.now() })); } catch (e) {}
+        paint(classify(code));
+      })
+      .catch(function () { /* clear skies by default */ });
+  }
+
+  /* ==================================================================
      HELLO
      The closer greets the visitor in their own browser language before
      asking them to get in touch. English visitors see no change.
@@ -5131,6 +5210,7 @@
   startScene();      /* after startCloser: it reads that canvas */
   startMoon();       /* after startScene: it draws into that svg */
   startHello();
+  startWeather();
   startSceneScreen();
   startTerminal();
   startTimelinePulse();
