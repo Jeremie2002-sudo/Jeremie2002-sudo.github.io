@@ -1819,6 +1819,18 @@
     stroke-linecap: round; opacity: .4;
   }
 
+  /* The lightning caption: a quiet line at the hero's lower-left naming
+     the strike that just crackled through the band. Fades in and out;
+     never shown on phones, where the hero is already full. */
+  .sferic {
+    position: absolute; left: var(--edge); bottom: 76px; z-index: 3;
+    font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--dim);
+    opacity: 0; transition: opacity .8s ease; pointer-events: none;
+  }
+  .sferic.on { opacity: .85; }
+  @media (max-width: 819px) { .sferic { display: none; } }
+
   /* The Genpact door swings open as the walker arrives — the shared
      scroll tick flips .arrived at 95% of the approach. */
   .vig .door, .vig .door-open { transition: opacity .5s ease; }
@@ -3080,6 +3092,16 @@
        the pointer's frequency, fading out 1.4s after the hand stops. */
     var curK = -1, curT = 0;
 
+    /* Real lightning waiting to crackle across the band. Filled by
+       startSferics via window.__sferic; drained one strike at a time in
+       spectrum(). Capped small — the sky can wait its turn. */
+    var sferics = [];
+    window.__sferic = function (a) {
+      if (sferics.length >= 3) return;
+      var rows = 3 + Math.round(a * 5);
+      sferics.push({ a: .18 + a * .5, rows: rows, rows0: rows });
+    };
+
     /* Hero physics: a carrier can be grabbed and dragged to a new
        frequency, and holding the pointer down anywhere else charges a
        transmission — the longer the hold, the bigger the chirp on
@@ -3325,6 +3347,16 @@
          still tracks the pointer because hold-to-charge and click
          transmissions aim with it. */
       var ca = 0;
+      /* Sferics: real lightning (startSferics feeds this queue) lands as
+         a brief broadband crackle — a few rows of raised, ragged noise
+         across the whole band, exactly what a strike does to a real
+         receiver. Zero strikes queued costs zero work. */
+      var sfA = 0;
+      if (sferics.length) {
+        var sf = sferics[0];
+        sfA = sf.a * (sf.rows / sf.rows0);
+        if (--sf.rows <= 0) sferics.shift();
+      }
       /* Receiver noise is not independent per bin. Adjacent FFT bins share
          energy through the window function, and successive rows overlap in
          time, so a real floor is granular and faintly streaky downward. A
@@ -3349,6 +3381,7 @@
            deliberately more texture than before, since the correlated grain
            can carry it where per-pixel static could not. */
         var v = .0875 + .04 * Math.sin(k * 11 + t * .7) + (nSm[x] - .5) * .05;
+        if (sfA > 0) v += sfA * (.35 + Math.random() * .65);
         for (var c = 0; c < carriers.length; c++) {
           var car = carriers[c];
           var centre = car.f + Math.sin(t * .6 + car.ph) * car.wob + car.dr * t * 40;
@@ -3993,6 +4026,104 @@
       (waxing ? "waxing " : "waning ") + (frac > .53 ? "gibbous" : frac < .47 ? "crescent" : "half moon");
     t.textContent = name + " · " + Math.round(frac * 100) + "% lit — tonight's actual phase";
     g.appendChild(t);
+  }
+
+  /* ==================================================================
+     SFERICS
+     Lightning is natural radio: every strike on Earth radiates a
+     broadband crackle that real receivers hear. Blitzortung's volunteer
+     network streams the strikes live; the nearest one every couple of
+     seconds crackles across the hero waterfall, with a quiet caption
+     naming its distance. If the feed is down, nothing happens — the
+     synthesized noise floor was already honest.
+     ================================================================== */
+
+  function startSferics() {
+    if (reduced || !("WebSocket" in window)) return;
+    var hero = document.querySelector(".hero");
+    if (!hero) return;
+    var tag = document.createElement("span");
+    tag.className = "sferic";
+    hero.appendChild(tag);
+
+    var HOSTS = ["wss://ws1.blitzortung.org/", "wss://ws7.blitzortung.org/", "wss://ws8.blitzortung.org/"];
+    var hi = Math.floor(Math.random() * HOSTS.length), fails = 0, ws = null, dead = false;
+
+    /* Frames arrive LZW-packed, dictionary from 256. Some hosts send
+       plain JSON; handle() tries that first. */
+    function unlzw(d) {
+      var dict = {}, ch = d.charAt(0), old = ch, out = [ch], code = 256, ph, i, cc;
+      for (i = 1; i < d.length; i++) {
+        cc = d.charCodeAt(i);
+        ph = cc < 256 ? d.charAt(i) : (dict[cc] !== undefined ? dict[cc] : old + ch);
+        out.push(ph);
+        ch = ph.charAt(0);
+        dict[code++] = old + ch;
+        old = ph;
+      }
+      return out.join("");
+    }
+
+    var lastPop = 0, lastTag = 0, best = null, tagTimer = null;
+    function bearing8(lat, lon) {
+      var la1 = 28.61 * Math.PI / 180, la2 = lat * Math.PI / 180;
+      var dl = (lon - 77.21) * Math.PI / 180;
+      var y = Math.sin(dl) * Math.cos(la2);
+      var x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dl);
+      var b = Math.atan2(y, x) * 180 / Math.PI;
+      return ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(((b + 360) % 360) / 45) % 8];
+    }
+    function strike(lat, lon) {
+      var dLat = (lat - 28.61) * Math.PI / 180, dLon = (lon - 77.21) * Math.PI / 180;
+      var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(28.61 * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      var km = Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+      if (!best || km < best.km) best = { km: km, dir: bearing8(lat, lon) };
+      var now = performance.now();
+      if (now - lastPop > 1600 && best) {
+        lastPop = now;
+        /* Closer strikes crackle harder; the far side of the planet is a whisper. */
+        var s = 1 - Math.min(1, best.km / 14000);
+        if (window.__sferic) window.__sferic(.2 + s * .8);
+        if (now - lastTag > 4200) {
+          lastTag = now;
+          tag.textContent = "⚡ " +
+            String(best.km).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " km · " +
+            best.dir + " · live";
+          tag.classList.add("on");
+          clearTimeout(tagTimer);
+          tagTimer = setTimeout(function () { tag.classList.remove("on"); }, 3600);
+        }
+        best = null;
+      }
+    }
+    function handle(raw) {
+      var j = null;
+      try { j = JSON.parse(raw); } catch (e) {
+        try { j = JSON.parse(unlzw(raw)); } catch (e2) { return; }
+      }
+      if (j && typeof j.lat === "number" && typeof j.lon === "number") strike(j.lat, j.lon);
+    }
+    function connect() {
+      if (dead) return;
+      if (document.hidden) { setTimeout(connect, 4000); return; }
+      try { ws = new WebSocket(HOSTS[hi % HOSTS.length]); } catch (e) { fail(); return; }
+      ws.onopen = function () { fails = 0; try { ws.send('{"a":111}'); } catch (e) {} };
+      ws.onmessage = function (ev) { if (typeof ev.data === "string") handle(ev.data); };
+      ws.onerror = function () { try { ws.close(); } catch (e) {} };
+      ws.onclose = function () { fail(); };
+    }
+    function fail() {
+      hi++; fails++;
+      if (fails >= 6) { dead = true; return; }   /* the sky is optional */
+      setTimeout(connect, 2500 * fails);
+    }
+    connect();
+    /* A hidden page should not hold a socket open. */
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden && ws) { try { ws.close(); } catch (e) {} }
+    });
   }
 
   /* ==================================================================
@@ -5246,6 +5377,7 @@
   startMoon();       /* after startScene: it draws into that svg */
   startHello();
   startWeather();
+  startSferics();
   startSceneScreen();
   startTerminal();
   startTimelinePulse();
