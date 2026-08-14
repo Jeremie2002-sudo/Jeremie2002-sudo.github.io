@@ -581,6 +581,17 @@
     to   { background-position: 0 240px, 0 0; }
   }
 
+  /* The thesis. Serif and sentence case so it reads as a person talking,
+     wedged between the name and the mono category row. Measure capped so
+     it never runs the full width of a desktop hero. */
+  .thesis {
+    font-family: var(--serif);
+    font-size: clamp(17px, 2.1vw, 23px);
+    line-height: 1.35; color: var(--ink);
+    max-width: 22ch; text-wrap: balance;
+    margin-bottom: 18px;
+  }
+
   .tagline {
     font-family: var(--mono);
     font-size: clamp(11px, 1.4vw, 13.5px);
@@ -621,6 +632,15 @@
     background: rgb(var(--accent-rgb) / .08);
   }
   .hero-act a:hover { border-color: rgb(var(--accent-rgb) / .7); color: var(--ember); transform: translateY(-2px); }
+  /* The way in leads the row: warmer edge and a faint accent wash, so the
+     eye picks it before the two contact pills. Its arrow nods downward on
+     hover, toward the work it scrolls to. */
+  .hero-act a.go {
+    border-color: rgb(var(--accent-rgb) / .5);
+    background: rgb(var(--accent-rgb) / .09);
+  }
+  .hero-act a.go .arr { transition: transform .35s cubic-bezier(.16,.86,.24,1); }
+  .hero-act a.go:hover .arr { transform: translateY(3px); }
   .hero-act i { font-style: normal; }
   /* A drawn arrow, not the ↓ glyph — the mono stack's fallback renders
      that character with a slant, which read as a mistake. */
@@ -672,10 +692,12 @@
 
   .fade { opacity: 0; transform: translateY(16px); transition: opacity 1.1s ease, transform 1.1s cubic-bezier(.16,.86,.24,1); }
   .lit .fade { opacity: 1; transform: none; }
-  .lit .tagline { transition-delay: .62s; }
-  .lit .place { transition-delay: .74s; }
-  .lit .hero-act { transition-delay: .84s; }
-  .lit .cue { transition-delay: .98s; }
+  /* The claim lands first after the name, then the supporting rows. */
+  .lit .thesis { transition-delay: .54s; }
+  .lit .tagline { transition-delay: .68s; }
+  .lit .place { transition-delay: .8s; }
+  .lit .hero-act { transition-delay: .9s; }
+  .lit .cue { transition-delay: 1.04s; }
 
   .cue {
     position: absolute; right: 0; bottom: 2px;
@@ -2190,6 +2212,13 @@
       <span class="ln"><span class="accent">Anand</span></span>
     </h1>
 
+    <!-- The claim, before the categories. Three category words are what a
+         hundred other people also list; this sentence is the actual thread
+         through every project on the page, and it sets up the closer's
+         "Building something that needs measuring?". Sentence case and
+         serif on purpose — a human voice between two rows of mono caps. -->
+    <p class="thesis fade">I build AI systems, then prove they work.</p>
+
     <p class="tagline fade">
       <span>Applied AI</span> <i>/</i>
       <span>Agentic Systems</span> <i>/</i>
@@ -2202,6 +2231,10 @@
          they see and wants to get in touch should not have to scroll the
          whole page to find an address. -->
     <p class="hero-act fade">
+      <!-- First, because "show me the work" is what a visitor actually
+           wants in the first five seconds — and the hero previously
+           offered only ways to contact him, not a way in. -->
+      <a href="#work" class="go">View the work <svg class="arr" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v8M2.8 6.7 6 10l3.2-3.3"/></svg></a>
       <a href="mailto:jerryanand10@gmail.com">jerryanand10@gmail.com</a>
       <a href="/David_Jeremie_Anand_Resume.pdf" download>Résumé <svg class="arr" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v8M2.8 6.7 6 10l3.2-3.3"/></svg></a>
       <!-- The guestbook nobody else has: a short word, spelled into the
