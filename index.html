@@ -57,6 +57,11 @@
 </script>
 
 <style>
+  /* Same-origin navigations cross-fade as one continuous surface (the
+     theme toggle already uses this API for its radial wipe). Browsers
+     without support just navigate normally. */
+  @view-transition { navigation: auto; }
+
   /* ------------------------------------------------------------------
      Both themes are real designs, not a recolour. The waterfall inverts
      between them: on black, high energy glows (magma). On paper, high
@@ -2838,7 +2843,11 @@
             <path d="M40 24v-4M40 48v4M28 36h-4M52 36h4M31 27l-3-3M49 45l3 3M49 27l3-3M31 45l-3 3"/>
           </g>
           <g class="sky-night" aria-hidden="true">
-            <path d="M46 27a9 9 0 1 0 7 15 8 8 0 1 1-7-15z"/>
+            <!-- The desk scene gets the REAL moon: startMoon() computes
+                 tonight's actual phase and draws it here — outline circle
+                 for the dark limb, filled path for the lit part. The
+                 vignette moons stay stylised; at 6px a phase is noise. -->
+            <g id="real-moon"></g>
             <circle class="star" cx="24" cy="30" r="1.4"/>
             <circle class="star st2" cx="58" cy="44" r="1.2"/>
           </g>
@@ -3887,6 +3896,76 @@
       if (document.hidden) { running = false; cancelAnimationFrame(raf); }
       else if (!running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
     });
+  }
+
+  /* ==================================================================
+     REAL MOON
+     The desk scene's night sky shows tonight's actual lunar phase: a
+     faint rim for the dark limb, a filled two-arc shape for the lit
+     part. Computed from the mean synodic month against a known new
+     moon — good to a few hours, which is plenty for an 16px moon.
+     ================================================================== */
+
+  function startMoon() {
+    var g = document.getElementById("real-moon");
+    if (!g) return;
+    var NS = "http://www.w3.org/2000/svg";
+    var SYN = 29.530588853;
+    var age = ((Date.now() - Date.UTC(2000, 0, 6, 18, 14)) / 86400000) % SYN;
+    var cx = 49, cy = 34, R = 8;
+
+    var rim = document.createElementNS(NS, "circle");
+    rim.setAttribute("cx", cx); rim.setAttribute("cy", cy); rim.setAttribute("r", R);
+    rim.setAttribute("fill", "none"); rim.setAttribute("stroke", "currentColor");
+    rim.setAttribute("stroke-width", ".8"); rim.setAttribute("opacity", ".22");
+    g.appendChild(rim);
+
+    var frac = (1 - Math.cos(2 * Math.PI * age / SYN)) / 2;
+    var waxing = age < SYN / 2;
+    if (frac >= .02) {
+      /* Limb arc down the lit side, elliptical terminator back up. The
+         terminator's x-radius runs +R (new) to -R (full); its sweep
+         flips as the bulge crosses the centre line. */
+      var term = R * Math.cos(2 * Math.PI * age / SYN);
+      var limbSweep = waxing ? 1 : 0;
+      var termSweep = (term > 0) ? (waxing ? 0 : 1) : (waxing ? 1 : 0);
+      var lit = document.createElementNS(NS, "path");
+      lit.setAttribute("d",
+        "M" + cx + " " + (cy - R) +
+        "A" + R + " " + R + " 0 0 " + limbSweep + " " + cx + " " + (cy + R) +
+        "A" + Math.abs(term).toFixed(2) + " " + R + " 0 0 " + termSweep + " " + cx + " " + (cy - R) + "Z");
+      lit.setAttribute("fill", "currentColor");
+      lit.setAttribute("opacity", ".8");
+      g.appendChild(lit);
+    }
+    var t = document.createElementNS(NS, "title");
+    var name = frac > .98 ? "full moon" : frac < .02 ? "new moon" :
+      (waxing ? "waxing " : "waning ") + (frac > .53 ? "gibbous" : frac < .47 ? "crescent" : "half moon");
+    t.textContent = name + " · " + Math.round(frac * 100) + "% lit — tonight's actual phase";
+    g.appendChild(t);
+  }
+
+  /* ==================================================================
+     HELLO
+     The closer greets the visitor in their own browser language before
+     asking them to get in touch. English visitors see no change.
+     ================================================================== */
+
+  function startHello() {
+    var eb = document.querySelector(".closer .eyebrow");
+    if (!eb) return;
+    var lang = ((navigator.languages && navigator.languages[0]) || navigator.language || "en")
+      .slice(0, 2).toLowerCase();
+    var H = {
+      hi: "Namaste", ta: "Vanakkam", te: "Namaskaram", bn: "Nomoshkar", mr: "Namaskar",
+      pa: "Sat sri akal", gu: "Kem chho", kn: "Namaskara", ml: "Namaskaram",
+      fr: "Bonjour", es: "Hola", de: "Hallo", it: "Ciao", pt: "Olá",
+      nl: "Hallo", tr: "Merhaba", id: "Halo", ja: "こんにちは",
+      ko: "안녕하세요", zh: "你好",
+      ar: "مرحبا", ru: "Привет"
+    };
+    var word = H[lang];
+    if (word) eb.textContent = word + " — " + eb.textContent.toLowerCase();
   }
 
   /* ==================================================================
@@ -5050,6 +5129,8 @@
   startNameFill();   /* after startWaterfall: it reads that canvas */
   startCloser();
   startScene();      /* after startCloser: it reads that canvas */
+  startMoon();       /* after startScene: it draws into that svg */
+  startHello();
   startSceneScreen();
   startTerminal();
   startTimelinePulse();
