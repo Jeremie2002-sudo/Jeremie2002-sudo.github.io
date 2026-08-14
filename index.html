@@ -15,6 +15,10 @@
 
 <title>David Jeremie Anand — Applied AI &amp; Agentic Systems</title>
 <meta name="description" content="Applied AI and agentic systems engineer. Two years turning tangled operations into measurable results, now building AI systems backed by tests and evaluation.">
+<!-- The subpages each declare one; the homepage was the only page without,
+     which left davidjeremieanand.com and www./index.html looking like
+     separate URLs to a crawler. -->
+<link rel="canonical" href="https://davidjeremieanand.com/">
 <!-- Structured data: how search engines know this page is a person. -->
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","name":"David Jeremie Anand","url":"https://davidjeremieanand.com/","jobTitle":"Applied AI Engineer","address":{"@type":"PostalAddress","addressLocality":"New Delhi","addressCountry":"IN"},"alumniOf":"Bhagwan Parshuram Institute of Technology, GGSIPU","sameAs":["https://github.com/Jeremie2002-sudo","https://www.linkedin.com/in/david-jeremie-anand/"]}</script>
 <meta name="theme-color" content="#05070B" media="(prefers-color-scheme: dark)">
@@ -272,11 +276,13 @@
   nav.up { transform: none; }
   nav a { text-decoration: none; color: var(--dim); transition: color .25s ease; }
   nav a:hover { color: var(--ember); }
-  nav .who { color: var(--ink); letter-spacing: .1em; display: flex; align-items: center; gap: 11px; }
+  nav .who { color: var(--ink); letter-spacing: .1em; display: flex; align-items: center; gap: 11px; padding: 3px 0; }
   /* The mark uses currentColor bars only for the plate, so it tracks the
      theme; the bars keep their own spectral colours in both. */
   nav .who svg { width: 19px; height: 19px; flex: none; border-radius: 5px; }
   nav .set { display: flex; gap: 22px; align-items: center; }
+  /* Same thumb-height reasoning as .visit: 18px of text, padded to 24. */
+  nav .set a { padding: 3px 0; }
   nav .set { padding-right: 52px; }
   .freq {
     font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
@@ -904,6 +910,11 @@
     font-family: var(--mono); font-size: 11px; letter-spacing: .17em;
     text-transform: uppercase; text-decoration: none; color: var(--ember);
     display: inline-flex; align-items: center; gap: 9px; margin-top: 24px;
+    /* 11px type gives an 18px-tall hit area; a thumb needs 24. The padding
+       buys the height without moving the text (the margin above absorbs
+       it), and the right padding keeps three of these per card from
+       sitting shoulder to shoulder on a phone. */
+    padding: 4px 14px 4px 0;
   }
 
   /* === PIPELINE SCHEMATIC ===========================================
@@ -1151,7 +1162,7 @@
     font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
     text-transform: uppercase; color: var(--dim); opacity: .7;
   }
-  .row h4 { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.2vw, 21px); letter-spacing: -.022em; }
+  .row h3 { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.2vw, 21px); letter-spacing: -.022em; }
 
   /* The one entry that is not a line on a list. Two years, the first job,
      and every metric this page opens with came out of it — at the same
@@ -1159,7 +1170,7 @@
      to meet the year beside it rather than sit under it: both land at
      30px, and the heading wins on weight and colour where the year is
      dim. Tighter tracking because display sizes need less of it. */
-  .row h4.lead {
+  .row h3.lead {
     font-size: clamp(21px, 3.1vw, 30px);
     letter-spacing: -.032em;
   }
@@ -2570,7 +2581,7 @@
       <div class="row rise">
         <dt><b>2024</b><span>Aug 2024 — Aug 2026</span></dt>
         <dd>
-          <h4 class="lead">Genpact</h4>
+          <h3 class="lead">Genpact</h3>
           <div class="meta">Associate and Subject Matter Expert — Operations · Gurugram &amp; Noida</div>
           <ul class="pts">
             <li>Analysed high-volume workflows and drove process redesign, contributing to an <b>18% reduction in turnaround time</b>.</li>
@@ -2615,7 +2626,7 @@
       <div class="row rise">
         <dt><b>2023</b><span>Jul — Aug 2023</span></dt>
         <dd>
-          <h4>Bhagwan Parshuram Institute of Technology, GGSIPU</h4>
+          <h3>Bhagwan Parshuram Institute of Technology, GGSIPU</h3>
           <div class="meta">Data Analytics Intern · New Delhi</div>
           <p>Analysed institutional datasets in Python and Excel, building KPI dashboards and automated reports that cut repetitive manual effort by <b>25%</b>.</p>
         </dd>
@@ -2623,7 +2634,7 @@
       <div class="row rise">
         <dt><b>2022</b><span>Jul — Sep 2022</span></dt>
         <dd>
-          <h4>Defence Research and Development Organisation (DRDO)</h4>
+          <h3>Defence Research and Development Organisation (DRDO)</h3>
           <div class="meta">Research and Development Intern · India</div>
           <p>Supported development, validation and signal analysis of an embedded wireless sensing prototype, improving reliability and reducing errors.</p>
         </dd>
@@ -2631,7 +2642,7 @@
       <div class="row rise">
         <dt><b>2020</b><span>Sep — Oct 2020</span></dt>
         <dd>
-          <h4>AGIXURY</h4>
+          <h3>AGIXURY</h3>
           <div class="meta">Web Development Intern · Remote</div>
           <p>Built responsive interfaces from business requirements and improved usability across desktop and mobile.</p>
         </dd>
@@ -2683,21 +2694,21 @@
       <div class="row rise">
         <dt><b>2026</b><span>Present</span></dt>
         <dd>
-          <h4>Masters&rsquo; Union <span class="now"><i aria-hidden="true"></i>Current</span></h4>
+          <h3>Masters&rsquo; Union <span class="now"><i aria-hidden="true"></i>Current</span></h3>
           <div class="meta">PGP in Applied AI and Agentic Systems · Gurugram</div>
         </dd>
       </div>
       <div class="row rise">
         <dt><b>2020</b><span>To 2024</span></dt>
         <dd>
-          <h4>B.Tech, Electronics and Communication Engineering</h4>
+          <h3>B.Tech, Electronics and Communication Engineering</h3>
           <div class="meta">Bhagwan Parshuram Institute of Technology, GGSIPU · CGPA 8.53 / 10</div>
         </dd>
       </div>
       <div class="row rise">
         <dt><b>2018</b><span>To 2020</span></dt>
         <dd>
-          <h4>Faith Academy Senior Secondary School, CBSE</h4>
+          <h3>Faith Academy Senior Secondary School, CBSE</h3>
           <div class="meta">Class XII 92.8% · Class X 94.2% · New Delhi</div>
         </dd>
       </div>

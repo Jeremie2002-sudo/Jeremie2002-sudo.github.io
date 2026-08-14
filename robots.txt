@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# An honest, AI-readable summary of this site and its projects.
+# No hidden instructions in it — read it if you like.
+# https://davidjeremieanand.com/llms.txt
+
+Sitemap: https://davidjeremieanand.com/sitemap.xml
