@@ -173,40 +173,9 @@
 
   /* Film grain. One inline SVG turbulence, no request, and it stops the
      large flat blacks from banding on cheap panels. */
-  /* Custom cursor. The ring lags the dot deliberately — that gap is the
-     effect. Hidden entirely on touch, where there is no pointer to
-     replace, and the native cursor is only suppressed once ours exists. */
-  .cur-ring, .cur-dot {
-    position: fixed; top: 0; left: 0; z-index: 40;
-    pointer-events: none; border-radius: 50%;
-    transform: translate3d(-100px, -100px, 0);
-    will-change: transform;
-  }
-  .cur-ring {
-    width: 32px; height: 32px; margin: -16px 0 0 -16px;
-    border: 1px solid rgb(var(--accent-rgb) / .55);
-    transition: width .28s cubic-bezier(.16,.86,.24,1), height .28s cubic-bezier(.16,.86,.24,1),
-                margin .28s cubic-bezier(.16,.86,.24,1), background .28s ease, border-color .28s ease;
-  }
-  .cur-ring.big {
-    width: 58px; height: 58px; margin: -29px 0 0 -29px;
-    background: rgb(var(--accent-rgb) / .1);
-    border-color: rgb(var(--accent-rgb) / .8);
-  }
-  .cur-dot {
-    width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px;
-    background: var(--ember);
-  }
-  @media (pointer: fine) {
-    .has-cursor, .has-cursor a, .has-cursor button, .has-cursor .cell { cursor: none; }
-    /* Text keeps its I-beam. Hiding the cursor over prose makes selecting
-       and copying it feel broken, and someone reading a portfolio does
-       copy things — an email address, a project name. */
-    .has-cursor p, .has-cursor li, .has-cursor dd, .has-cursor h1,
-    .has-cursor h2, .has-cursor h3, .has-cursor h4 { cursor: text; }
-    .has-cursor a, .has-cursor button, .has-cursor .theme { cursor: none; }
-  }
-  @media (pointer: coarse) { .cur-ring, .cur-dot { display: none; } }
+  /* The custom trailing cursor (ring + dot) lived here from 11 Aug to
+     14 Aug 2026, then came out at David's request — the native cursor
+     serves every visitor now. */
 
   .grain {
     position: fixed; inset: 0; z-index: 9;
@@ -1961,7 +1930,7 @@
     .now i { opacity: 1 !important; transform: none !important; }
     main section { opacity: 1 !important; transform: none !important; }
     .hero-inner { transform: none !important; opacity: 1 !important; }
-    #motes, #shader, .cur-ring, .cur-dot { display: none; }
+    #motes, #shader { display: none; }
     .marquee-track { animation: none !important; }
     .cell-in { backdrop-filter: none; }
     #waterfall { opacity: .8 !important; transform: none !important; }
@@ -3889,54 +3858,8 @@
     });
   }
 
-  /* ==================================================================
-     CURSOR
-     A ring that trails the pointer and a dot that tracks it exactly. The
-     lag between them is the whole effect — it reads as weight. Grows and
-     fills over anything interactive.
-     ================================================================== */
-
-  function startCursor() {
-    var ring = document.createElement("div");
-    var dot = document.createElement("div");
-    ring.className = "cur-ring"; dot.className = "cur-dot";
-    document.body.appendChild(ring); document.body.appendChild(dot);
-
-    var tx = innerWidth / 2, ty = innerHeight / 2, rx = tx, ry = ty, on = false, live = false;
-
-    addEventListener("pointermove", function (e) {
-      tx = e.clientX; ty = e.clientY;
-      dot.style.transform = "translate3d(" + tx + "px," + ty + "px,0)";
-      /* Hide the real cursor only once ours has actually been positioned by
-         a real pointer event. Hiding it up front means that if anything
-         here fails, or the visitor never moves the mouse, they are left
-         with no pointer at all — a broken decoration is survivable, no
-         cursor is not. */
-      if (!live) { live = true; document.documentElement.classList.add("has-cursor"); }
-      if (!on) { on = true; requestAnimationFrame(loop); }
-    }, { passive: true });
-
-    /* Give the native cursor back whenever ours cannot be trusted to be
-       on screen: another window takes focus, or the page is hidden. */
-    function release() { document.documentElement.classList.remove("has-cursor"); live = false; }
-    addEventListener("blur", release);
-    document.addEventListener("visibilitychange", function () { if (document.hidden) release(); });
-
-    function loop() {
-      rx += (tx - rx) * .16; ry += (ty - ry) * .16;
-      ring.style.transform = "translate3d(" + rx.toFixed(1) + "px," + ry.toFixed(1) + "px,0)";
-      if (Math.abs(tx - rx) > .3 || Math.abs(ty - ry) > .3) requestAnimationFrame(loop);
-      else on = false;
-    }
-
-    /* Delegated, so cells and links added later are covered too. */
-    document.addEventListener("pointerover", function (e) {
-      if (e.target.closest("a, button, .cell, .theme")) ring.classList.add("big");
-    }, { passive: true });
-    document.addEventListener("pointerout", function (e) {
-      if (e.target.closest("a, button, .cell, .theme")) ring.classList.remove("big");
-    }, { passive: true });
-  }
+  /* The trailing ring cursor was removed 14 Aug 2026 at David's request;
+     the native cursor does the job. */
 
   /* ==================================================================
      INERTIAL SCROLL
@@ -5073,7 +4996,6 @@
 
   if (!reduced && matchMedia("(pointer: fine)").matches) {
     startGlow();
-    startCursor();
     startCardLight();
     startMagnets();
     /* startInertia() is deliberately not called.
