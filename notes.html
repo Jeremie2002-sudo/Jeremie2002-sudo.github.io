@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Field notes — David Jeremie Anand</title>
+<meta name="description" content="Short notes from building AI systems that have to be measured: crash-testing small models, prompt regression, and why my assistants refuse to do arithmetic.">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://davidjeremieanand.com/notes.html">
+<meta property="og:title" content="Field notes — David Jeremie Anand">
+<meta property="og:description" content="Short notes from building AI systems that have to be measured.">
+<meta property="og:image" content="https://davidjeremieanand.com/og.jpg">
+<meta property="og:url" content="https://davidjeremieanand.com/notes.html">
+<meta property="og:type" content="website">
+
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
+    } catch (e) { /* storage blocked; fall back to the OS preference */ }
+  })();
+</script>
+
+<style>
+  :root {
+    --void: #F6F4F1; --deep: #EEEAE5; --raised: #E6E1DA;
+    --ink: #14171C; --soft: #4B5563; --dim: #656C78; --line: #DCD6CE;
+    --ember: #A55C08; --flare: #B8401D; --wine: #7A1F3D;
+    --display: system-ui, -apple-system, "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+    --measure: 62ch;
+    --edge: clamp(20px, 5vw, 68px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --void: #05070B; --deep: #0A0E16; --raised: #10151F;
+      --ink: #F2F5FA; --soft: #C3CEDD; --dim: #7C8B9E; --line: #1A2231;
+      --ember: #FFB454; --flare: #FF7A4A; --wine: #8E2F52;
+    }
+  }
+  :root[data-theme="dark"] {
+    --void: #05070B; --deep: #0A0E16; --raised: #10151F;
+    --ink: #F2F5FA; --soft: #C3CEDD; --dim: #7C8B9E; --line: #1A2231;
+    --ember: #FFB454; --flare: #FF7A4A; --wine: #8E2F52;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--void); color: var(--ink);
+    font-family: var(--serif); font-size: 17px; line-height: 1.65;
+    padding: 0 var(--edge) 90px;
+  }
+  .col { max-width: var(--measure); margin: 0 auto; }
+
+  .crumbs {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+    text-transform: uppercase; padding: 26px 0 60px;
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .crumbs a { color: var(--dim); text-decoration: none; }
+  .crumbs a:hover { color: var(--ember); }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--ember); margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 800; letter-spacing: -.02em;
+    font-size: clamp(34px, 6vw, 54px); line-height: 1.04; text-wrap: balance;
+    margin-bottom: 18px;
+  }
+  .stand { color: var(--soft); font-size: 19px; margin-bottom: 64px; }
+
+  article { margin-bottom: 74px; }
+  .date {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--dim); margin-bottom: 8px;
+  }
+  h2 {
+    font-family: var(--display); font-weight: 700; letter-spacing: -.01em;
+    font-size: 26px; margin-bottom: 14px; text-wrap: balance;
+  }
+  h2 a { color: inherit; text-decoration: none; }
+  p { margin-bottom: 14px; }
+  a { color: var(--ember); }
+  code {
+    font-family: var(--mono); font-size: .82em; background: var(--deep);
+    border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px;
+  }
+  .tail { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+  .foot {
+    font-family: var(--mono); font-size: 11px; color: var(--dim);
+    padding-top: 26px; border-top: 1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+<div class="col">
+
+  <nav class="crumbs">
+    <a href="/">&#8592; davidjeremieanand.com</a>
+    <a href="/firstline.html">firstline case study</a>
+  </nav>
+
+  <p class="eyebrow">Field notes</p>
+  <h1>Things the numbers taught me</h1>
+  <p class="stand">Short notes from building AI systems that have to be measured, not
+  just demoed. New notes as the PGP goes on.</p>
+
+  <article id="crying-wolf">
+    <p class="date">13 Aug 2026 · firstline</p>
+    <h2><a href="#crying-wolf">Safety by crying wolf</a></h2>
+    <p>I crash-tested a 3-billion-parameter model on a simulated ops shift and it did
+    something I didn't expect: it aced the metric everyone optimises for, and failed
+    the one nobody talks about.</p>
+    <p>Across every run, it never missed a single critical ticket — 100% escalation
+    recall. Sounds like a pass. But its escalation <em>precision</em> on the hardest
+    shift was 21%: for every ticket that genuinely needed a human, it escalated
+    roughly four that didn't. Having worked in a real queue, I can tell you exactly
+    what that is: it's the analyst who forwards everything to the senior team. Nobody
+    gets fired, nothing improves, and within a month the seniors stop reading the
+    forwards — which is how the real P0 eventually gets missed.</p>
+    <p>The model wasn't being safe. It was being <em>unaccountable</em>, and only a
+    scorecard that prices escalation as spending a human could tell the difference.
+    The general lesson I took: whatever your agent is for, find the metric that makes
+    cowardice visible, or your agent will learn to be a coward.</p>
+    <p class="tail">The full numbers are in the <a href="/firstline.html">case
+    study</a>; every figure comes from a committed run capture.</p>
+  </article>
+
+  <article id="temperature-zero">
+    <p class="date">Aug 2026 · promptdrift</p>
+    <h2><a href="#temperature-zero">Temperature zero is not determinism</a></h2>
+    <p>The first surprise of building a prompt regression tester: an LLM at
+    temperature 0 can still give different answers to the identical request. Batching,
+    hardware, quantisation — the sources vary, but the consequence doesn't: a single
+    passing run of a prompt test tells you almost nothing.</p>
+    <p>So <a href="https://github.com/Jeremie2002-sudo/promptdrift">PromptDrift</a>
+    runs every case N times and scores a pass <em>rate</em> against a threshold. A
+    prompt that works 70% of the time is a different object from one that always
+    works, and a tool that can't tell them apart will bless flaky prompts all day.
+    Flakiness itself became a first-class report state: technically green, but on its
+    way to failing on someone else's machine.</p>
+    <p>The second surprise was subtler: the baseline must store pass rates, never raw
+    outputs. Store outputs and every run diffs noisily against the last one, the diff
+    becomes wallpaper, and people stop reading it — the tool's worst failure mode is
+    going green while nobody looks. Regression testing non-deterministic systems is
+    mostly the art of deciding what <em>not</em> to compare.</p>
+    <p class="tail">157 tests, all offline against a deterministic mock — because a
+    test tool whose own tests flake has no business judging your prompts.</p>
+  </article>
+
+  <article id="narrate-not-calculate">
+    <p class="date">Aug 2026 · ledgr</p>
+    <h2><a href="#narrate-not-calculate">The model narrates. It never calculates.</a></h2>
+    <p>Ask an LLM "how much did I spend on dining in June?" with your transactions
+    pasted into the prompt and you'll get a confident number that is sometimes right.
+    Confident-sometimes-right is the worst possible property for anything touching
+    money.</p>
+    <p>So <a href="https://github.com/Jeremie2002-sudo/ai-finance-manager">Ledgr</a>'s
+    assistant is banned from arithmetic. The model gets four tools —
+    <code>get_totals</code>, <code>get_spending_by_category</code>,
+    <code>search_transactions</code>, <code>get_largest_transactions</code> — and its
+    only job is deciding which to call and how to phrase what comes back. Pandas does
+    every sum; the model does every sentence. Its answers match the dashboard to the
+    paisa because they are the dashboard's numbers.</p>
+    <p>The same split runs through the monthly summary: code computes a stats dict,
+    the model writes prose around it. I've come to think of this as the honest
+    division of labour with today's models — they are unreliable calculators and
+    excellent narrators, and most "AI hallucinated my data" stories come from letting
+    the narrator hold the calculator.</p>
+    <p class="tail">Bonus defence: the tool loop is capped at five rounds, because an
+    unbounded loop with a confused model is a bill, not a bug report.</p>
+  </article>
+
+  <p class="foot">David Jeremie Anand · written by hand, measured by machine ·
+  <a href="/">home</a></p>
+
+</div>
+</body>
+</html>
