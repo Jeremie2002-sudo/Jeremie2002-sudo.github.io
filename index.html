@@ -1849,7 +1849,9 @@
     color: var(--dim); margin-top: 8px; text-transform: uppercase;
     min-height: 13px;
   }
-  #voytag[role="button"] { cursor: pointer; }
+  /* The voyager layer is decorative and click-transparent, but the
+     nameplate is a real button now — restore its pointer events. */
+  #voytag[role="button"] { cursor: pointer; pointer-events: auto; }
   #voytag[role="button"]:hover { color: var(--ember); }
 
   /* The lightning caption: a quiet line at the hero's lower-left naming
@@ -4288,10 +4290,10 @@
 
     /* Delegated, so cells and links added later are covered too. */
     document.addEventListener("pointerover", function (e) {
-      if (e.target.closest("a, button, .cell, .theme")) ring.classList.add("big");
+      if (e.target.closest("a, button, .cell, .theme, [role='button']")) ring.classList.add("big");
     }, { passive: true });
     document.addEventListener("pointerout", function (e) {
-      if (e.target.closest("a, button, .cell, .theme")) ring.classList.remove("big");
+      if (e.target.closest("a, button, .cell, .theme, [role='button']")) ring.classList.remove("big");
     }, { passive: true });
   }
 
