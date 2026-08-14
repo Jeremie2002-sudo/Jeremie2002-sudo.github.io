@@ -1589,6 +1589,12 @@
     left: 48.82%; top: 39.17%; width: 17.06%; height: 19.17%;
     transform: skewX(7.43deg); transform-origin: 0 100%;
     background: rgb(var(--accent-rgb) / .08);
+    /* The screen throws light now: a soft breathing halo in the accent. */
+    animation: screen-halo 4.4s ease-in-out infinite;
+  }
+  @keyframes screen-halo {
+    0%, 100% { box-shadow: 0 0 10px rgb(var(--accent-rgb) / .18); }
+    50%      { box-shadow: 0 0 22px rgb(var(--accent-rgb) / .38); }
   }
 
   /* The screen as a doorway: an invisible button over the laptop, with a
@@ -1600,6 +1606,26 @@
     transform: skewX(7.43deg); transform-origin: 0 100%;
     background: transparent; border: 0; padding: 0; cursor: pointer;
     border-radius: 2px;
+    overflow: hidden;
+  }
+  /* CRT-meets-hologram: a faint fixed scanline texture plus one bright
+     line sweeping down the screen. Lives on the button (the canvas is a
+     replaced element — pseudo-elements don't render on it). */
+  .scene-open::before {
+    content: "";
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(180deg,
+        transparent 0%, transparent 42%,
+        rgb(var(--accent-rgb) / .28) 50%,
+        transparent 58%, transparent 100%) no-repeat 0 0 / 100% 34%,
+      repeating-linear-gradient(180deg,
+        rgb(var(--accent-rgb) / .05) 0 1px, transparent 1px 3px);
+    animation: screen-sweep 5.6s linear infinite;
+  }
+  @keyframes screen-sweep {
+    0%   { background-position: 0 -34%, 0 0; }
+    100% { background-position: 0 134%, 0 0; }
   }
   .scene-open::after {
     content: "say hi";
@@ -1768,6 +1794,33 @@
     0%, 100% { transform: translate(0, 0); }
     38%, 62% { transform: translate(-3px, -40px); }
   }
+
+  /* The mug rides the same arc as the hand holding it, with a small tip
+     toward the face at the top — the cup genuinely leaves the desk now
+     instead of the man miming a sip at thin air. Steam travels too. */
+  .scene .mug { transform-box: fill-box; transform-origin: center; }
+  .scene svg.sip .mug { animation: scene-sip-mug 2.2s ease-in-out 1; }
+  @keyframes scene-sip-mug {
+    0%, 100% { transform: translate(0, 0) rotate(0); }
+    38%, 62% { transform: translate(-3px, -40px) rotate(-12deg); }
+  }
+
+  /* Futurist dressing on the laptop: HUD corner brackets that shimmer,
+     and two holographic side-panels floating beside the screen. All of it
+     dies under the global reduced-motion rule like everything else. */
+  .scene .hud {
+    fill: none; stroke: var(--ember); stroke-width: 1.4;
+    opacity: .55; animation: hud-shimmer 3.8s ease-in-out infinite;
+  }
+  @keyframes hud-shimmer { 0%, 100% { opacity: .3; } 50% { opacity: .75; } }
+  .scene .holo rect {
+    fill: rgb(var(--accent-rgb) / .06); stroke: var(--ember);
+    stroke-width: 1; opacity: .55;
+  }
+  .scene .holo path { fill: none; stroke: var(--ember); stroke-width: 1.2; opacity: .5; }
+  .scene .holo { animation: holo-bob 5.2s ease-in-out infinite alternate; }
+  .scene .holo.h2 { animation-duration: 6.6s; animation-delay: -2.1s; }
+  @keyframes holo-bob { from { transform: translateY(0); } to { transform: translateY(-2.4px); } }
 
   /* A visitor's hello reaches the desk: the figure straightens for a
      beat — breathing pauses, back lifts — then settles. */
@@ -2813,16 +2866,29 @@
           <!-- laptop: bezel filled with ground so the waterfall behind the
                section cannot show through the gap around the screen blit -->
           <path class="bezel" d="M157 91h64l6 52h-64z"/>
-          <path class="set" d="M150 148h88"/>
-          <!-- mug and steam. It used to sit out at x244, past the laptop —
-               a full forearm from the man who sips every few seconds. Now it
-               sits at his resting hand (153,144): body 152-164 on the desk,
-               handle curling left toward him, top corner tucked 1px behind
-               the laptop's bottom-left corner for depth. The sip finally
-               has a mug in it. -->
-          <path class="set" d="M152 136h12v12h-12zM152 139c-7 0-7 9 0 9"/>
-          <path class="steam s1" d="M150 130c-3-5 3-8 0-13"/>
-          <path class="steam s2" d="M156 128c-3-4 3-7 0-12"/>
+          <!-- HUD dressing: corner brackets over the screen's top corners
+               and two holographic side-panels floating beside it — thin
+               projected windows with content ticks, bobbing slowly. -->
+          <path class="hud" d="M152 98v-8h8M217 88h9v8"/>
+          <g class="holo h1">
+            <rect x="234" y="98" width="20" height="12" rx="2"/>
+            <path d="M238 102h13M238 106h9"/>
+          </g>
+          <g class="holo h2">
+            <rect x="240" y="116" width="16" height="10" rx="2"/>
+            <path d="M244 120h9"/>
+          </g>
+          <path class="set" d="M141 148h97"/>
+          <!-- mug and steam, grouped so the whole thing can ride the sip.
+               Body 146-158: five clear pixels short of the laptop base
+               (starts 163), handle curling left toward the man, his hand
+               resting on it. During svg.sip the group travels the hand's
+               exact arc — the cup actually leaves the desk. -->
+          <g class="mug">
+            <path class="set" d="M146 136h12v12h-12zM146 139c-7 0-7 9 0 9"/>
+            <path class="steam s1" d="M144 130c-3-5 3-8 0-13"/>
+            <path class="steam s2" d="M150 128c-3-4 3-7 0-12"/>
+          </g>
           <!-- the cat, asleep under the desk, breathing. A round loaf with
                two proper triangular ears and the tail wrapped along the
                floor in front — the three things that stop it reading as
@@ -4894,9 +4960,15 @@
     }
     function scanTour() {
       var i = 0;
-      addEventListener("wheel", scanAbort, { passive: true });
-      addEventListener("touchstart", scanAbort, { passive: true });
-      addEventListener("keydown", scanAbort);
+      /* Arm the abort listeners a tick late: the Enter that launched the
+         tour is still mid-dispatch, and it bubbles to window AFTER this
+         function returns — armed synchronously, that same keystroke
+         aborted the tour at its first stop. */
+      setTimeout(function () {
+        addEventListener("wheel", scanAbort, { passive: true });
+        addEventListener("touchstart", scanAbort, { passive: true });
+        addEventListener("keydown", scanAbort);
+      }, 0);
       (function step() {
         var el = document.getElementById(TOUR[i]);
         if (el) el.scrollIntoView({ behavior: "smooth" });
