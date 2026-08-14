@@ -1028,6 +1028,22 @@
   }
   .visit i { font-style: normal; transition: transform .38s cubic-bezier(.16,.86,.24,1); }
   .visit:hover i { transform: translate(5px, -5px); }
+  /* Cards can carry two or three of these now (case study · repo · live). */
+  .visit + .visit { margin-left: 22px; }
+
+  /* A quiet tip for keyboard people. Pointless on touch, so hidden there. */
+  .term-hint {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+    color: var(--dim); margin-top: 26px;
+  }
+  .term-hint kbd {
+    font-family: var(--mono); font-size: 11px; color: var(--ember);
+    border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 4px; padding: 1px 6px;
+  }
+  @media (hover: none), (max-width: 819px) {
+    .term-hint { display: none; }
+  }
 
   /* === ROWS ========================================================= */
 
@@ -2277,7 +2293,7 @@
             <span class="chip">Live shift dashboard</span>
             <span class="chip">Ollama · Groq · offline rules</span>
           </div>
-          <a class="visit" href="https://github.com/Jeremie2002-sudo/firstline" target="_blank" rel="noopener">View repository <i>&#8599;</i></a>
+          <a class="visit" href="/firstline.html">Case study <i>&#8594;</i></a><a class="visit" href="https://github.com/Jeremie2002-sudo/firstline" target="_blank" rel="noopener">GitHub <i>&#8599;</i></a><a class="visit" href="https://firstline-oxqj.onrender.com" target="_blank" rel="noopener">Live demo <i>&#8599;</i></a>
         </div>
       </article>
 
@@ -2383,11 +2399,11 @@
             <span class="chip hot">31-test CI</span>
             <span class="chip">Render</span>
           </div>
-          <a class="visit" href="https://github.com/Jeremie2002-sudo/synapse" target="_blank" rel="noopener">View repository <i>&#8599;</i></a>
+          <a class="visit" href="https://github.com/Jeremie2002-sudo/synapse" target="_blank" rel="noopener">View repository <i>&#8599;</i></a><a class="visit" href="https://synapse-3zxr.onrender.com" target="_blank" rel="noopener">Live demo <i>&#8599;</i></a>
         </div>
       </article>
 
-      <article class="cell rise" data-tilt>
+      <article class="cell rise" data-tilt id="work-more">
         <div class="cell-in">
           <div class="cell-top"><span class="num">04</span><span class="stack">Flask · SQLite · Docker</span></div>
           <h3>Ledgr <em>— AI Finance Manager</em></h3>
@@ -2424,7 +2440,7 @@
             <span class="chip hot">58-test CI</span>
             <span class="chip">Tool-calling</span>
           </div>
-          <a class="visit" href="https://github.com/Jeremie2002-sudo/ai-finance-manager" target="_blank" rel="noopener">View repository <i>&#8599;</i></a>
+          <a class="visit" href="https://github.com/Jeremie2002-sudo/ai-finance-manager" target="_blank" rel="noopener">View repository <i>&#8599;</i></a><a class="visit" href="https://ai-finance-manager-wh10.onrender.com" target="_blank" rel="noopener">Live demo <i>&#8599;</i></a>
         </div>
       </article>
 
@@ -2718,7 +2734,9 @@
         <a href="/David_Jeremie_Anand_Resume.pdf" download>Résumé <svg class="arr" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v8M2.8 6.7 6 10l3.2-3.3"/></svg></a>
         <a href="https://www.linkedin.com/in/david-jeremie-anand/" target="_blank" rel="noopener">LinkedIn ↗</a>
         <a href="https://github.com/Jeremie2002-sudo" target="_blank" rel="noopener">GitHub ↗</a>
+        <a href="/notes.html">Field notes</a>
       </div>
+      <p class="term-hint rise d3">ps — there&rsquo;s a terminal behind this page. press <kbd>&#96;</kbd></p>
       </div>
 
       <!-- The page ends with its author at the desk, making the signal it
@@ -4855,6 +4873,10 @@
                 "resume", "hire", "iss", "log", "source", "73", "sudo", "clear", "exit"];
     var SECS = ["top", "about", "work", "experience", "internships",
                 "education", "skills", "contact"];
+    /* The tour's own stops: same as goto's targets, plus a waypoint halfway
+       down the project shelf so all five cards glide past instead of the
+       autopilot skipping from the flagship straight to Experience. */
+    var TOUR = SECS.slice(0, 3).concat(["work-more"], SECS.slice(3));
     var hist = [], hIdx = 0;
 
     /* The self-driving tour: glide stop to stop, the dial sweeping as
@@ -4873,10 +4895,10 @@
       addEventListener("touchstart", scanAbort, { passive: true });
       addEventListener("keydown", scanAbort);
       (function step() {
-        var el = document.getElementById(SECS[i]);
+        var el = document.getElementById(TOUR[i]);
         if (el) el.scrollIntoView({ behavior: "smooth" });
         i++;
-        if (i < SECS.length) scanTimer = setTimeout(step, 2300);
+        if (i < TOUR.length) scanTimer = setTimeout(step, 2300);
         else scanAbort();
       })();
     }
