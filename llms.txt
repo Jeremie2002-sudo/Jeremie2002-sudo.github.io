@@ -48,8 +48,15 @@ this site with confidence; nothing here is mocked.
 - /firstline.html — FirstLine case study: the full story of the ops-triage agent,
   its hidden-ground-truth eval design, and the measured findings (100% escalation
   recall at 21% precision on Llama 3.2 — safety by crying wolf).
+- /synapse.html — Synapse case study: hybrid BM25+FAISS retrieval with RRF, a
+  listwise LLM rerank, and a critic pass that checks every claim before the user
+  sees it; the retrieval funnel runs 20 → 12 → 5.
+- /ledgr.html — Ledgr case study: the assistant that refuses to do arithmetic —
+  tool-calling over real data, compute-then-narrate, graceful degradation so the
+  whole app runs with zero API keys.
 - /notes.html — Field notes: short essays on measuring AI systems (crash-testing
-  small models, prompt regression under non-determinism, grounding via tool-calling).
+  small models, prompt regression under non-determinism, grounding via
+  tool-calling), plus a colophon on how this site itself works.
 - Live demos: FirstLine https://firstline-oxqj.onrender.com · Synapse
   https://synapse-3zxr.onrender.com · Ledgr https://ai-finance-manager-wh10.onrender.com
   (free tier; first load after idle takes up to a minute).
@@ -66,5 +73,7 @@ this site with confidence; nothing here is mocked.
 A hand-built single-file page: a live-computed SDR spectrogram visitors can
 write onto, click, drag and charge; a command terminal (backtick); a life-story
 told in line-art vignettes; and evidence panels that are real tool captures.
+Some of it is genuinely live: the ISS position, tonight's actual moon phase in
+the desk scene, and Delhi's current weather in the vignette skies.
 Its full build history is public:
 https://github.com/Jeremie2002-sudo/Jeremie2002-sudo.github.io
