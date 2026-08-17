@@ -898,9 +898,13 @@
      drawing loud enough to compete with them would be decoration. It
      warms on hover, the one moment someone is looking at a single card
      rather than the whole shelf. */
+  /* Sized and inset so the drawing clears the chips and the evidence
+     panel rather than tucking under them: at 104px the mark's top edge
+     reached 31px into the chip row on the PromptDrift card, which read
+     as two things touching rather than a watermark behind content. */
   .cell .mark {
-    position: absolute; right: clamp(14px, 1.6vw, 22px); bottom: clamp(14px, 1.6vw, 22px);
-    width: clamp(66px, 7.5vw, 104px); height: auto;
+    position: absolute; right: clamp(10px, 1.2vw, 16px); bottom: clamp(9px, 1.1vw, 14px);
+    width: clamp(52px, 5.4vw, 72px); height: auto;
     color: var(--dim); opacity: .14;
     pointer-events: none; z-index: 0;
     transition: opacity .45s ease, color .45s ease, transform .45s cubic-bezier(.16,.86,.24,1);
@@ -1169,10 +1173,17 @@
      popping). Sits at the same x as the spine's 1px line. */
   .rows::after {
     content: ""; position: absolute;
-    left: 1px; top: calc(var(--py, 0) * 100%);
-    width: 7px; height: 7px; border-radius: 50%;
+    /* Was a 7px dot with a soft 10px halo, which disappeared against the
+       spine on a bright screen. Bigger, brighter, and with a second wider
+       falloff so it reads as a travelling pulse rather than a stray dot —
+       re-centred on the 1px line at the new size. */
+    left: -1px; top: calc(var(--py, 0) * 100%);
+    width: 11px; height: 11px; border-radius: 50%;
     background: var(--ember);
-    box-shadow: 0 0 10px 2px rgb(var(--accent-rgb) / .5);
+    box-shadow:
+      0 0 0 3px rgb(var(--accent-rgb) / .22),
+      0 0 16px 5px rgb(var(--accent-rgb) / .55),
+      0 0 34px 10px rgb(var(--accent-rgb) / .22);
     transform: translateY(-50%);
     opacity: var(--pa, 0);
     pointer-events: none;
