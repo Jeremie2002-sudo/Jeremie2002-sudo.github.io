@@ -136,11 +136,16 @@
   }
   .bars .tick { font-family: var(--mono); font-size: 10px; fill: var(--dim); }
   .bars .note { font-family: var(--serif); font-style: italic; font-size: 12px; fill: var(--soft); }
+  /* The bars grow when the reader REACHES them, not when the page loads —
+     the chart sits two thirds of the way down, so a load-time animation
+     played to an empty room and left everyone arriving to static bars.
+     The .seen class is added by the observer at the end of this file. */
   @media (prefers-reduced-motion: no-preference) {
-    .bars .fill { animation: barGrow .9s cubic-bezier(.22,.61,.36,1) both; }
-    .bars .precision { animation-delay: .18s; }
+    .bars .fill { transform: scaleX(0); }
+    .bars.seen .fill { animation: barGrow .9s cubic-bezier(.22,.61,.36,1) both; }
+    .bars.seen .precision { animation-delay: .18s; }
   }
-  @keyframes barGrow { from { transform: scaleX(0); } }
+  @keyframes barGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
   .cta {
     display: flex; gap: 26px; flex-wrap: wrap; margin-top: 56px;
@@ -310,5 +315,23 @@
   from a committed run capture in the repo's docs/runs/.</p>
 
 </div>
+
+<!-- Ten lines so the chart's one animation happens where someone can see
+     it. If IntersectionObserver is missing, the bars are marked seen
+     immediately — a chart that never animates beats a chart that never
+     appears. -->
+<script>
+  (function () {
+    var el = document.querySelector(".bars");
+    if (!el) return;
+    if (!("IntersectionObserver" in window)) { el.classList.add("seen"); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("seen"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.35 });
+    io.observe(el);
+  })();
+</script>
 </body>
 </html>
