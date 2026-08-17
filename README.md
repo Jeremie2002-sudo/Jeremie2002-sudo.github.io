@@ -1,4 +1,4 @@
-# davidjeremieanand.in
+# davidjeremieanand.com
 
 Personal site. One file, no build step, no dependencies.
 
