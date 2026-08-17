@@ -863,6 +863,10 @@
     font-size: clamp(20px, 2.6vw, 31px);
     letter-spacing: -.035em; line-height: 1.06;
     color: var(--ink);
+    /* Project titles carry an em dash and a subtitle, so left to itself a
+       line can break leaving one orphaned word. Balanced wrapping evens
+       the lines instead — the hero and section headings already do this. */
+    text-wrap: balance;
   }
   .cell.feature h3 { font-size: clamp(24px, 3.4vw, 40px); }
   .cell h3 em { font-style: normal; color: var(--soft); font-weight: 400; }
@@ -1195,7 +1199,7 @@
     font-family: var(--mono); font-size: 10px; letter-spacing: .16em;
     text-transform: uppercase; color: var(--dim); opacity: .7;
   }
-  .row h3 { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.2vw, 21px); letter-spacing: -.022em; }
+  .row h3 { font-family: var(--display); font-weight: 600; font-size: clamp(17px, 2.2vw, 21px); letter-spacing: -.022em; text-wrap: balance; }
 
   /* The one entry that is not a line on a list. Two years, the first job,
      and every metric this page opens with came out of it — at the same
@@ -1254,7 +1258,24 @@
     width: 12px; height: 1px;
     background: linear-gradient(90deg, var(--ember), transparent);
   }
-  ul.pts b { color: var(--ink); font-weight: 600; }
+  /* The measurements. This whole page argues that the work was measured,
+     and the numbers were set exactly like the words around them — so the
+     evidence read as prose. Tabular figures (so digits share a width and
+     line up between bullets), tighter tracking the way numerals want, and
+     the accent tint reserved for the figures themselves. The claim after
+     each number stays ink, because the number is what earns the emphasis. */
+  ul.pts b, .row dd p b {
+    color: var(--ink); font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.012em;
+  }
+  /* Standalone, not nested under the list: one of these figures lives in
+     a paragraph rather than a bullet, and a list-scoped selector silently
+     skipped it. */
+  .n {
+    color: var(--ember);
+    font-variant-numeric: tabular-nums;
+  }
 
   /* === SKILLS ======================================================= */
 
@@ -2628,10 +2649,10 @@
           <h3 class="lead">Genpact</h3>
           <div class="meta">Associate and Subject Matter Expert — Operations · Gurugram &amp; Noida</div>
           <ul class="pts">
-            <li>Analysed high-volume workflows and drove process redesign, contributing to an <b>18% reduction in turnaround time</b>.</li>
-            <li>Ran structured root-cause analysis of recurring defects and SLA deviations, contributing to a <b>30% reduction in operational defects</b>.</li>
-            <li>Automated management reporting in Excel and Power BI, cutting recurring effort by <b>25%</b>.</li>
-            <li>Partnered with Risk, Compliance and Quality on controls and workflow improvements, contributing to a <b>22% productivity uplift</b>.</li>
+            <li>Analysed high-volume workflows and drove process redesign, contributing to an <b><span class="n">18%</span> reduction in turnaround time</b>.</li>
+            <li>Ran structured root-cause analysis of recurring defects and SLA deviations, contributing to a <b><span class="n">30%</span> reduction in operational defects</b>.</li>
+            <li>Automated management reporting in Excel and Power BI, cutting recurring effort by <b><span class="n">25%</span></b>.</li>
+            <li>Partnered with Risk, Compliance and Quality on controls and workflow improvements, contributing to a <b><span class="n">22%</span> productivity uplift</b>.</li>
             <li>Documented process gaps, tracked issues through Buganizer and validated corrective actions.</li>
           </ul>
         </dd>
@@ -2672,7 +2693,7 @@
         <dd>
           <h3>Bhagwan Parshuram Institute of Technology, GGSIPU</h3>
           <div class="meta">Data Analytics Intern · New Delhi</div>
-          <p>Analysed institutional datasets in Python and Excel, building KPI dashboards and automated reports that cut repetitive manual effort by <b>25%</b>.</p>
+          <p>Analysed institutional datasets in Python and Excel, building KPI dashboards and automated reports that cut repetitive manual effort by <b><span class="n">25%</span></b>.</p>
         </dd>
       </div>
       <div class="row rise">
