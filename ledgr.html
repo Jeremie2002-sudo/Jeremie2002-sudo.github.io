@@ -117,6 +117,37 @@
     margin: 26px 0; color: var(--soft); font-style: italic; font-size: 18px;
   }
 
+  /* The tool-loop diagram. Two colours do the arguing: ember is the model,
+     flare is my code — so you can see at a glance that nothing ember-coloured
+     ever touches a number. Dashed edges carry the same split for anyone who
+     can't separate the two hues. The viewBox is tall and narrow rather than
+     wide because a wide one would either shrink to nothing on a phone or need
+     a second layout, and one drawing is easier to keep honest than two. */
+  figure.flow { margin: 26px 0 30px; }
+  .flow svg { display: block; width: 100%; height: auto; max-width: 420px; margin: 0 auto; }
+  .flow text { font-family: var(--mono); }
+  .flow .lead { font-size: 11.5px; fill: var(--ink); }
+  .flow .sub { font-size: 10px; fill: var(--soft); }
+  .flow .note { font-size: 9.5px; fill: var(--dim); letter-spacing: .04em; }
+  .flow .tag { font-size: 9.5px; letter-spacing: .14em; }
+  .flow .box { fill: var(--deep); stroke-width: 1.5; }
+  .flow .ring { fill: var(--deep); stroke-width: 1.2; }
+  .flow .plain { stroke: var(--line); }
+  .flow .model { stroke: var(--ember); stroke-dasharray: 5 4; }
+  .flow .code { stroke: var(--flare); }
+  .flow .wire { fill: none; stroke: var(--dim); stroke-width: 1.5; }
+  .flow .em { fill: var(--ember); }
+  .flow .fl { fill: var(--flare); }
+  .flow figcaption {
+    font-family: var(--mono); font-size: 11px; line-height: 1.65;
+    color: var(--dim); max-width: 420px; margin: 12px auto 0;
+  }
+  /* The return path crawls, but only for readers who asked for motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    .flow .loop { stroke-dasharray: 6 5; animation: crawl 3.4s linear infinite; }
+    @keyframes crawl { to { stroke-dashoffset: -22; } }
+  }
+
   .cta {
     display: flex; gap: 26px; flex-wrap: wrap; margin-top: 56px;
     padding-top: 26px; border-top: 1px solid var(--line);
@@ -192,6 +223,86 @@
   <p class="pull">The assistant's dollar figures match the dashboard exactly —
   not because the model is careful, but because it was never given the chance
   to be careless.</p>
+
+  <figure class="flow">
+    <svg viewBox="0 0 360 480" role="img" aria-labelledby="flow-t flow-d">
+      <title id="flow-t">The tool-calling loop that stops the model inventing
+      numbers</title>
+      <desc id="flow-d">Your question goes to the model, which chooses one of
+      four declared tools: get_totals, get_spending_by_category,
+      search_transactions or get_largest_transactions. My code executes that
+      query against the real transaction data and sends the result back as a
+      tool message. The model may go round again — at most five rounds — before
+      it writes the sentence. The model only chooses and narrates; it never
+      computes.</desc>
+
+      <defs>
+        <marker id="tip" viewBox="0 0 10 10" refX="9" refY="5"
+                markerUnits="userSpaceOnUse" markerWidth="6" markerHeight="6"
+                orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 Z" fill="var(--dim)"/>
+        </marker>
+      </defs>
+
+      <!-- key -->
+      <line class="model" x1="8" y1="15" x2="24" y2="15" stroke-width="2"/>
+      <text class="note em" x="29" y="18.5">model: chooses, narrates</text>
+      <line class="code" x1="190" y1="15" x2="206" y2="15" stroke-width="2"/>
+      <text class="note fl" x="211" y="18.5">my code: computes</text>
+
+      <rect class="box plain" x="8" y="34" width="280" height="30" rx="9"/>
+      <text class="note" x="148" y="53" text-anchor="middle">YOUR QUESTION, IN PLAIN ENGLISH</text>
+
+      <path class="wire" d="M48,64 V85" marker-end="url(#tip)"/>
+
+      <rect class="box model" x="8" y="88" width="280" height="110" rx="9"/>
+      <circle class="ring" cx="268" cy="106" r="10" stroke="var(--ember)"/>
+      <text class="lead em" x="268" y="110" text-anchor="middle">1</text>
+      <text class="tag em" x="22" y="110">THE MODEL</text>
+      <text class="lead" x="22" y="132">chooses one of four declared tools</text>
+      <text class="sub" x="26" y="150">&#183; get_totals</text>
+      <text class="sub" x="26" y="163">&#183; get_spending_by_category</text>
+      <text class="sub" x="26" y="176">&#183; search_transactions</text>
+      <text class="sub" x="26" y="189">&#183; get_largest_transactions</text>
+
+      <path class="wire" d="M48,198 V227" marker-end="url(#tip)"/>
+      <text class="note" x="60" y="216">the tool call, with its arguments</text>
+
+      <rect class="box code" x="8" y="230" width="280" height="78" rx="9"/>
+      <circle class="ring" cx="268" cy="248" r="10" stroke="var(--flare)"/>
+      <text class="lead fl" x="268" y="252" text-anchor="middle">2</text>
+      <text class="tag fl" x="22" y="252">MY CODE</text>
+      <text class="lead" x="22" y="274">executes that query against the</text>
+      <text class="lead" x="22" y="288">real transaction data</text>
+      <text class="sub" x="22" y="302">every number is computed here</text>
+
+      <path class="wire" d="M48,308 V347" marker-end="url(#tip)"/>
+      <text class="note" x="60" y="324">the result goes back as a tool message</text>
+
+      <!-- round again, or answer -->
+      <circle cx="48" cy="338" r="2.5" fill="var(--dim)"/>
+      <path class="wire loop" d="M48,338 H344 V150 H290" marker-end="url(#tip)"/>
+      <text class="note fl" x="322" y="244" text-anchor="middle"
+            transform="rotate(-90 322 244)">AT MOST 5 ROUNDS</text>
+
+      <rect class="box model" x="8" y="350" width="280" height="78" rx="9"/>
+      <circle class="ring" cx="268" cy="368" r="10" stroke="var(--ember)"/>
+      <text class="lead em" x="268" y="372" text-anchor="middle">3</text>
+      <text class="tag em" x="22" y="372">THE MODEL</text>
+      <text class="lead" x="22" y="394">writes the sentence, quoting the</text>
+      <text class="lead" x="22" y="408">figures it was handed</text>
+      <text class="sub" x="22" y="422">it computes nothing, ever</text>
+
+      <path class="wire" d="M48,428 V443" marker-end="url(#tip)"/>
+
+      <rect class="box plain" x="8" y="446" width="280" height="30" rx="9"/>
+      <text class="note" x="148" y="465" text-anchor="middle">AN ANSWER THAT MATCHES THE DASHBOARD</text>
+    </svg>
+    <figcaption>Dashed boxes are the model, solid ones are my code. The model
+    picks a tool and narrates the result; it never sees a calculation it has to
+    do itself. After five rounds the loop stops and asks you for a more
+    specific question.</figcaption>
+  </figure>
 
   <h2>Degrade to a dumber version, never to an error page</h2>
   <p>Every AI feature in Ledgr has a non-AI path underneath it. If no backend is

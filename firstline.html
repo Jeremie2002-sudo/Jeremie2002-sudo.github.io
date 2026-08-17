@@ -117,6 +117,31 @@
     margin: 26px 0; color: var(--soft); font-style: italic; font-size: 18px;
   }
 
+  /* The headline finding is a length difference, so it gets drawn rather than
+     only stated. Both bars share one track and one scale — that is the whole
+     argument, and anything decorative would dilute it. The bars grow from the
+     left on load because the emptiness of the second one is easier to feel
+     than to read; readers who asked the browser to hold still get them
+     already drawn, which is why the animation is opt-in rather than opt-out. */
+  .bars { display: block; width: 100%; height: auto; margin: 24px 0 30px; }
+  .bars .track { fill: var(--deep); stroke: var(--line); }
+  .bars .grid { stroke: var(--line); stroke-dasharray: 3 4; }
+  .bars .fill { transform-box: fill-box; transform-origin: left center; }
+  .bars .recall { fill: var(--ember); }
+  .bars .precision { fill: var(--flare); }
+  .bars .lab { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; fill: var(--dim); }
+  .bars .val {
+    font-family: var(--mono); font-size: 16px; font-weight: 700;
+    fill: var(--ink); font-variant-numeric: tabular-nums;
+  }
+  .bars .tick { font-family: var(--mono); font-size: 10px; fill: var(--dim); }
+  .bars .note { font-family: var(--serif); font-style: italic; font-size: 12px; fill: var(--soft); }
+  @media (prefers-reduced-motion: no-preference) {
+    .bars .fill { animation: barGrow .9s cubic-bezier(.22,.61,.36,1) both; }
+    .bars .precision { animation-delay: .18s; }
+  }
+  @keyframes barGrow { from { transform: scaleX(0); } }
+
   .cta {
     display: flex; gap: 26px; flex-wrap: wrap; margin-top: 56px;
     padding-top: 26px; border-top: 1px solid var(--line);
@@ -201,6 +226,33 @@
   </div>
   <p class="pull">The model never missed a critical ticket — but only by escalating
   five tickets for every one that needed a human. Safety by crying wolf, measured.</p>
+
+  <svg class="bars" viewBox="0 0 400 176" role="img" aria-labelledby="barsTitle">
+    <title id="barsTitle">On the mixed_shift scenario, local Llama 3.2 reached an
+    escalation recall of 1.000 but an escalation precision of only 0.212 — it caught
+    every ticket that needed a human by escalating roughly five for each one.</title>
+
+    <text class="lab" x="0" y="10">MIXED_SHIFT &#183; LLAMA3.2 (3B)</text>
+
+    <text class="lab" x="0" y="38">ESCALATION RECALL</text>
+    <text class="val" x="400" y="38" text-anchor="end">1.000</text>
+    <rect class="track" x="0" y="46" width="400" height="26" rx="3"/>
+
+    <text class="lab" x="0" y="104">ESCALATION PRECISION</text>
+    <text class="val" x="400" y="104" text-anchor="end">0.212</text>
+    <rect class="track" x="0" y="112" width="400" height="26" rx="3"/>
+
+    <line class="grid" x1="200" y1="46" x2="200" y2="138"/>
+
+    <rect class="fill recall" x="0" y="46" width="400" height="26" rx="3"/>
+    <rect class="fill precision" x="0" y="112" width="84.8" height="26" rx="3"/>
+
+    <text class="tick" x="0" y="152">0</text>
+    <text class="tick" x="200" y="152" text-anchor="middle">0.5</text>
+    <text class="tick" x="400" y="152" text-anchor="end">1.0</text>
+
+    <text class="note" x="0" y="172">Only one escalation in five was one a human actually needed.</text>
+  </svg>
   <p>That's the headline finding, and it's one a demo can never surface. Perfect
   escalation recall with 21% precision is an agent that is technically safe and
   operationally useless — it has simply moved the queue onto the senior team, and

@@ -117,6 +117,30 @@
     margin: 26px 0; color: var(--soft); font-style: italic; font-size: 18px;
   }
 
+  /* The funnel is the argument of the whole project, and a paragraph makes you
+     hold four numbers in your head to see it. Drawn as inline SVG rather than
+     an image because this page ships zero external requests, and because an
+     SVG can read the theme tokens directly instead of guessing at what colour
+     the background is. Every width below is proportional to its count, so the
+     narrowing is the real ratio and not a flattering drawing of it. */
+  figure.funnel { margin: 26px 0; }
+  figure.funnel svg {
+    display: block; width: 100%; height: auto; max-width: 480px; margin: 0 auto;
+  }
+  figure.funnel figcaption {
+    font-family: var(--mono); font-size: 11px; line-height: 1.6;
+    color: var(--dim); text-align: center; margin-top: 12px;
+  }
+  .funnel .band { fill: var(--deep); stroke: var(--line); stroke-width: 1; }
+  .funnel .flow { fill: var(--line); }
+  .funnel .keep { fill: var(--ember); fill-opacity: .12; stroke: var(--ember); stroke-width: 1; }
+  .funnel .n { font-family: var(--display); font-size: 25px; font-weight: 700; fill: var(--ember); }
+  .funnel .op { font-family: var(--mono); font-size: 11.5px; fill: var(--soft); }
+  .funnel .in { font-family: var(--mono); font-size: 10.5px; fill: var(--soft); }
+  .funnel .unit { font-family: var(--mono); font-size: 9.5px; fill: var(--dim); }
+  .funnel .tick { stroke: var(--dim); stroke-width: 1.2; }
+  .funnel .head { fill: var(--dim); }
+
   .cta {
     display: flex; gap: 26px; flex-wrap: wrap; margin-top: 56px;
     padding-top: 26px; border-top: 1px solid var(--line);
@@ -198,6 +222,63 @@
   off-topic passage highly. So the last word goes to an LLM that sees all 12
   candidates at once and outputs an ordering — one cheap call over short previews,
   and it can spot what similarity scores can't.</p>
+
+  <figure class="funnel">
+    <svg viewBox="0 0 360 342" role="img" xmlns="http://www.w3.org/2000/svg">
+      <title>The retrieval funnel. The document is indexed as 1600-character
+      chunks with 200 characters of overlap. Each question fans out to two
+      retrievers in parallel — BM25 keyword search returns 20 candidates and
+      FAISS vector search returns 20. Reciprocal Rank Fusion merges the two
+      lists and 12 survive. A listwise LLM rerank judges all 12 in one call and
+      the top 5 become the evidence the answer is written from.</title>
+
+      <!-- the indexed document: the pool everything below is drawn from -->
+      <rect class="band" x="4" y="6" width="224" height="20" rx="4"/>
+      <text class="in" x="116" y="20" text-anchor="middle">1600-char chunks &#183; 200 overlap</text>
+      <text class="op" x="240" y="20">the document</text>
+
+      <line class="tick" x1="57" y1="26" x2="57" y2="34"/>
+      <polygon class="head" points="53,34 61,34 57,39"/>
+      <line class="tick" x1="175" y1="26" x2="175" y2="34"/>
+      <polygon class="head" points="171,34 179,34 175,39"/>
+
+      <!-- stage 1: two retrievers, 20 each -->
+      <rect class="band" x="4" y="40" width="106" height="62" rx="5"/>
+      <text class="unit" x="57" y="56" text-anchor="middle">BM25 keyword</text>
+      <text class="n" x="57" y="86" text-anchor="middle">20</text>
+      <text class="unit" x="57" y="97" text-anchor="middle">candidates</text>
+
+      <rect class="band" x="122" y="40" width="106" height="62" rx="5"/>
+      <text class="unit" x="175" y="56" text-anchor="middle">FAISS vector</text>
+      <text class="n" x="175" y="86" text-anchor="middle">20</text>
+      <text class="unit" x="175" y="97" text-anchor="middle">candidates</text>
+
+      <text class="op" x="240" y="75">two retrievers</text>
+
+      <!-- stage 2: rank fusion collapses 40 into 12 -->
+      <polygon class="flow" points="4,102 228,102 149.6,156 82.4,156"/>
+      <text class="op" x="240" y="124">Reciprocal Rank</text>
+      <text class="op" x="240" y="137">Fusion</text>
+
+      <rect class="band" x="82.4" y="156" width="67.2" height="52" rx="5"/>
+      <text class="n" x="116" y="184" text-anchor="middle">12</text>
+      <text class="unit" x="116" y="199" text-anchor="middle">fused</text>
+
+      <!-- stage 3: the rerank keeps 5 -->
+      <polygon class="flow" points="82.4,208 149.6,208 130,262 102,262"/>
+      <text class="op" x="240" y="230">listwise LLM</text>
+      <text class="op" x="240" y="243">rerank</text>
+
+      <rect class="keep" x="102" y="262" width="28" height="52" rx="5"/>
+      <text class="n" x="116" y="297" text-anchor="middle">5</text>
+      <text class="op" x="240" y="291">the evidence</text>
+
+      <text class="unit" x="116" y="332" text-anchor="middle">the answer is written from these</text>
+    </svg>
+    <figcaption>Fan out wide, cut hard: 40 candidates in, 5 out. Every width is
+    proportional to its count.</figcaption>
+  </figure>
+
   <p class="pull">Retrieval quality, not the model, is where RAG lives or dies.
   If the right passage isn't in the evidence, no prompt can save the answer.</p>
 
