@@ -252,12 +252,31 @@
      not a peekaboo. */
   main section { will-change: opacity, transform; }
 
-  /* Scroll progress — a spectral hairline, the only fixed chrome. */
+  /* Scroll progress — a spectral hairline, the only fixed chrome. Read as
+     a signal-strength meter rather than a plain bar: the calibration
+     ticks below give the fill something to measure against, which is the
+     difference between a loading bar and an instrument. Every real
+     receiver on a desk has exactly this strip along the top. */
+  .smeter {
+    position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 11;
+    pointer-events: none;
+    /* Minor ticks every 44px, a heavier one every fifth — the way an
+       S-meter marks S1..S9 and then the plus-dB stretch. */
+    background:
+      repeating-linear-gradient(90deg,
+        rgb(var(--accent-rgb) / .5) 0 1px, transparent 1px 220px),
+      repeating-linear-gradient(90deg,
+        rgb(var(--accent-rgb) / .22) 0 1px, transparent 1px 44px);
+    opacity: .55;
+  }
   .progress {
-    position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 12;
+    position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 12;
     background: linear-gradient(90deg, var(--violet), var(--wine) 26%, var(--plasma) 48%, var(--blush) 66%, var(--flare) 84%, var(--ember));
     transform: scaleX(0); transform-origin: left;
     will-change: transform;
+    /* The needle: a brighter edge where the fill currently reaches, so
+       the eye catches the reading and not just the wash behind it. */
+    box-shadow: 1px 0 6px 0 rgb(var(--accent-rgb) / .55);
   }
 
   nav {
@@ -872,6 +891,25 @@
   .cell h3 em { font-style: normal; color: var(--soft); font-weight: 400; }
   .cell p { color: var(--soft); margin-top: 15px; max-width: 62ch; }
   .cell p.aside { color: var(--dim); font-size: 15.5px; }
+
+  /* A maker's mark per project, drawn in the same hand as the journey
+     vignettes — outline work, one colour, no faces. Watermark weight on
+     purpose: the card's job is its words and its evidence panel, and a
+     drawing loud enough to compete with them would be decoration. It
+     warms on hover, the one moment someone is looking at a single card
+     rather than the whole shelf. */
+  .cell .mark {
+    position: absolute; right: clamp(14px, 1.6vw, 22px); bottom: clamp(14px, 1.6vw, 22px);
+    width: clamp(66px, 7.5vw, 104px); height: auto;
+    color: var(--dim); opacity: .14;
+    pointer-events: none; z-index: 0;
+    transition: opacity .45s ease, color .45s ease, transform .45s cubic-bezier(.16,.86,.24,1);
+  }
+  .cell:hover .mark { opacity: .26; color: var(--ember); transform: translateY(-3px); }
+  /* Everything the reader actually reads stays above the drawing. */
+  .cell-in > *:not(.mark) { position: relative; z-index: 1; }
+  /* On a narrow phone the card has no spare corner to give it. */
+  @media (max-width: 560px) { .cell .mark { display: none; } }
   .cell p b { color: var(--ink); font-weight: 600; }
   .cell .chips { margin-top: 20px; }
   .cell .visit { margin-top: 20px; }
@@ -2125,7 +2163,7 @@
      back to solid ink: background-clip text with a transparent color
      prints as nothing at all. */
   @media print {
-    nav, .theme, .progress, #voyager, #term, .grain, #shader, #motes,
+    nav, .theme, .progress, .smeter, #voyager, #term, .grain, #shader, #motes,
     .cue, .wf-write, .scene, .vig, .grad, .marquee, #wf-layer, #glow,
     .pipe, .constellation, .sky-day, .sky-night,
     #wf-close-layer, .scene-card, .scene-open { display: none !important; }
@@ -2155,6 +2193,7 @@
 </head>
 <body>
 
+<i class="smeter" aria-hidden="true"></i>
 <div class="progress" id="progress" aria-hidden="true"></div>
 <canvas id="shader" aria-hidden="true"></canvas>
 <canvas id="motes" aria-hidden="true"></canvas>
@@ -2403,7 +2442,7 @@
 
       <article class="cell feature rise" data-tilt>
         <div class="cell-in">
-          <div class="cell-top"><span class="num">01</span><span class="stack">Python · FastAPI · Ollama/Groq · pytest</span></div>
+          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="30" y="58" width="62" height="44" rx="8" fill="none" stroke-width="3" transform="rotate(-15 40 98)"/><rect x="30" y="58" width="62" height="44" rx="8" fill="none" stroke-width="3" transform="rotate(-7 40 98)"/><rect x="30" y="58" width="62" height="44" rx="8" fill="currentColor" stroke-width="3"/><path d="M92 11A17 17 0 1 1 77.3 19.5" stroke-width="3.6"/><path d="M92 28V19M92 28l7 5" stroke-width="4"/></g></svg><div class="cell-top"><span class="num">01</span><span class="stack">Python · FastAPI · Ollama/Groq · pytest</span></div>
           <h3>FirstLine <em>— An AI First Line of Support</em></h3>
           <p>
             I worked in an ops queue for two years. FirstLine is that job rebuilt as an
@@ -2446,7 +2485,7 @@
 
       <article class="cell rise" data-tilt>
         <div class="cell-in">
-          <div class="cell-top"><span class="num">02</span><span class="stack">Python · asyncio · pytest · GitHub Actions</span></div>
+          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M12 54h96" stroke-width="3"/><path d="M50 54c15 3 26 17 45 38" stroke-width="5"/><path d="M100 58h6v30h-6" stroke-width="2.4"/><path d="M21 32l5 6 10-14" stroke-width="3.5"/><path d="M24 84l12 12M36 84l-12 12" stroke-width="3.5"/></g><circle cx="50" cy="54" r="4.5" fill="currentColor"/></svg><div class="cell-top"><span class="num">02</span><span class="stack">Python · asyncio · pytest · GitHub Actions</span></div>
           <h3>PromptDrift <em>— Prompt Regression Testing</em></h3>
           <p>
             You tweak a prompt to fix one bad case, it works, you ship it — and three other
@@ -2490,7 +2529,7 @@
 
       <article class="cell rise" data-tilt>
         <div class="cell-in">
-          <div class="cell-top"><span class="num">03</span><span class="stack">FastAPI · FAISS</span></div>
+          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M28 20h44l20 20v60H28Z" stroke-width="3"/><path d="M72 20v20h20" stroke-width="3"/><path d="M39 52h28M39 63h20" stroke-width="3"/><path d="M39 76h26" stroke-width="7"/><circle cx="66" cy="72" r="23" stroke-width="5"/><path d="M83 89l16 16" stroke-width="8"/></g></svg><div class="cell-top"><span class="num">03</span><span class="stack">FastAPI · FAISS</span></div>
           <h3>Synapse <em>— Agentic RAG Assistant</em></h3>
           <p>
             BM25 and FAISS fused through Reciprocal Rank Fusion with LLM listwise reranking,
@@ -2552,7 +2591,7 @@
 
       <article class="cell rise" data-tilt id="work-more">
         <div class="cell-in">
-          <div class="cell-top"><span class="num">04</span><span class="stack">Flask · SQLite · Docker</span></div>
+          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M22 18h44v74l-7.3-6-7.3 6-7.4-6-7.3 6-7.4-6-7.3 6z" stroke-width="3"/><path d="M32 36h24M32 48h24M32 60h15" stroke-width="3.4"/><path d="M78 96V72M92 96V54M106 96V82" stroke-width="7"/><path d="M70 103h44" stroke-width="3"/></g></svg><div class="cell-top"><span class="num">04</span><span class="stack">Flask · SQLite · Docker</span></div>
           <h3>Ledgr <em>— AI Finance Manager</em></h3>
           <p>
             A full-stack finance tracker with dashboards, budgets and CSV import/export, plus
@@ -2593,7 +2632,7 @@
 
       <article class="cell rise" data-tilt>
         <div class="cell-in">
-          <div class="cell-top"><span class="num">05</span><span class="stack">SDR · RF and wireless systems</span></div>
+          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="24" y="80" width="62" height="24" rx="5" fill="currentColor"/><path d="M54 80V40" stroke-width="5"/><circle cx="54" cy="38" r="4" fill="currentColor"/><path d="M44.8 30.8a13 13 0 0 1 18.4 0" stroke-width="3.5"/><path d="M39.2 25.2a21 21 0 0 1 29.6 0" stroke-width="3.5"/><path d="M33.5 19.5a29 29 0 0 1 41 0" stroke-width="3.5"/><path d="M36 113q4-7 8 0t8 0t8 0t8 0" stroke-width="3"/></svg><div class="cell-top"><span class="num">05</span><span class="stack">SDR · RF and wireless systems</span></div>
           <h3>Wireless Temperature Detection <em>— HackRF One</em></h3>
           <p>
             An RF prototype that pulls remotely transmitted temperature signals out of the air
