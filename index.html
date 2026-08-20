@@ -2062,6 +2062,42 @@
     display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px;
   }
 
+  /* The seismograph. A day of real earthquakes as a drum trace above
+     the footer — the flat line is the planet holding still, the kicks
+     are it not holding still. startSeismo() unhides it only when the
+     USGS feed answers; no data, no instrument. */
+  .seismo { padding-top: 10px; }
+  .seismo[hidden] { display: none; }
+  .seismo svg {
+    display: block; width: 100%; height: 56px;
+    /* the pen rides the very edge of "now"; clipping half of it off
+       would read as a bug rather than a boundary */
+    overflow: visible;
+  }
+  .seismo path {
+    fill: none; stroke: var(--dim); stroke-width: 1;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .seismo .seismo-peak { stroke: var(--ember); stroke-width: 1.4; }
+  .seismo .seismo-pen { stroke: var(--ember); stroke-width: 4; }
+  .seismo-note {
+    display: flex; flex-wrap: wrap; justify-content: space-between;
+    gap: 4px 24px; margin-top: 7px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .13em;
+    color: var(--dim);
+  }
+  .seismo-big { color: var(--soft); }
+  .seismo-big b { color: var(--ember); font-weight: 600; }
+  @media (max-width: 560px) {
+    .seismo svg { height: 44px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    /* only the pen breathes — the trace is a finished record, not a
+       loading bar. no draw-on either: the record is already written. */
+    .seismo .seismo-pen { animation: seismo-pen 2.6s ease-in-out infinite; }
+  }
+  @keyframes seismo-pen { 50% { opacity: .3; } }
+
   /* Phones. The desktop rhythm is built on vh-based clamps, which resolve
      generously on a tall narrow screen — and every two-column grid here
      collapses to one, stacking its own gap on top. Left alone that reads
@@ -2174,7 +2210,7 @@
      back to solid ink: background-clip text with a transparent color
      prints as nothing at all. */
   @media print {
-    nav, .theme, .progress, .smeter, #voyager, #term, .grain, #shader, #motes,
+    nav, .theme, .progress, .smeter, .seismo, #voyager, #term, .grain, #shader, #motes,
     .cue, .wf-write, .scene, .vig, .grad, .marquee, #wf-layer, #glow,
     .pipe, .constellation, .sky-day, .sky-night,
     #wf-close-layer, .scene-card, .scene-open { display: none !important; }
@@ -3066,6 +3102,21 @@
   </section>
 
 </main>
+
+<!-- A drum recorder for the whole planet: the last 24 hours of M4.5+
+     earthquakes, drawn by startSeismo() from the USGS day feed. Stays
+     hidden until real data arrives — no feed, no instrument. -->
+<aside class="seismo wrap" id="seismo" hidden aria-label="Seismograph: the last 24 hours of earthquakes">
+  <svg viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path class="seismo-base" d="" vector-effect="non-scaling-stroke"></path>
+    <path class="seismo-peak" d="" vector-effect="non-scaling-stroke"></path>
+    <path class="seismo-pen" d="" vector-effect="non-scaling-stroke"></path>
+  </svg>
+  <p class="seismo-note">
+    <span class="seismo-big" id="seismo-big"></span>
+    <span class="seismo-cap">seismograph · every M4.5+ on Earth, past 24 hours · usgs</span>
+  </p>
+</aside>
 
 <footer class="wrap">
   <span>David Jeremie Anand · New Delhi, India</span>
@@ -5212,6 +5263,145 @@
   }
 
   /* ==================================================================
+     SEISMOGRAPH
+     A drum recorder for the whole planet, parked above the footer:
+     every M4.5+ earthquake USGS logged in the last 24 hours, time
+     running left to right, each arrival kicking the pen by magnitude.
+     The day's largest is inked in ember and named below the strip.
+     One fetch on load, ten minutes of session cache, no polling; a
+     failed feed leaves no instrument at all, and an empty one still
+     draws — a flat line is a real reading too.
+     ================================================================== */
+
+  function startSeismo() {
+    var box = document.getElementById("seismo");
+    if (!box || !window.fetch) return;
+    var base = box.querySelector(".seismo-base");
+    var peak = box.querySelector(".seismo-peak");
+    var pen = box.querySelector(".seismo-pen");
+    var slot = document.getElementById("seismo-big");
+    if (!base || !peak || !pen || !slot) return;
+
+    var W = 1000, MID = 30, DAY = 864e5;
+
+    /* Magnitude is already log-energy — one whole step is ~32x — so a
+       gentle power curve on top is enough: an M4.5 stays a flick, an
+       M7 fills the drum. Clamped where the paper runs out. */
+    function throwPx(m) {
+      var n = (Math.min(m, 8) - 4.4) / 3.6;
+      if (n < 0) n = 0;
+      return 2 + 24 * Math.pow(n, 1.6);
+    }
+
+    function f1(v) { return Math.round(v * 10) / 10; }
+
+    function draw(evs) {
+      var now = Date.now(), list = [], i, e, amp;
+      for (i = 0; i < evs.length; i++) {
+        e = evs[i];
+        if (typeof e.m !== "number" || typeof e.t !== "number") continue;
+        if (e.t > now || now - e.t > DAY) continue;
+        amp = throwPx(e.m);
+        list.push({
+          x: (1 - (now - e.t) / DAY) * W,
+          amp: amp,
+          /* bigger events ring longer — the coda scales with the throw */
+          span: 10 + amp * .55,
+          m: e.m, t: e.t, place: e.place || ""
+        });
+      }
+
+      /* The trace is a function of x: silence until each arrival, then
+         a sharp onset ringing down — cos for the wiggle, exp for the
+         coda. Overlapping events sum, which is what a real drum does;
+         the clamp is the pen hitting the edge of the paper. */
+      function yAt(x) {
+        var y = MID, k, u;
+        for (k = 0; k < list.length; k++) {
+          u = (x - list[k].x) / list[k].span;
+          if (u >= 0 && u <= 1)
+            y -= list[k].amp * Math.cos(u * 16) * Math.exp(-u * 4);
+        }
+        return y < 1 ? 1 : y > 59 ? 59 : y;
+      }
+
+      /* Half-unit sampling, flat runs collapsed to H — the baseline is
+         most of the day and does not need spelling out point by point. */
+      function seg(from, to) {
+        var d = "M" + f1(from) + " " + f1(yAt(from));
+        var flat = false, x, y;
+        for (x = from + .5; x <= to; x += .5) {
+          y = yAt(x);
+          if (Math.abs(y - MID) < .01) { flat = true; continue; }
+          if (flat) { d += "H" + f1(x - .5); flat = false; }
+          d += "L" + f1(x) + " " + f1(y);
+        }
+        if (flat) d += "H" + f1(to);
+        return d;
+      }
+
+      var bigE = null;
+      for (i = 0; i < list.length; i++) if (!bigE || list[i].m > bigE.m) bigE = list[i];
+
+      var dBase, dPeak = "";
+      if (!bigE) {
+        dBase = seg(0, W);
+      } else {
+        /* the largest event's window goes to the ember path; the base
+           trace steps over it so the two colours never double-strike */
+        var lo = Math.floor(bigE.x * 2) / 2;
+        var hi = Math.ceil(Math.min(W, bigE.x + bigE.span) * 2) / 2;
+        if (lo < 0) lo = 0;
+        dBase = "";
+        if (lo >= 1) dBase += seg(0, lo);
+        if (W - hi >= 1) dBase += (dBase ? " " : "") + seg(hi, W);
+        dPeak = seg(lo, hi);
+      }
+
+      base.setAttribute("d", dBase);
+      if (dPeak) peak.setAttribute("d", dPeak);
+      /* the pen rides at "now" — the right edge, wherever the trace
+         happens to be when the drum reaches it */
+      pen.setAttribute("d", "M" + W + " " + f1(yAt(W)) + "h.01");
+
+      slot.textContent = "";
+      if (bigE) {
+        var b = document.createElement("b");
+        b.textContent = "M" + bigE.m.toFixed(1);
+        slot.appendChild(b);
+        /* usgs writes "270 km SSE of Dunhuang, China" — the distance
+           prefix is for seismologists; the name is for everyone */
+        var pl = bigE.place.replace(/^\s*\d+\s*km\s+[A-Z]{1,3}\s+of\s+/, "");
+        var min = Math.round((now - bigE.t) / 6e4);
+        var when = min < 1 ? "just now"
+          : min < 60 ? min + "m ago"
+          : Math.round(min / 60) + "h ago";
+        slot.appendChild(document.createTextNode((pl ? " · " + pl : "") + " · " + when));
+      } else {
+        slot.appendChild(document.createTextNode("a quiet day, seismically"));
+      }
+      box.hidden = false;
+    }
+
+    var c = null;
+    try { c = JSON.parse(sessionStorage.getItem("dja-quakes") || "null"); } catch (e) {}
+    if (c && c.evs && Date.now() - c.t < 6e5) { draw(c.evs); return; }
+    fetch("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson")
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (j) {
+        if (!j || !j.features || typeof j.features.length !== "number") return;
+        var evs = [], i, p;
+        for (i = 0; i < j.features.length; i++) {
+          p = j.features[i] && j.features[i].properties;
+          if (p && typeof p.mag === "number" && typeof p.time === "number")
+            evs.push({ m: p.mag, t: p.time, place: p.place || "" });
+        }
+        try { sessionStorage.setItem("dja-quakes", JSON.stringify({ t: Date.now(), evs: evs })); } catch (e) {}
+        draw(evs);
+      })["catch"](function () { /* no feed, no instrument */ });
+  }
+
+  /* ==================================================================
      PIPELINE NODES
      Click a stage and the pulse launches from it: the animation restarts
      with a negative delay equal to that node's position in the loop.
@@ -5747,6 +5937,7 @@
   startTimelinePulse();
   startPipe();
   startFresh();
+  startSeismo();
   startISS();
   startGlobe();
   /* Not under reduced motion: with transitions globally disabled the
