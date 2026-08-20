@@ -5625,8 +5625,55 @@
       cx2.stroke();
     }
 
-    function draw() {
-      if (document.hidden) return;
+    /* Subsolar point: declination from the day of the year, longitude
+       straight from the UTC hour. Skips the equation of time — that
+       correction tops out near 4°, and the twilight band painted below
+       is wider than that, so the extra math would buy nothing here. */
+    function subsolar() {
+      var now = new Date();
+      var doy = (now.getTime() - Date.UTC(now.getUTCFullYear(), 0, 0)) / 864e5;
+      var h = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+      return { lat: -23.44 * Math.cos(2 * Math.PI * (doy + 10) / 365.25),
+               lon: (((12 - h) * 15) + 540) % 360 - 180 };
+    }
+
+    /* Night side. The terminator is a great circle 90° from the sun,
+       and under this projection that is always a centred half-ellipse —
+       so the whole hemisphere is one filled path (rim arc + ellipse
+       arc), no per-pixel work, as cheap to redraw as a coastline. A
+       wide faint stroke along the same curve first stands in for dusk. */
+    function night(la0, lo0, R, cxp, cyp) {
+      var sun = subsolar();
+      var s = proj(sun.lat, sun.lon, la0, lo0, 1);
+      /* proj keeps the toward-viewer cosine to itself; mirror it */
+      var p = sun.lat * Math.PI / 180, l = sun.lon * Math.PI / 180;
+      var p0 = la0 * Math.PI / 180, l0 = lo0 * Math.PI / 180;
+      var sz = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(p) * Math.cos(l - l0);
+      var k = -sz;
+      if (k > -1e-3 && k < 1e-3) k = 1e-3;   /* scale(0) would void the path */
+      cx2.save();
+      cx2.translate(cxp, cyp);
+      cx2.rotate(Math.atan2(s.y, s.x));      /* sun now points along +x */
+      cx2.beginPath(); cx2.arc(0, 0, R, 0, 7); cx2.clip();
+      cx2.beginPath();
+      cx2.save(); cx2.scale(k, 1);
+      cx2.arc(0, 0, R, Math.PI / 2, -Math.PI / 2, true);
+      cx2.restore();
+      cx2.strokeStyle = "rgba(0,0,0,.1)"; cx2.lineWidth = R * .09;
+      cx2.stroke();
+      cx2.beginPath();
+      cx2.arc(0, 0, R, -Math.PI / 2, Math.PI / 2, true);
+      cx2.save(); cx2.scale(k, 1);
+      cx2.arc(0, 0, R, Math.PI / 2, -Math.PI / 2, true);
+      cx2.restore();
+      cx2.closePath();
+      cx2.fillStyle = "rgba(0,0,0,.32)";
+      cx2.fill();
+      cx2.restore();
+    }
+
+    function draw(force) {
+      if (document.hidden && !force) return;
       var iss = issNow();
       if (!iss) { foot.textContent = "acquiring fix…"; return; }
 
@@ -5649,6 +5696,11 @@
       var li;
       for (li = 0; li < COAST.length; li++) polyline(COAST[li], view.lat, view.lon, R, cxp, cyp);
       cx2.globalAlpha = 1;
+
+      /* shade before the overlays: ground and coasts fall into night,
+         the orbit, footprint and station stay readable on top */
+      night(view.lat, view.lon, R, cxp, cyp);
+
 
       if (orbit) {
         var flat = [], oi;
@@ -5696,6 +5748,10 @@
       foot.textContent = iss.lat.toFixed(1) + "°, " + iss.lon.toFixed(1) + "°"
         + (iss.alt ? " · " + Math.round(iss.alt) + " km up" : "") + place;
     }
+
+    /* a backgrounded pane never paints the interval; this handle draws
+       one honest frame on demand so tooling can look at real pixels */
+    window.__globeDraw = function () { if (cx2) draw(true); };
 
     function esc(e) { if (e.key === "Escape") closeCard(); }
     function openCard() {
