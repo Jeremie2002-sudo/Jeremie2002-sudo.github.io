@@ -1937,6 +1937,33 @@
     stroke-linecap: round; opacity: .4;
   }
 
+  /* The same verdict at hero scale: when Open-Meteo says Delhi is wet,
+     the hero itself rains. Built by heroRain() inside startWeather() —
+     on a dry day the layer does not exist, which is also the failure
+     mode. The falling is the vignette trick writ large: dashes marching
+     down full-height lines, so with motion off the static dashes still
+     read as rain. z -1 slots it above the waterfall (-2), above the
+     glow by DOM order, and under every word of the hero. */
+  #hero-rain {
+    position: absolute; inset: 0; z-index: -1;
+    pointer-events: none;
+  }
+  #hero-rain line {
+    stroke: var(--dim); stroke-width: 1.2; opacity: .16;
+    stroke-dasharray: 12 26;
+  }
+  /* A thunderstorm should press a little harder than a shower. */
+  #hero-rain[data-level="storm"] line { opacity: .22; stroke-width: 1.4; }
+  @media (prefers-reduced-motion: no-preference) {
+    #hero-rain line { animation: hero-rain-fall 1.6s linear infinite; }
+  }
+  @keyframes hero-rain-fall { to { stroke-dashoffset: -152; } }
+  /* Half the streaks on phones: the percent layout compresses there,
+     and a 375px hero under the full set stops reading as sparse. */
+  @media (max-width: 560px) {
+    #hero-rain line:nth-child(2n) { display: none; }
+  }
+
   /* The ISS globe: click the satellite's nameplate and a small dark
      Earth opens — orthographic, centred on the station, coastlines in
      line-work, Delhi marked, the orbit drawn an hour each way. Pure
@@ -2211,7 +2238,7 @@
      prints as nothing at all. */
   @media print {
     nav, .theme, .progress, .smeter, .seismo, #voyager, #term, .grain, #shader, #motes,
-    .cue, .wf-write, .scene, .vig, .grad, .marquee, #wf-layer, #glow,
+    .cue, .wf-write, .scene, .vig, .grad, .marquee, #wf-layer, #glow, #hero-rain,
     .pipe, .constellation, .sky-day, .sky-night,
     #wf-close-layer, .scene-card, .scene-open { display: none !important; }
     html, body { background: #fff !important; color: #111 !important; }
@@ -4329,7 +4356,7 @@
 
   /* ==================================================================
      WEATHER
-     When it rains in Delhi it rains in the vignettes. Open-Meteo's
+     When it rains in Delhi it rains in the vignettes and the hero. Open-Meteo's
      current conditions (free, no key), cached six hours; on any failure
      the skies simply stay clear — absence is the fallback.
      ================================================================== */
@@ -4376,9 +4403,52 @@
         }
       }
     }
+
+    /* The hero gets the same verdict at hero scale. Density steps with
+       the WMO code because a drizzle and a thunderstorm should not
+       look alike: drizzle is a suggestion, a storm is a curtain.
+       Geometry is deterministic (golden-angle spread, fixed delays) —
+       it looks scattered but lays out identically every load, so it
+       can be asserted rather than eyeballed. Returns the layer, or
+       null after removing any previous one: clear means absent from
+       the DOM, not hidden. */
+    function heroRain(code) {
+      var hero = document.getElementById("top");
+      var old = document.getElementById("hero-rain");
+      if (old) old.parentNode.removeChild(old);
+      if (!hero || typeof code !== "number" || classify(code) !== "rain") return null;
+      var level = (code === 65 || code === 67 || code === 82 || code >= 95) ? "storm"
+        : (code <= 57 || code === 61 || code === 80) ? "drizzle" : "rain";
+      var n = level === "storm" ? 28 : level === "drizzle" ? 10 : 18;
+      var NS = "http://www.w3.org/2000/svg";
+      var svg = document.createElementNS(NS, "svg");
+      svg.setAttribute("id", "hero-rain");
+      svg.setAttribute("data-wx", "rain");
+      svg.setAttribute("data-level", level);
+      svg.setAttribute("aria-hidden", "true");
+      for (var i = 0; i < n; i++) {
+        var ln = document.createElementNS(NS, "line");
+        var x = (i * 61.8034 + 7) % 100;
+        ln.setAttribute("x1", x.toFixed(2) + "%");
+        ln.setAttribute("y1", "-6%");
+        ln.setAttribute("x2", (x - 3).toFixed(2) + "%");
+        ln.setAttribute("y2", "106%");
+        ln.style.animationDelay = (-((i * .37) % 1.6)).toFixed(2) + "s";
+        svg.appendChild(ln);
+      }
+      /* After #glow, before the text: equal z with the glow, so DOM
+         order paints rain over it, and negative z keeps it under the
+         words. insertBefore with a null second argument appends. */
+      hero.insertBefore(svg, hero.querySelector(".hero-inner"));
+      return svg;
+    }
+    /* Exposed like __stampHero — the only way to test a thunderstorm
+       on a clear day is to hand the builder the code yourself. */
+    window.__heroRain = heroRain;
+
     try {
       var hit = JSON.parse(localStorage.getItem(KEY) || "null");
-      if (hit && Date.now() - hit.t < TTL) { paint(classify(hit.code)); return; }
+      if (hit && Date.now() - hit.t < TTL) { paint(classify(hit.code)); heroRain(hit.code); return; }
     } catch (e) { /* storage blocked: fall through to a fresh fetch */ }
     fetch("https://api.open-meteo.com/v1/forecast?latitude=28.61&longitude=77.21&current=weather_code")
       .then(function (r) { return r.json(); })
@@ -4387,6 +4457,7 @@
         if (typeof code !== "number") return;
         try { localStorage.setItem(KEY, JSON.stringify({ code: code, t: Date.now() })); } catch (e) {}
         paint(classify(code));
+        heroRain(code);
       })
       .catch(function () { /* clear skies by default */ });
   }
