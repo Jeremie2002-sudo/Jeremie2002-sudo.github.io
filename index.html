@@ -2323,8 +2323,53 @@
      evidence panels, black on white. The gradient surname must fall
      back to solid ink: background-clip text with a transparent color
      prints as nothing at all. */
+  /* Sky-events line: one fixed pill below the top chrome that exists
+     only while something rare is actually happening — an M-flare, a
+     Kp>=5 storm, a shower peak night, the station overhead. Most
+     visits it is never shown; a quiet sky is the designed state, not
+     a failure mode. It sits at top:58px so nav's band (which ends
+     ~52px) never overlaps it in either nav state, and at z-index 10
+     it stays under nav (11), progress (12), theme (13), terminal
+     (40) and the globe card (60) — no fixed chrome ever fights it. */
+  .skyline {
+    position: fixed; top: 58px; left: 50%; transform: translateX(-50%);
+    z-index: 10;
+    display: flex; align-items: center; gap: 10px;
+    max-width: min(640px, calc(100vw - 24px));
+    padding: 7px 6px 7px 15px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+    color: var(--soft);
+    background: rgb(var(--ground-rgb) / .92);
+    border: 1px solid var(--line); border-radius: 999px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgb(0 0 0 / .18);
+  }
+  .skyline[hidden] { display: none; }
+  /* The event lamp — lit steady, no pulse: a static state that is
+     already complete beats a blink reduced-motion would have to undo. */
+  .skyline::before {
+    content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 8px rgb(var(--accent-rgb) / .6);
+  }
+  .skyline span {
+    flex: 1 1 auto; min-width: 0;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .skyline button {
+    flex: none; background: none; border: 0; padding: 2px 8px;
+    font-size: 14px; line-height: 1; color: var(--dim); cursor: pointer;
+  }
+  .skyline button:hover, .skyline button:focus-visible { color: var(--ink); }
+  @media (max-width: 560px) {
+    .skyline {
+      top: 52px; left: 8px; right: 8px; transform: none;
+      max-width: none; font-size: 10px; letter-spacing: .08em;
+    }
+  }
+
   @media print {
-    nav, .theme, .progress, .smeter, .seismo, .tuner, .qsl, #voyager, #term, .grain, #shader, #motes,
+    nav, .theme, .progress, .smeter, .seismo, .tuner, .qsl, .skyline, #voyager, #term, .grain, #shader, #motes,
     .cue, .wf-write, .scene, .vig, .grad, .marquee, #wf-layer, #glow, #hero-rain, #hero-sky,
     .pipe, .constellation, .sky-day, .sky-night,
     #wf-close-layer, .scene-card, .scene-open { display: none !important; }
@@ -2356,6 +2401,12 @@
 
 <i class="smeter" aria-hidden="true"></i>
 <div class="progress" id="progress" aria-hidden="true"></div>
+<!-- Born hidden, and on most days it stays that way — startSky()
+     only wakes it while something rare is genuinely happening. -->
+<aside id="skyline" class="skyline" hidden aria-live="polite">
+  <span id="skyline-txt"></span>
+  <button id="skyline-x" type="button" aria-label="Dismiss the sky notice">×</button>
+</aside>
 <canvas id="shader" aria-hidden="true"></canvas>
 <canvas id="motes" aria-hidden="true"></canvas>
 <div class="grain" aria-hidden="true"></div>
@@ -6342,6 +6393,255 @@
   }
 
   /* ==================================================================
+     SKY EVENTS
+     A watcher for the rare days. Four checks — the station actually
+     overhead, an M-class flare on the GOES X-ray feed, a geomagnetic
+     storm in the planetary K index, a major shower around its peak —
+     and a one-line banner that exists only while one of them is
+     true. Most visits every check comes back quiet and the banner is
+     never born: silence is the designed state. One fetch per feed
+     per visit, half-hour session cache, no polling; the terminal's
+     `events` command answers either way with the real readings.
+     ================================================================== */
+
+  function startSky() {
+    var bar = document.getElementById("skyline");
+    var txt = document.getElementById("skyline-txt");
+    var dis = document.getElementById("skyline-x");
+    if (!bar || !txt || !dis || !window.fetch) return;
+
+    var TTL = 18e5;   /* the same half-hour the barometer keeps */
+    var MONTHS = ["jan", "feb", "mar", "apr", "may", "jun",
+                  "jul", "aug", "sep", "oct", "nov", "dec"];
+
+    /* IMO working-list windows and peaks as [month, day]; z is the
+       peak ZHR under an ideal sky — quoted as "up to", never a
+       promise. The banner only wakes within a day of the peak: a
+       shower's rate curve is a few days wide at best, and a "look
+       up" line on a tail night delivering two strays an hour would
+       be noise dressed as an event. The full window still counts —
+       the terminal reports it as context. */
+    var SHOWERS = [
+      { n: "quadrantids",     a: [12, 28], b: [1, 12],  p: [1, 3],   z: 110 },
+      { n: "lyrids",          a: [4, 14],  b: [4, 30],  p: [4, 22],  z: 18 },
+      { n: "eta aquariids",   a: [4, 19],  b: [5, 28],  p: [5, 5],   z: 50 },
+      { n: "delta aquariids", a: [7, 12],  b: [8, 23],  p: [7, 30],  z: 25 },
+      { n: "perseids",        a: [7, 17],  b: [8, 24],  p: [8, 12],  z: 100 },
+      { n: "draconids",       a: [10, 6],  b: [10, 10], p: [10, 8],  z: 10 },
+      { n: "orionids",        a: [10, 2],  b: [11, 7],  p: [10, 21], z: 20 },
+      { n: "leonids",         a: [11, 6],  b: [11, 30], p: [11, 17], z: 15 },
+      { n: "geminids",        a: [12, 4],  b: [12, 20], p: [12, 14], z: 150 },
+      { n: "ursids",          a: [12, 17], b: [12, 26], p: [12, 22], z: 10 }
+    ];
+
+    var lastSig = "";
+
+    /* Cache re-read on every pass, never held: a headless check can
+       seed "dja-sky" after load and the next __sky() call sees it. */
+    function readCache() {
+      var c = null;
+      try { c = JSON.parse(sessionStorage.getItem("dja-sky") || "null"); } catch (e) {}
+      return c || {};
+    }
+    function writeCache(c) {
+      try { sessionStorage.setItem("dja-sky", JSON.stringify(c)); } catch (e) {}
+    }
+
+    /* Flare class straight from the flux decade — the scale IS the
+       exponent: A<1e-7, B<1e-6, C<1e-5, M<1e-4, X above. */
+    function xclass(f) {
+      if (typeof f !== "number" || f <= 0) return null;
+      if (f >= 1e-4) return "X" + (f / 1e-4).toFixed(1);
+      if (f >= 1e-5) return "M" + (f / 1e-5).toFixed(1);
+      if (f >= 1e-6) return "C" + (f / 1e-6).toFixed(1);
+      if (f >= 1e-7) return "B" + (f / 1e-7).toFixed(1);
+      return "A" + (f / 1e-8).toFixed(1);
+    }
+
+    /* Days to the nearest occurrence of a [month, day] peak, signed —
+       negative is past. Anchored at noon so the peak date itself
+       rounds to zero all day, and tried across the year seam because
+       the quadrantids window straddles new year. */
+    function peakDelta(now, p) {
+      var y = now.getFullYear(), best = 1e9, k, d;
+      for (k = -1; k <= 1; k++) {
+        d = Math.round((new Date(y + k, p[0] - 1, p[1], 12).getTime() - now.getTime()) / 864e5);
+        if (Math.abs(d) < Math.abs(best)) best = d;
+      }
+      return best;
+    }
+
+    function showerNow(now) {
+      var t = (now.getMonth() + 1) * 100 + now.getDate();
+      var best = null, i, s, lo, hi, inWin, d;
+      for (i = 0; i < SHOWERS.length; i++) {
+        s = SHOWERS[i];
+        lo = s.a[0] * 100 + s.a[1];
+        hi = s.b[0] * 100 + s.b[1];
+        inWin = lo <= hi ? t >= lo && t <= hi : t >= lo || t <= hi;
+        if (!inWin) continue;
+        d = peakDelta(now, s.p);
+        /* windows overlap in april and october — nearest peak wins */
+        if (!best || Math.abs(d) < Math.abs(best.d)) {
+          best = { n: s.n, d: d, z: s.z, peak: MONTHS[s.p[0] - 1] + " " + s.p[1] };
+        }
+      }
+      return best;
+    }
+
+    /* The verdicts. Reads the session cache and window.__iss only —
+       no fetching here, so the answer is deterministic given a
+       seeded cache and a fixed clock. Events land in immediacy
+       order: an overhead pass expires in minutes, a flare in tens of
+       minutes, a storm in hours, a shower owns the whole night. */
+    function compute(now) {
+      var nowMs = now.getTime();
+      var st = { events: [], off: [], sun: null, sunAge: 0, kp: null, shower: null, km: null };
+      var c = readCache(), age, cls, g;
+
+      /* the station: startISS fixes __iss on load and every five
+         minutes with the Delhi distance precomputed — the globe card
+         never needs to open. Under 600 km of ground distance the
+         station stands more than ~30° up: honestly "overhead". */
+      if (window.__iss && typeof window.__iss.km === "number") {
+        st.km = window.__iss.km;
+        if (st.km < 600) {
+          st.events.push({ k: "iss",
+            line: "the station is overhead right now — look up" });
+        }
+      } else st.off.push("iss");
+
+      if (c.xr && typeof c.xr.f === "number") {
+        st.sun = xclass(c.xr.f);
+        st.sunAge = Math.round((nowMs - c.xr.t) / 6e4);
+        /* M or X within the hour. The peak carries the event's own
+           timestamp, so a stale cache cannot stretch a flare's hour —
+           it can only miss a new one, which the TTL bounds. An
+           in-progress line reads the meter now; a peaked line names
+           the flare by its peak, the way flares are named. */
+        age = nowMs - c.xr.pt;
+        if (c.xr.p >= 1e-5 && age < 36e5) {
+          if (c.xr.f >= 1e-5) {
+            cls = xclass(c.xr.f);
+            st.events.push({ k: "flare" + cls.charAt(0),
+              line: cls + " flare in progress — the shortwave bands are rattling" });
+          } else {
+            cls = xclass(c.xr.p);
+            st.events.push({ k: "flare" + cls.charAt(0),
+              line: cls + " flare peaked " + Math.max(1, Math.round(age / 6e4))
+                + "m ago — the bands are still ringing" });
+          }
+        }
+      } else st.off.push("x-ray");
+
+      if (c.kp && typeof c.kp.v === "number") {
+        st.kp = Math.round(c.kp.v * 10) / 10;
+        if (c.kp.v >= 5) {
+          /* NOAA's G scale rides the same number: Kp5=G1 … Kp9=G5 */
+          g = Math.min(5, Math.floor(c.kp.v) - 4);
+          st.events.push({ k: "kp" + Math.floor(c.kp.v),
+            line: "geomagnetic storm, kp " + Math.floor(c.kp.v) + " (g" + g
+              + ") — aurora far further south than usual tonight" });
+        }
+      } else st.off.push("kp");
+
+      st.shower = showerNow(now);
+      if (st.shower && st.shower.d >= -1 && st.shower.d <= 1) {
+        st.events.push({ k: st.shower.n + (st.shower.d === 0 ? "-peak" : "-near"),
+          line: st.shower.d === 0
+            ? st.shower.n + " peak tonight — up to " + st.shower.z + "/hr under a dark sky"
+            : st.shower.d > 0
+              ? st.shower.n + " peak tomorrow night — already building"
+              : st.shower.n + " peaked last night — still worth a look" });
+      }
+
+      return st;
+    }
+
+    function apply(now) {
+      var st = compute(now || new Date());
+      var sig = "", i, hush = "";
+      for (i = 0; i < st.events.length; i++) sig += (i ? "|" : "") + st.events[i].k;
+      st.sig = sig;
+      try { hush = sessionStorage.getItem("dja-sky-hush") || ""; } catch (e) {}
+      if (!sig || sig === hush) {
+        bar.hidden = true;
+      } else {
+        txt.textContent = st.events[0].line
+          + (st.events.length > 1 ? " · +" + (st.events.length - 1) + " more in the terminal" : "");
+        bar.hidden = false;
+      }
+      lastSig = sig;
+      return st;
+    }
+
+    dis.addEventListener("click", function () {
+      /* one click hushes THIS sky for the session; a different event
+         later makes a different signature and speaks again */
+      try { sessionStorage.setItem("dja-sky-hush", lastSig); } catch (e) {}
+      bar.hidden = true;
+    });
+
+    /* Headless hook: seed "dja-sky" (and window.__iss), call with a
+       fixed epoch, read the returned state and the banner DOM. */
+    window.__sky = function (tMs) { return apply(tMs ? new Date(tMs) : null); };
+
+    var c0 = readCache(), nowT = Date.now();
+
+    if (!c0.xr || nowT - c0.xr.t >= TTL) {
+      fetch("https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json")
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (js) {
+          if (!js || !js.length) return;
+          /* long channel (0.1-0.8nm) only — flare class is defined on
+             it; the short channel rides interleaved in the same array */
+          var last = null, peakF = 0, peakT = 0, i, e, tms;
+          for (i = js.length - 1; i >= 0; i--) {
+            e = js[i];
+            if (!e || e.energy !== "0.1-0.8nm" || typeof e.flux !== "number") continue;
+            tms = Date.parse(e.time_tag);
+            if (isNaN(tms)) continue;
+            if (!last) last = { f: e.flux, t: tms };
+            if (last.t - tms > 36e5) break;   /* one hour of history answers the whole question */
+            if (e.flux > peakF) { peakF = e.flux; peakT = tms; }
+          }
+          if (!last) return;
+          var c = readCache();
+          c.xr = { t: Date.now(), f: last.f, p: peakF, pt: peakT };
+          writeCache(c);
+          apply();
+        })["catch"](function () { /* watcher dark — `events` will say so */ });
+    }
+
+    if (!c0.kp || nowT - c0.kp.t >= TTL) {
+      fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json")
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (js) {
+          if (!js || !js.length) return;
+          var i, v;
+          for (i = js.length - 1; i >= 0; i--) {
+            if (!js[i]) continue;
+            v = typeof js[i].Kp === "number" ? js[i].Kp : parseFloat(js[i].Kp);
+            if (typeof v === "number" && !isNaN(v)) {
+              var c = readCache();
+              c.kp = { t: Date.now(), v: v };
+              writeCache(c);
+              apply();
+              return;
+            }
+          }
+        })["catch"](function () { /* watcher dark — `events` will say so */ });
+    }
+
+    apply();
+    /* the first ISS fix lands seconds after load; look once more for
+       it, then re-read the world on startISS's own five-minute beat.
+       Both are reads of a variable — neither is a fetch. */
+    setTimeout(function () { apply(); }, 2e4);
+    setInterval(function () { apply(); }, 3e5);
+  }
+
+  /* ==================================================================
      QSL CARD
      Ham stations close a contact by mailing a card that confirms it
      happened. Same ritual here for a visit: the qsl press builds one
@@ -6623,7 +6923,7 @@
 
     /* Completion targets and command history. */
     var CMDS = ["help", "goto", "scan", "transmit", "hello", "theme",
-                "resume", "hire", "iss", "wx", "quakes", "moon", "tune",
+                "resume", "hire", "iss", "wx", "quakes", "moon", "events", "tune",
                 "qsl", "log", "source", "73", "sudo", "clear", "exit"];
     var SECS = ["top", "about", "work", "experience", "internships",
                 "education", "skills", "contact"];
@@ -6679,6 +6979,7 @@
         print("wx                what delhi's sky is doing", true);
         print("quakes            the seismograph's day, ranked", true);
         print("moon              tonight's actual phase", true);
+        print("events            flares, storms, shower peaks, the station", true);
         print("tune <380-700>    one wavelength as the accent · tune reset", true);
         print("qsl               a contact card for this visit, yours to keep", true);
         print("iss · log · source · theme dark|light · resume · 73 · clear · exit", true);
@@ -6795,6 +7096,39 @@
         } else {
           print("no reading — the moon never rose on this page", true);
         }
+      } else if (cmd === "events") {
+        if (typeof window.__sky !== "function") {
+          print("sky watcher offline", true);
+        } else {
+          var sv = window.__sky(), svp = [], svi, svk = "";
+          for (svi = 0; svi < sv.events.length; svi++) {
+            print(sv.events[svi].line, true);
+            svk += sv.events[svi].k + " ";
+          }
+          /* a shower window off its peak is context, not an event */
+          if (sv.shower && (sv.shower.d < -1 || sv.shower.d > 1)) {
+            print(sv.shower.n + " window open — " + (sv.shower.d > 0
+              ? "building toward the " + sv.shower.peak + " peak"
+              : "past the " + sv.shower.peak + " peak, tail strays only"), true);
+          }
+          /* the quiet remainder shows real readings, not adjectives */
+          if (svk.indexOf("flare") < 0 && sv.sun) {
+            var sva = sv.sunAge >= 45
+              ? " (" + (sv.sunAge < 90 ? sv.sunAge + "m" : Math.round(sv.sunAge / 60) + "h") + " old)"
+              : "";
+            svp.push("sun " + sv.sun + sva);
+          }
+          if (svk.indexOf("kp") < 0 && sv.kp !== null) svp.push("field kp " + sv.kp);
+          if (!sv.shower) svp.push("no shower window");
+          if (svk.indexOf("iss") < 0 && sv.km !== null) {
+            svp.push(sv.km < 600 ? "station overhead" : "station " + sv.km + " km out");
+          }
+          if (svp.length) {
+            print((sv.events.length || sv.shower ? "otherwise: " : "all quiet: ")
+              + svp.join(" · "), true);
+          }
+          if (sv.off.length) print("watchers offline: " + sv.off.join(", "), true);
+        }
       } else if (cmd === "tune") {
         if (typeof window.__tune !== "function") {
           print("tuner offline", true);
@@ -6899,6 +7233,7 @@
   startSeismo();
   startBaro();
   startISS();
+  startSky();       /* after startISS — it reads the same __iss fix */
   startGlobe();
   /* Not under reduced motion: with transitions globally disabled the
      replay would blink the panel rather than re-run it. */
