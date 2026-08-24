@@ -2147,6 +2147,16 @@
   }
   @keyframes seismo-pen { 50% { opacity: .3; } }
 
+  /* The barograph. Two days of Delhi surface pressure on the drum below
+     the quakes — the footer wall grows a second instrument. The trace is
+     the twice-daily atmospheric tide with the monsoon's slower swells on
+     top; startBaro() unhides it only when open-meteo answers. It shares
+     the seismo class family, so only the drum height is its own. */
+  .baro svg { height: 32px; }
+  @media (max-width: 560px) {
+    .baro svg { height: 28px; }
+  }
+
   /* The wavelength tuner. The ribbon is the visible spectrum itself —
      the one place literal colours are the honest choice, because these
      ARE the wavelengths; painting them with theme tokens would be a
@@ -3214,6 +3224,20 @@
   <p class="seismo-note">
     <span class="seismo-big" id="seismo-big"></span>
     <span class="seismo-cap">seismograph · every M4.5+ on Earth, past 24 hours · usgs</span>
+  </p>
+</aside>
+
+<!-- A barograph under the quake drum: 48 hours of real Delhi surface
+     pressure, drawn by startBaro() from open-meteo. Same rule as its
+     sibling — no feed, no instrument. -->
+<aside class="seismo baro wrap" id="baro" hidden aria-label="Barograph: 48 hours of Delhi surface pressure">
+  <svg viewBox="0 0 1000 36" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path class="baro-trace" d="" vector-effect="non-scaling-stroke"></path>
+    <path class="seismo-pen" d="" vector-effect="non-scaling-stroke"></path>
+  </svg>
+  <p class="seismo-note">
+    <span class="seismo-big" id="baro-big"></span>
+    <span class="seismo-cap">barograph · Delhi surface pressure, past 48 hours · open-meteo</span>
   </p>
 </aside>
 
@@ -5835,6 +5859,100 @@
   }
 
   /* ==================================================================
+     BAROGRAPH
+     A second pen on the observatory wall: 48 hours of Delhi surface
+     pressure under the quake strip. No animation — a barograph trace
+     is a record, already written. One fetch on load, thirty minutes
+     of session cache, no polling; a failed feed leaves no instrument,
+     and a dead-calm two days still draws a line worth reading.
+     ================================================================== */
+
+  function startBaro() {
+    var box = document.getElementById("baro");
+    if (!box || !window.fetch) return;
+    var trace = box.querySelector(".baro-trace");
+    var pen = box.querySelector(".seismo-pen");
+    var slot = document.getElementById("baro-big");
+    if (!trace || !pen || !slot) return;
+
+    var W = 1000, TOP = 3, BOT = 33;
+
+    function f1(v) { return Math.round(v * 10) / 10; }
+
+    /* hrs: [{t: epoch ms, p: hPa}]. Keeps the trailing 49 hourly
+       samples up to "now" — 49 fence posts make a 48-hour span —
+       then draws and unhides. Exposed as window.__baro for
+       deterministic testing: hand it a fabricated list, read the
+       paths and note back. */
+    function draw(hrs) {
+      if (!hrs || typeof hrs.length !== "number") return;
+      var now = Date.now(), list = [], i;
+      for (i = 0; i < hrs.length; i++) {
+        if (!hrs[i] || typeof hrs[i].t !== "number" || typeof hrs[i].p !== "number") continue;
+        if (hrs[i].t > now) continue;   /* forecast hours are not a record yet */
+        list.push(hrs[i]);
+      }
+      list.sort(function (a, b) { return a.t - b.t; });
+      if (list.length > 49) list = list.slice(list.length - 49);
+      if (list.length < 2) return;      /* one point is not a trace */
+
+      var lo = list[0].p, hi = lo, t0 = list[0].t, t1 = list[list.length - 1].t;
+      for (i = 1; i < list.length; i++) {
+        if (list[i].p < lo) lo = list[i].p;
+        if (list[i].p > hi) hi = list[i].p;
+      }
+      if (t1 <= t0) return;
+
+      /* Autoscale to the window's own extremes. Delhi's whole 48-hour
+         story — the pressure tide, a monsoon low walking through —
+         lives inside a handful of hPa; on any absolute scale that is
+         a flatline. Two hPa of padding keeps the ink off the paper's
+         edges and makes dead-calm weather a centred line instead of a
+         divide by zero. */
+      var pad = 2, span = (hi + pad) - (lo - pad);
+      function yOf(p) { return TOP + ((hi + pad) - p) / span * (BOT - TOP); }
+      function xOf(t) { return (t - t0) / (t1 - t0) * W; }
+
+      var d = "";
+      for (i = 0; i < list.length; i++)
+        d += (i ? "L" : "M") + f1(xOf(list[i].t)) + " " + f1(yOf(list[i].p));
+      trace.setAttribute("d", d);
+      /* the same pen as the seismograph, riding the same "now" edge */
+      pen.setAttribute("d", "M" + W + " " + f1(yOf(list[list.length - 1].p)) + "h.01");
+
+      slot.textContent = "";
+      var b = document.createElement("b");
+      b.textContent = list[list.length - 1].p.toFixed(1) + " hPa";
+      slot.appendChild(b);
+      slot.appendChild(document.createTextNode(
+        " · 48h span " + lo.toFixed(1) + "-" + hi.toFixed(1)));
+      box.hidden = false;
+    }
+
+    window.__baro = draw;
+
+    var c = null;
+    try { c = JSON.parse(sessionStorage.getItem("dja-baro") || "null"); } catch (e) {}
+    if (c && c.hrs && Date.now() - c.t < 18e5) { draw(c.hrs); return; }
+    /* unixtime, not iso8601: an offset-less "2026-08-24T13:00" parses
+       as LOCAL time in modern engines, which would slide the window by
+       the visitor's UTC offset. Epoch seconds have no such opinion. */
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=28.61&longitude=77.21" +
+          "&hourly=surface_pressure&past_days=2&forecast_days=1&timeformat=unixtime")
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (j) {
+        var h = j && j.hourly;
+        if (!h || !h.time || !h.surface_pressure) return;
+        var hrs = [], i, n = Math.min(h.time.length, h.surface_pressure.length);
+        for (i = 0; i < n; i++)
+          if (typeof h.time[i] === "number" && typeof h.surface_pressure[i] === "number")
+            hrs.push({ t: h.time[i] * 1e3, p: h.surface_pressure[i] });
+        try { sessionStorage.setItem("dja-baro", JSON.stringify({ t: Date.now(), hrs: hrs })); } catch (e) {}
+        draw(hrs);
+      })["catch"](function () { /* no feed, no instrument */ });
+  }
+
+  /* ==================================================================
      PIPELINE NODES
      Click a stage and the pulse launches from it: the animation restarts
      with a negative delay equal to that node's position in the loop.
@@ -6501,6 +6619,7 @@
   startPipe();
   startFresh();
   startSeismo();
+  startBaro();
   startISS();
   startGlobe();
   /* Not under reduced motion: with transitions globally disabled the
