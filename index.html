@@ -2169,6 +2169,34 @@
     .baro svg { height: 28px; }
   }
 
+  /* The station clock. The wall's third instrument, and the only one
+     with no feed to lose: sunrise and sunset are geometry, not news.
+     Midnight sits at the top like a shack's UTC clock, so the lit arc
+     hangs low through the face's own noon and the night wraps over
+     the crown, where the moon keeps its phase. It borrows the drums'
+     note typography; only the roundness is new. */
+  .stn { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 26px; }
+  .stn svg { width: 104px; height: 104px; }
+  .stn .seismo-note { display: block; flex: 1 1 200px; min-width: 0; margin-top: 0; }
+  .stn .seismo-big { display: block; margin-bottom: 3px; }
+  /* butt caps: day and night meet at sunrise and sunset exactly,
+     instead of two round noses overlapping the boundary */
+  .stn .stn-night { stroke: var(--line); stroke-width: 1.5; stroke-linecap: butt; }
+  .stn .stn-day { stroke: var(--ember); stroke-width: 2.5; stroke-linecap: butt; opacity: .8; }
+  .stn .stn-mark { stroke: var(--ember); stroke-width: 1; }
+  .stn .stn-hand { stroke: var(--soft); stroke-width: 1.4; }
+  .stn .stn-hub { fill: var(--ember); }
+  .stn .stn-face line { stroke: var(--line); }
+  .stn text {
+    font-family: var(--mono); font-size: 7px; letter-spacing: .06em;
+    fill: var(--dim);
+  }
+  .stn .stn-moon-rim { fill: none; stroke: var(--dim); stroke-width: .7; opacity: .45; }
+  .stn .stn-moon-lit { fill: var(--soft); stroke: none; opacity: .75; }
+  @media (max-width: 560px) {
+    .stn svg { width: 88px; height: 88px; }
+  }
+
   /* The wavelength tuner. The ribbon is the visible spectrum itself —
      the one place literal colours are the honest choice, because these
      ARE the wavelengths; painting them with theme tokens would be a
@@ -3301,6 +3329,27 @@
   <p class="seismo-note">
     <span class="seismo-big" id="baro-big"></span>
     <span class="seismo-cap">barograph · Delhi surface pressure, past 48 hours · open-meteo</span>
+  </p>
+</aside>
+
+<!-- The station clock. Third instrument on the wall and the only one
+     that needs no feed: where today's light begins and ends is pure
+     geometry — Delhi's latitude against the sun's declination, with
+     IST a fixed UTC+5:30 and no DST to complicate the day. startClock()
+     computes it and unhides the face. -->
+<aside class="seismo stn wrap" id="stn" hidden aria-label="Station clock: today's Delhi daylight on a 24-hour dial">
+  <svg viewBox="0 0 104 104" aria-hidden="true" focusable="false">
+    <g class="stn-face" id="stn-face"></g>
+    <path class="stn-night" id="stn-night" d=""></path>
+    <path class="stn-day" id="stn-day" d=""></path>
+    <path class="stn-mark" id="stn-mark" d=""></path>
+    <g id="stn-moon"></g>
+    <line class="stn-hand" id="stn-hand" x1="52" y1="52" x2="52" y2="23"></line>
+    <circle class="stn-hub" cx="52" cy="52" r="1.7"></circle>
+  </svg>
+  <p class="seismo-note">
+    <span class="seismo-big" id="stn-big"></span>
+    <span class="seismo-cap">station clock · Delhi's daylight, computed not fetched · IST</span>
   </p>
 </aside>
 
@@ -6020,6 +6069,194 @@
   }
 
   /* ==================================================================
+     STATION CLOCK
+     The wall's third instrument, and the only one with nothing to
+     fetch: where today's light begins and ends is geometry — Delhi's
+     latitude against the sun's declination — and IST is a fixed
+     UTC+5:30 with no DST, so one arithmetic pass covers the whole
+     day. A 24-hour dial, midnight at the top like a shack's UTC
+     clock: the lit arc hangs low through the face's own noon, night
+     wraps over the crown, and the hand makes one turn per day.
+     ================================================================== */
+
+  function startClock() {
+    var box = document.getElementById("stn");
+    if (!box) return;
+    var face = document.getElementById("stn-face");
+    var dayP = document.getElementById("stn-day");
+    var nightP = document.getElementById("stn-night");
+    var markP = document.getElementById("stn-mark");
+    var moonG = document.getElementById("stn-moon");
+    var hand = document.getElementById("stn-hand");
+    var slot = document.getElementById("stn-big");
+    if (!face || !dayP || !nightP || !markP || !hand || !slot) return;
+
+    var NS = "http://www.w3.org/2000/svg";
+    var D2R = Math.PI / 180;
+    var LAT = 28.61, LON = 77.21, IST = 198e5; /* +5:30 — fixed, no DST */
+    var CX = 52, CY = 52, R = 36;
+
+    function f2(v) { return Math.round(v * 100) / 100; }
+
+    /* NOAA "General Solar Position Calculations" (gml.noaa.gov/grad/
+       solcalc — the Meeus ch.25 truncation): equation of time in
+       minutes and solar declination in degrees for one instant. */
+    function sunAt(ms) {
+      var T = (ms / 864e5 + 2440587.5 - 2451545) / 36525;
+      var L0 = (280.46646 + T * (36000.76983 + .0003032 * T)) % 360;
+      var M = D2R * (357.52911 + T * (35999.05029 - .0001537 * T));
+      var e = .016708634 - T * (.000042037 + .0000001267 * T);
+      var om = D2R * (125.04 - 1934.136 * T);
+      var lam = L0
+        + Math.sin(M) * (1.914602 - T * (.004817 + .000014 * T))
+        + Math.sin(2 * M) * (.019993 - .000101 * T)
+        + Math.sin(3 * M) * .000289
+        - .00569 - .00478 * Math.sin(om);
+      var eps = D2R * (23 + (26 + (21.448 - T * (46.815 + T * (.00059 - T * .001813))) / 60) / 60)
+        + D2R * .00256 * Math.cos(om);
+      var y = Math.tan(eps / 2); y *= y;
+      var eq = (y * Math.sin(2 * D2R * L0) - 2 * e * Math.sin(M)
+        + 4 * e * y * Math.sin(M) * Math.cos(2 * D2R * L0)
+        - .5 * y * y * Math.sin(4 * D2R * L0)
+        - 1.25 * e * e * Math.sin(2 * M)) * 4 / D2R;
+      return { eq: eq, decl: Math.asin(Math.sin(eps) * Math.sin(D2R * lam)) / D2R };
+    }
+
+    /* Sunrise/sunset as minutes past IST midnight, standard -0.833°
+       horizon (refraction plus the sun's half-width). Seeded from
+       local noon, refined once at the event's own hour — declination
+       moves ~0.4°/day in August, and the second pass is what holds
+       the answer to the minute. */
+    function edge(mid, seed, sign) {
+      var s = sunAt(mid + seed * 6e4);
+      var x = Math.cos(90.833 * D2R) / (Math.cos(LAT * D2R) * Math.cos(s.decl * D2R))
+        - Math.tan(LAT * D2R) * Math.tan(s.decl * D2R);
+      /* Delhi always has a dawn; the clamp only guards float dust */
+      if (x > 1) x = 1; else if (x < -1) x = -1;
+      return 720 - 4 * LON + 330 - s.eq + sign * Math.acos(x) * 4 / D2R;
+    }
+
+    function pt(min, rad) {
+      /* midnight at top, clockwise — one lap is one day */
+      var a = min / 1440 * 2 * Math.PI;
+      return { x: CX + rad * Math.sin(a), y: CY - rad * Math.cos(a) };
+    }
+    function arc(from, to, rad) {
+      var a = pt(from, rad), b = pt(to, rad);
+      var large = ((to - from) % 1440 + 1440) % 1440 > 720 ? 1 : 0;
+      return "M" + f2(a.x) + " " + f2(a.y)
+        + "A" + rad + " " + rad + " 0 " + large + " 1 " + f2(b.x) + " " + f2(b.y);
+    }
+    function hm(min) {
+      var m = ((Math.round(min) % 1440) + 1440) % 1440;
+      var h = (m - m % 60) / 60; m %= 60;
+      return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
+    }
+
+    /* face furniture: 24 hour ticks and the four cardinal digits */
+    var i, el, p1, p2;
+    for (i = 0; i < 24; i++) {
+      p1 = pt(i * 60, R - 2.5); p2 = pt(i * 60, R);
+      el = document.createElementNS(NS, "line");
+      el.setAttribute("x1", f2(p1.x)); el.setAttribute("y1", f2(p1.y));
+      el.setAttribute("x2", f2(p2.x)); el.setAttribute("y2", f2(p2.y));
+      face.appendChild(el);
+    }
+    var NUMS = ["00", "06", "12", "18"];
+    for (i = 0; i < 4; i++) {
+      p1 = pt(i * 360, R + 9.5);
+      el = document.createElementNS(NS, "text");
+      el.setAttribute("x", f2(p1.x)); el.setAttribute("y", f2(p1.y + 2.5));
+      el.setAttribute("text-anchor", "middle");
+      el.textContent = NUMS[i];
+      face.appendChild(el);
+    }
+
+    /* The moon on this dial is an emblem, not a position: a defensible
+       moonrise needs a real lunar ephemeris — dozens of periodic terms
+       plus horizontal parallax — and a mean-longitude shortcut can
+       miss the horizon by half an hour, which fails the house rule of
+       real math or nothing. So the phase sits in the dial's night
+       instead, the desk moon's two-arc construction rebuilt from
+       __moon's own numbers: cos(2π·age/syn) = 1 − 2·illumination. */
+    if (moonG && typeof window.__moon === "function") {
+      var mo = window.__moon();
+      var MR = 4.2, mcy = CY - 16;
+      var rim = document.createElementNS(NS, "circle");
+      rim.setAttribute("cx", CX); rim.setAttribute("cy", mcy); rim.setAttribute("r", MR);
+      rim.setAttribute("class", "stn-moon-rim");
+      moonG.appendChild(rim);
+      var frac = mo.illumination / 100;
+      if (frac >= .02) {
+        var term = MR * (1 - 2 * frac);
+        var lsw = mo.waxing ? 1 : 0;
+        var tsw = term > 0 ? (mo.waxing ? 0 : 1) : (mo.waxing ? 1 : 0);
+        var lit = document.createElementNS(NS, "path");
+        lit.setAttribute("d", "M" + CX + " " + (mcy - MR)
+          + "A" + MR + " " + MR + " 0 0 " + lsw + " " + CX + " " + (mcy + MR)
+          + "A" + f2(Math.abs(term)) + " " + MR + " 0 0 " + tsw + " " + CX + " " + (mcy - MR) + "Z");
+        lit.setAttribute("class", "stn-moon-lit");
+        moonG.appendChild(lit);
+      }
+      var mt = document.createElementNS(NS, "title");
+      mt.textContent = mo.name + " · " + mo.illumination + "% lit";
+      moonG.appendChild(mt);
+    }
+
+    function draw(ms) {
+      var mid = Math.floor((ms + IST) / 864e5) * 864e5 - IST;
+      var rise = edge(mid, edge(mid, 720, -1), -1);
+      var set = edge(mid, edge(mid, 720, 1), 1);
+      var nowMin = (ms - mid) / 6e4;
+      dayP.setAttribute("d", arc(rise, set, R));
+      nightP.setAttribute("d", arc(set, rise, R));
+      /* rise and set cross the ring as ember ticks — the lit arc's
+         ends become marks you can read against the digits */
+      var a1 = pt(rise, R - 3.5), b1 = pt(rise, R + 3.5);
+      var a2 = pt(set, R - 3.5), b2 = pt(set, R + 3.5);
+      markP.setAttribute("d",
+        "M" + f2(a1.x) + " " + f2(a1.y) + "L" + f2(b1.x) + " " + f2(b1.y)
+        + "M" + f2(a2.x) + " " + f2(a2.y) + "L" + f2(b2.x) + " " + f2(b2.y));
+      var tip = pt(nowMin, R - 7);
+      hand.setAttribute("x2", f2(tip.x));
+      hand.setAttribute("y2", f2(tip.y));
+
+      var dl = Math.round(set - rise);
+      var len = (dl - dl % 60) / 60 + "h " + (dl % 60 < 10 ? "0" : "") + dl % 60 + "m";
+      slot.textContent = "";
+      var br = document.createElement("b"); br.textContent = hm(rise);
+      var bs = document.createElement("b"); bs.textContent = hm(set);
+      slot.appendChild(br);
+      slot.appendChild(document.createTextNode(" → "));
+      slot.appendChild(bs);
+      slot.appendChild(document.createTextNode(" · " + len + " of light"));
+      return {
+        rise: hm(rise), set: hm(set), noon: hm((rise + set) / 2), len: len,
+        riseMin: rise, setMin: set, angle: nowMin / 1440 * 360
+      };
+    }
+
+    /* Draws for any moment — headless checks hand this a fixed
+       timestamp and read the dial back. */
+    window.__clock = function (ms) {
+      return draw(typeof ms === "number" ? ms : Date.now());
+    };
+
+    draw(Date.now());
+    box.hidden = false;
+
+    /* One discrete attribute write a minute is a reading changing,
+       not motion: no rAF, no easing, no CSS animation to disable —
+       so it ticks under prefers-reduced-motion too. Freezing the
+       hand would make this the wall's only wrong instrument. Hidden
+       tabs skip the write and catch up the moment they return. */
+    setInterval(function () { if (!document.hidden) draw(Date.now()); }, 6e4);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) draw(Date.now());
+    });
+  }
+
+  /* ==================================================================
      PIPELINE NODES
      Click a stage and the pulse launches from it: the animation restarts
      with a negative delay equal to that node's position in the loop.
@@ -7046,7 +7283,7 @@
 
     /* Completion targets and command history. */
     var CMDS = ["help", "goto", "scan", "transmit", "hello", "theme",
-                "resume", "hire", "iss", "wx", "quakes", "moon", "events", "tune",
+                "resume", "hire", "iss", "wx", "quakes", "moon", "sun", "events", "tune",
                 "qsl", "log", "source", "73", "sudo", "clear", "exit"];
     var SECS = ["top", "about", "work", "experience", "internships",
                 "education", "skills", "contact"];
@@ -7102,6 +7339,7 @@
         print("wx                what delhi's sky is doing", true);
         print("quakes            the seismograph's day, ranked", true);
         print("moon              tonight's actual phase", true);
+        print("sun               where today's light begins and ends", true);
         print("events            flares, storms, shower peaks, the station", true);
         print("tune <380-700>    one wavelength as the accent · tune reset", true);
         print("qsl               a contact card for this visit, yours to keep", true);
@@ -7218,6 +7456,14 @@
           print(mo.name + " · " + mo.illumination + "% lit — tonight's actual phase", true);
         } else {
           print("no reading — the moon never rose on this page", true);
+        }
+      } else if (cmd === "sun") {
+        if (typeof window.__clock === "function") {
+          var sv = window.__clock();
+          print("sunrise " + sv.rise + " · sunset " + sv.set + " · " + sv.len + " of light", true);
+          print("solar noon " + sv.noon + " — geometry, not a feed", true);
+        } else {
+          print("the dial is dark — clock offline", true);
         }
       } else if (cmd === "events") {
         if (typeof window.__sky !== "function") {
@@ -7355,6 +7601,7 @@
   startFresh();
   startSeismo();
   startBaro();
+  startClock();      /* after startMoon: the dial borrows its phase */
   startISS();
   startSky();       /* after startISS — it reads the same __iss fix */
   startGlobe();
