@@ -4397,11 +4397,20 @@
      ================================================================== */
 
   function startMoon() {
+    var SYN = 29.530588853;
+    var age = ((Date.now() - Date.UTC(2000, 0, 6, 18, 14)) / 86400000) % SYN;
+    var frac = (1 - Math.cos(2 * Math.PI * age / SYN)) / 2;
+    var waxing = age < SYN / 2;
+    var name = frac > .98 ? "full moon" : frac < .02 ? "new moon" :
+      (waxing ? "waxing " : "waning ") + (frac > .53 ? "gibbous" : frac < .47 ? "crescent" : "half moon");
+    /* Hoisted above the element check so the terminal's moon command
+       reads the same computation instead of duplicating it. */
+    window.__moon = function () {
+      return { name: name, illumination: Math.round(frac * 100), waxing: waxing };
+    };
     var g = document.getElementById("real-moon");
     if (!g) return;
     var NS = "http://www.w3.org/2000/svg";
-    var SYN = 29.530588853;
-    var age = ((Date.now() - Date.UTC(2000, 0, 6, 18, 14)) / 86400000) % SYN;
     var cx = 49, cy = 34, R = 8;
 
     var rim = document.createElementNS(NS, "circle");
@@ -4410,8 +4419,6 @@
     rim.setAttribute("stroke-width", ".8"); rim.setAttribute("opacity", ".22");
     g.appendChild(rim);
 
-    var frac = (1 - Math.cos(2 * Math.PI * age / SYN)) / 2;
-    var waxing = age < SYN / 2;
     if (frac >= .02) {
       /* Limb arc down the lit side, elliptical terminator back up. The
          terminator's x-radius runs +R (new) to -R (full); its sweep
@@ -4429,8 +4436,6 @@
       g.appendChild(lit);
     }
     var t = document.createElementNS(NS, "title");
-    var name = frac > .98 ? "full moon" : frac < .02 ? "new moon" :
-      (waxing ? "waxing " : "waning ") + (frac > .53 ? "gibbous" : frac < .47 ? "crescent" : "half moon");
     t.textContent = name + " · " + Math.round(frac * 100) + "% lit — tonight's actual phase";
     g.appendChild(t);
   }
@@ -6054,7 +6059,8 @@
 
     /* Completion targets and command history. */
     var CMDS = ["help", "goto", "scan", "transmit", "hello", "theme",
-                "resume", "hire", "iss", "log", "source", "73", "sudo", "clear", "exit"];
+                "resume", "hire", "iss", "wx", "quakes", "moon", "tune",
+                "log", "source", "73", "sudo", "clear", "exit"];
     var SECS = ["top", "about", "work", "experience", "internships",
                 "education", "skills", "contact"];
     /* The tour's own stops: same as goto's targets, plus a waypoint halfway
@@ -6106,6 +6112,10 @@
         print("transmit <word>   write it on the waterfall", true);
         print("hello             signal the desk", true);
         print("hire              open a channel", true);
+        print("wx                what delhi's sky is doing", true);
+        print("quakes            the seismograph's day, ranked", true);
+        print("moon              tonight's actual phase", true);
+        print("tune <380-700>    one wavelength as the accent · tune reset", true);
         print("iss · log · source · theme dark|light · resume · 73 · clear · exit", true);
       } else if (cmd === "scan") {
         print("scanning the band — touch anything to abort", true);
@@ -6168,6 +6178,70 @@
         } else {
           print("no fix yet — the sky is loading", true);
         }
+      } else if (cmd === "wx") {
+        var wc = null;
+        try { wc = JSON.parse(localStorage.getItem("wx-delhi") || "null"); } catch (eW) {}
+        if (wc && typeof wc.code === "number") {
+          /* Same three-way verdict startWeather() reaches — its classify()
+             is closure-trapped, and re-deriving from the cached code beats
+             a second fetch for the same sky. */
+          var wkind = ((wc.code >= 51 && wc.code <= 67) || (wc.code >= 80 && wc.code <= 82) || wc.code >= 95)
+            ? "rain"
+            : (wc.code === 2 || wc.code === 3 || wc.code === 45 || wc.code === 48) ? "cloud" : "clear";
+          var wmin = Math.round((Date.now() - wc.t) / 6e4);
+          var wage = wmin < 1 ? "fresh" : wmin < 60 ? wmin + "m old" : Math.round(wmin / 60) + "h old";
+          print("delhi: " + wkind + " (wmo " + wc.code + ") · verdict " + wage, true);
+        } else {
+          print("no reading yet — scroll the journey to wake the weather", true);
+        }
+      } else if (cmd === "quakes") {
+        var qc = null;
+        try { qc = JSON.parse(sessionStorage.getItem("dja-quakes") || "null"); } catch (eQ) {}
+        if (qc && qc.evs && typeof qc.evs.length === "number") {
+          var qnow = Date.now(), qlist = [], qi, qe;
+          for (qi = 0; qi < qc.evs.length; qi++) {
+            qe = qc.evs[qi];
+            if (typeof qe.m !== "number" || typeof qe.t !== "number") continue;
+            /* same day window the drum draws — the cache can hold a stale tail */
+            if (qe.t > qnow || qnow - qe.t > 864e5) continue;
+            qlist.push(qe);
+          }
+          if (qlist.length) {
+            qlist.sort(function (x, y) { return y.m - x.m; });
+            for (qi = 0; qi < qlist.length && qi < 3; qi++) {
+              qe = qlist[qi];
+              /* same distance-prefix strip the seismograph caption does */
+              var qpl = (qe.place || "").replace(/^\s*\d+\s*km\s+[A-Z]{1,3}\s+of\s+/, "").toLowerCase();
+              var qmin = Math.round((qnow - qe.t) / 6e4);
+              var qwhen = qmin < 1 ? "just now" : qmin < 60 ? qmin + "m ago" : Math.round(qmin / 60) + "h ago";
+              print("M" + qe.m.toFixed(1) + "  " + (qpl || "unnamed water") + "  " + qwhen, true);
+            }
+            print(qlist.length + " above M4.5 in the last 24h — the drum below has the trace", true);
+          } else {
+            print("a quiet day, seismically", true);
+          }
+        } else {
+          print("seismograph offline — no feed this session", true);
+        }
+      } else if (cmd === "moon") {
+        if (typeof window.__moon === "function") {
+          var mo = window.__moon();
+          print(mo.name + " · " + mo.illumination + "% lit — tonight's actual phase", true);
+        } else {
+          print("no reading — the moon never rose on this page", true);
+        }
+      } else if (cmd === "tune") {
+        if (typeof window.__tune !== "function") {
+          print("tuner offline", true);
+        } else if (!arg) {
+          print("tuned to " + window.__tune() + "nm — tune 380-700 shifts it, tune reset lets go", true);
+        } else if (arg === "reset") {
+          print("detuned — back to " + window.__tune(null) + "nm, the native ember", true);
+        } else {
+          var tnm = window.__tune(parseInt(arg, 10));
+          if (tnm === null) print("not a wavelength — visible light runs 380-700", true);
+          else print("tuned to " + tnm + "nm", true);
+        }
       } else if (cmd === "73") {
         print("73 — best regards, de DJA", true);
       } else if (cmd === "clear") {
@@ -6178,6 +6252,9 @@
         print("unknown — try help", true);
       }
     }
+    /* Exposed like __heroRain: a headless check cannot press backtick,
+       but it can call the dispatcher and read the log. */
+    window.__term = exec;
 
     document.addEventListener("keydown", function (e) {
       if (e.key === "`") {
