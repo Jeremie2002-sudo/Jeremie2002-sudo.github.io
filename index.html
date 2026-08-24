@@ -407,6 +407,18 @@
   .thint { opacity: .7; }
   @media (max-width: 680px) { .thint { display: none; } }
 
+  /* The qsl press. A ham contact ends with a card in the mail; the
+     footer keeps one ready — startQsl() draws it on the spot, from
+     what the page actually knows. Styled like the terminal hint, but
+     it stays on phones: a download works anywhere the site does. */
+  .qsl {
+    background: none; border: 0; padding: 0;
+    font: inherit; letter-spacing: inherit; color: inherit;
+    opacity: .7; cursor: pointer;
+    transition: opacity .25s ease, color .25s ease;
+  }
+  .qsl:hover, .qsl:focus-visible { opacity: 1; color: var(--ember); }
+
   /* Theme toggle. Fixed rather than living inside the nav, because the nav
      stays hidden across the whole hero — which is exactly where someone
      decides the page is too bright or too dark. */
@@ -2312,7 +2324,7 @@
      back to solid ink: background-clip text with a transparent color
      prints as nothing at all. */
   @media print {
-    nav, .theme, .progress, .smeter, .seismo, .tuner, #voyager, #term, .grain, #shader, #motes,
+    nav, .theme, .progress, .smeter, .seismo, .tuner, .qsl, #voyager, #term, .grain, #shader, #motes,
     .cue, .wf-write, .scene, .vig, .grad, .marquee, #wf-layer, #glow, #hero-rain, #hero-sky,
     .pipe, .constellation, .sky-day, .sky-night,
     #wf-close-layer, .scene-card, .scene-open { display: none !important; }
@@ -3247,6 +3259,10 @@
        above to back it. -->
   <span>Zero hallucinations — everything here really happened</span>
   <span class="thint">` opens the terminal</span>
+<!-- QSL: press a contact card for this visit. Every field is computed
+       on this device at click time — startQsl() has the pen. -->
+  <button class="qsl" id="qsl" type="button"
+          title="download a contact card for this visit — drawn here, nothing sent">qsl?</button>
 <!-- The amber this site wears is light at ~620nm. This retunes the
        whole page to any visible wavelength — drag the detent; a
        double-click comes home to 620. -->
@@ -6326,6 +6342,258 @@
   }
 
   /* ==================================================================
+     QSL CARD
+     Ham stations close a contact by mailing a card that confirms it
+     happened. Same ritual here for a visit: the qsl press builds one
+     SVG from what the page already knows — the clock, the tuner, the
+     instruments' own caches — painted in whatever colours the site
+     is wearing this instant, and hands it over as a download. Pure
+     client-side; nothing fetched, nothing sent, nothing invented.
+     DJA is a pair of initials, not a licence, and the card carries
+     that in its own small print.
+     ================================================================== */
+
+  function startQsl() {
+
+    /* Maidenhead grid: longitude and latitude interleaved in ever
+       finer digits — base-18 letters for the 20°x10° field, base-10
+       for the 2°x1° square, base-24 letters for the subsquare. Fed
+       this desk (28.61N 77.21E): lon+180=257.21 -> field M (12) and
+       square 8, lat+90=118.61 -> field L (11) and square 8, the
+       remainders 1.21° and 0.61° -> subsquare oo. ML88oo, the same
+       answer any grid map gives for Delhi. */
+    function grid(lat, lon) {
+      var F = "ABCDEFGHIJKLMNOPQR", S = "abcdefghijklmnopqrstuvwx";
+      var lo = lon + 180, la = lat + 90;
+      return F.charAt(Math.floor(lo / 20)) + F.charAt(Math.floor(la / 10))
+        + Math.floor(lo % 20 / 2) + Math.floor(la % 10)
+        + S.charAt(Math.floor(lo % 2 * 12)) + S.charAt(Math.floor(la % 1 * 24));
+    }
+
+    /* Everything dynamic on the card routes through this — the feeds
+       are trusted, but a quake named "&" would still be malformed XML. */
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function pad(n) { return (n < 10 ? "0" : "") + n; }
+
+    /* The whole card as a string. `when` is an epoch-ms override so a
+       headless check can press a card for a known instant and assert
+       every line; visitors get now. Returns {svg, name}. */
+    function build(when) {
+      var d = new Date(typeof when === "number" ? when : Date.now());
+      var g = grid(28.61, 77.21);
+
+      /* Read the tokens as painted this instant — the scroll palette
+         and the tuner write --ember/--accent-rgb inline on root, so a
+         tuned page issues a tuned card, not the factory amber. */
+      var cs = getComputedStyle(document.documentElement);
+      function tok(name, fb) {
+        var v = cs.getPropertyValue(name).replace(/^\s+|\s+$/g, "");
+        return v || fb;
+      }
+      var GROUND = tok("--void", "#F6F4F1"), INK = tok("--ink", "#14171C"),
+          SOFT = tok("--soft", "#4B5563"), DIM = tok("--dim", "#656C78"),
+          LINE = tok("--line", "#DCD6CE"), EMBER = tok("--ember", "#A55C08");
+
+      var date = d.getUTCFullYear() + "-" + pad(d.getUTCMonth() + 1) + "-" + pad(d.getUTCDate());
+      var time = pad(d.getUTCHours()) + ":" + pad(d.getUTCMinutes()) + " utc";
+      /* the honest mode of this contact — https on the real site */
+      var mode = location.protocol.replace(":", "");
+      var nm = typeof window.__tune === "function" ? window.__tune() : null;
+
+      /* City-level words from the visitor's own clock, the way the ISS
+         nameplate names the ground below. Nothing transmitted; a grid
+         square cannot be computed from a timezone, so none is faked. */
+      var tz = "";
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (eT) {}
+      var qth = "";
+      if (tz && tz.indexOf("/") > 0 && tz.indexOf("Etc/") !== 0) {
+        var seg = tz.split("/");
+        qth = seg[seg.length - 1].replace(/_/g, " ").toLowerCase();
+        /* the tz database's own alias table for cities it renamed — a
+           visitor's engine may still say Calcutta or Kiev, and the
+           card should speak the current name, not the leftover */
+        var TZR = { calcutta: "kolkata", saigon: "ho chi minh",
+                    katmandu: "kathmandu", rangoon: "yangon",
+                    kiev: "kyiv", godthab: "nuuk" };
+        if (TZR[qth]) qth = TZR[qth];
+      }
+
+      /* Same synodic arithmetic startMoon() runs; redone rather than
+         read from __moon() because the glyph needs the terminator
+         geometry that hook does not expose — and redoing it keeps the
+         card a pure function of `when`. */
+      var SYN = 29.530588853;
+      var age = ((d.getTime() - Date.UTC(2000, 0, 6, 18, 14)) / 864e5) % SYN;
+      var frac = (1 - Math.cos(2 * Math.PI * age / SYN)) / 2;
+      var waxing = age < SYN / 2;
+      var moonName = frac > .98 ? "full moon" : frac < .02 ? "new moon" :
+        (waxing ? "waxing " : "waning ") + (frac > .53 ? "gibbous" : frac < .47 ? "crescent" : "half moon");
+
+      /* Conditions at this end, from the instruments' own caches —
+         each line only if its instrument actually read something this
+         session. An offline instrument is an absent line, not a guess. */
+      var cond = [];
+      var wc = null;
+      try { wc = JSON.parse(localStorage.getItem("wx-delhi") || "null"); } catch (eW) {}
+      if (wc && typeof wc.code === "number" && d.getTime() - wc.t < 216e5) {
+        /* the same decades classify() uses, within the same 6h the site
+           treats a verdict as current */
+        var kind = ((wc.code >= 51 && wc.code <= 67) || (wc.code >= 80 && wc.code <= 82) || wc.code >= 95)
+          ? "rain" : (wc.code === 2 || wc.code === 3 || wc.code === 45 || wc.code === 48) ? "cloud" : "clear";
+        cond.push("wx: " + kind + " over delhi (wmo " + wc.code + ")");
+      }
+      var bc = null;
+      try { bc = JSON.parse(sessionStorage.getItem("dja-baro") || "null"); } catch (eB) {}
+      if (bc && bc.hrs && bc.hrs.length) {
+        /* last hour at or before `when` — the cache carries forecast
+           hours too, and a card must not read the future */
+        var bp = null, bi;
+        for (bi = 0; bi < bc.hrs.length; bi++)
+          if (typeof bc.hrs[bi].p === "number" && bc.hrs[bi].t <= d.getTime()) bp = bc.hrs[bi].p;
+        if (bp !== null) cond.push("baro: " + bp.toFixed(1) + " hPa on the drum");
+      }
+      var qc = null;
+      try { qc = JSON.parse(sessionStorage.getItem("dja-quakes") || "null"); } catch (eQ) {}
+      if (qc && qc.evs && qc.evs.length) {
+        var big = null, qi, qe;
+        for (qi = 0; qi < qc.evs.length; qi++) {
+          qe = qc.evs[qi];
+          if (typeof qe.m !== "number" || typeof qe.t !== "number") continue;
+          if (qe.t > d.getTime() || d.getTime() - qe.t > 864e5) continue;
+          if (!big || qe.m > big.m) big = qe;
+        }
+        if (big) {
+          /* same distance-prefix strip the seismograph caption does */
+          var pl = (big.place || "").replace(/^\s*\d+\s*km\s+[A-Z]{1,3}\s+of\s+/, "").toLowerCase();
+          cond.push("seismo: M" + big.m.toFixed(1) + (pl ? " · " + pl.slice(0, 18) : ""));
+        }
+      }
+
+      var rows = [["date", date], ["time", time], ["mode", mode]];
+      if (nm) rows.push(["band", "λ " + nm + "nm" + (nm === 620 ? " · the native ember" : " · tuned by you")]);
+      if (qth) rows.push(["your qth", qth + " · by your clock"]);
+
+      function txt(x, y, size, fill, str, extra) {
+        return "<text x='" + x + "' y='" + y + "' font-size='" + size
+          + "' fill='" + fill + "'" + (extra || "") + ">" + esc(str) + "</text>";
+      }
+
+      /* XML attributes are single-quoted throughout: the builder stays
+         readable in a double-quoted file, and XML does not mind. */
+      var s = [];
+      s.push("<?xml version='1.0' encoding='UTF-8'?>");
+      s.push("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1050 660' width='1050' height='660'"
+        + " role='img' aria-label='QSL card: davidjeremieanand.com confirming a visit'>");
+      s.push("<style>text{font-family:ui-monospace,'SF Mono','Cascadia Mono','Segoe UI Mono',Consolas,monospace}</style>");
+      s.push("<rect width='1050' height='660' fill='" + GROUND + "'/>");
+      s.push("<rect x='18' y='18' width='1014' height='624' fill='none' stroke='" + LINE + "' stroke-width='2'/>");
+      s.push("<rect x='28' y='28' width='994' height='604' fill='none' stroke='" + EMBER + "' stroke-opacity='.28'/>");
+      /* registration ticks, the maker's-mark corners */
+      s.push("<path d='M48 68V48h20M982 48h20v20M48 592v20h20M1002 592v20h-20'"
+        + " fill='none' stroke='" + EMBER + "' stroke-opacity='.8' stroke-width='1.5'/>");
+
+      s.push(txt(68, 84, 15, DIM, "davidjeremieanand.com · new delhi, india · grid " + g, " letter-spacing='3'"));
+      s.push(txt(64, 182, 92, INK, "QSL", " letter-spacing='18' font-weight='600'"));
+      s.push(txt(68, 216, 17, SOFT, "your visit, confirmed the way radio does it", " letter-spacing='5'"));
+
+      /* tonight's actual moon, the same two-arc construction the desk
+         scene draws: limb down the lit side, elliptical terminator back */
+      s.push("<circle cx='910' cy='112' r='30' fill='none' stroke='" + SOFT
+        + "' stroke-opacity='.4' stroke-width='1.2'/>");
+      if (frac >= .02) {
+        var term = 30 * Math.cos(2 * Math.PI * age / SYN);
+        var limbSweep = waxing ? 1 : 0;
+        var termSweep = term > 0 ? (waxing ? 0 : 1) : (waxing ? 1 : 0);
+        s.push("<path d='M910 82A30 30 0 0 " + limbSweep + " 910 142A"
+          + Math.abs(term).toFixed(2) + " 30 0 0 " + termSweep + " 910 82Z' fill='" + INK
+          + "' fill-opacity='.85'/>");
+      }
+      s.push(txt(910, 168, 13, DIM, moonName + " · " + Math.round(frac * 100) + "% lit", " text-anchor='middle'"));
+
+      var ry = 272, ri;
+      for (ri = 0; ri < rows.length; ri++) {
+        s.push(txt(68, ry, 14, DIM, rows[ri][0], " letter-spacing='3'"));
+        s.push(txt(250, ry + 1, 20, INK, rows[ri][1]));
+        s.push("<line x1='68' y1='" + (ry + 12) + "' x2='620' y2='" + (ry + 12)
+          + "' stroke='" + LINE + "' stroke-dasharray='1 5'/>");
+        ry += 46;
+      }
+
+      if (cond.length) {
+        s.push(txt(660, 272, 14, DIM, "conditions at this end", " letter-spacing='3'"));
+        for (ri = 0; ri < cond.length; ri++)
+          s.push(txt(660, 306 + ri * 30, 15.5, SOFT, cond[ri]));
+      }
+
+      /* The band strip is literal colour on purpose — these hexes ARE
+         the wavelengths (the tuner's own Bruton stops); painting them
+         with tokens would be a colour chart drawn in the wrong colours. */
+      s.push("<defs><linearGradient id='qslband'>"
+        + "<stop offset='0' stop-color='#610061'/><stop offset='.125' stop-color='#6A00FF'/>"
+        + "<stop offset='.188' stop-color='#0000FF'/><stop offset='.344' stop-color='#00FFFF'/>"
+        + "<stop offset='.406' stop-color='#00FF00'/><stop offset='.625' stop-color='#FFFF00'/>"
+        + "<stop offset='.75' stop-color='#FF7700'/><stop offset='.828' stop-color='#FF0000'/>"
+        + "</linearGradient></defs>");
+      s.push("<rect x='68' y='500' width='914' height='8' rx='3' fill='url(#qslband)' opacity='.9'/>");
+      if (nm) {
+        var tx = (68 + (nm - 380) / 320 * 914).toFixed(1);
+        s.push("<line x1='" + tx + "' y1='492' x2='" + tx + "' y2='516' stroke='" + INK
+          + "' stroke-width='2.5'/>");
+      }
+      s.push(txt(68, 530, 11, DIM, "380nm"));
+      s.push(txt(982, 530, 11, DIM, "700nm", " text-anchor='end'"));
+
+      s.push("<line x1='68' y1='546' x2='982' y2='546' stroke='" + LINE + "'/>");
+      s.push(txt(68, 584, 20, EMBER, "73 — best regards · de DJA", " letter-spacing='2'"));
+      /* the transmit mark: one dot, three arcs, going quiet */
+      s.push("<g stroke='" + EMBER + "' fill='none' stroke-width='1.6'>"
+        + "<path d='M947.1 570.9A10 10 0 0 1 947.1 585.1' opacity='.85'/>"
+        + "<path d='M952 566A17 17 0 0 1 952 590' opacity='.5'/>"
+        + "<path d='M957 561A24 24 0 0 1 957 595' opacity='.28'/></g>");
+      s.push("<circle cx='940' cy='578' r='3.5' fill='" + EMBER + "'/>");
+
+      /* the small print is the honesty: initials, not a callsign */
+      s.push(txt(68, 608, 11.5, DIM,
+        "dja are initials, not an amateur callsign — this card confirms a visit, not a radio contact."));
+      s.push(txt(68, 624, 11.5, DIM,
+        "grid " + g + " encodes this desk at 28.61°N 77.21°E · your locale came from your clock and never left this page."));
+      s.push("</svg>");
+
+      return {
+        svg: s.join("\n"),
+        name: "qsl-dja-" + date.replace(/-/g, "") + "-"
+          + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + "z.svg"
+      };
+    }
+
+    function save() {
+      var card = build();
+      var blob = new Blob([card.svg], { type: "image/svg+xml;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = card.name;
+      document.body.appendChild(a);   /* firefox will not click an orphan */
+      a.click();
+      document.body.removeChild(a);
+      /* revoke late — the save may still be reading the blob this tick */
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }
+
+    var btn = document.getElementById("qsl");
+    /* No Blob/object-URL, no card press — the button leaves rather
+       than promising a download it cannot make. */
+    if (!(window.Blob && window.URL && URL.createObjectURL)) {
+      if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
+      return;
+    }
+    window.__qsl = build;
+    if (btn) btn.addEventListener("click", save);
+  }
+
+  /* ==================================================================
      TERMINAL
      Quake-style: backtick toggles, Escape closes, commands drive the
      site's own machinery rather than duplicating navigation chrome.
@@ -6356,7 +6624,7 @@
     /* Completion targets and command history. */
     var CMDS = ["help", "goto", "scan", "transmit", "hello", "theme",
                 "resume", "hire", "iss", "wx", "quakes", "moon", "tune",
-                "log", "source", "73", "sudo", "clear", "exit"];
+                "qsl", "log", "source", "73", "sudo", "clear", "exit"];
     var SECS = ["top", "about", "work", "experience", "internships",
                 "education", "skills", "contact"];
     /* The tour's own stops: same as goto's targets, plus a waypoint halfway
@@ -6412,6 +6680,7 @@
         print("quakes            the seismograph's day, ranked", true);
         print("moon              tonight's actual phase", true);
         print("tune <380-700>    one wavelength as the accent · tune reset", true);
+        print("qsl               a contact card for this visit, yours to keep", true);
         print("iss · log · source · theme dark|light · resume · 73 · clear · exit", true);
       } else if (cmd === "scan") {
         print("scanning the band — touch anything to abort", true);
@@ -6538,6 +6807,14 @@
           if (tnm === null) print("not a wavelength — visible light runs 380-700", true);
           else print("tuned to " + tnm + "nm", true);
         }
+      } else if (cmd === "qsl") {
+        var qslBtn = document.getElementById("qsl");
+        if (qslBtn) {
+          qslBtn.click();
+          print("qsl — confirming contact, the card is in your downloads", true);
+        } else {
+          print("card press offline — no blob urls in this browser", true);
+        }
       } else if (cmd === "73") {
         print("73 — best regards, de DJA", true);
       } else if (cmd === "clear") {
@@ -6615,6 +6892,7 @@
   startSferics();
   startSceneScreen();
   startTerminal();
+  startQsl();       /* the parting gift, pressed last */
   startTimelinePulse();
   startPipe();
   startFresh();
