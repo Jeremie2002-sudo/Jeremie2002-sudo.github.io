@@ -1964,6 +1964,28 @@
     #hero-rain line:nth-child(2n) { display: none; }
   }
 
+  /* The real sky. In dark theme the hero carries the brightest stars
+     actually above New Delhi, computed from the clock — startStars().
+     Same plane as the rain (z -1): the waterfall canvas below (z -2)
+     paints opaque pixels, so a star behind it would never be seen; the
+     hero's ::after scrim still paints on top, so stars dim toward the
+     lit horizon the way they do over a real city. Light theme is
+     daytime — no stars, same gate as the vignette skies. */
+  #hero-sky {
+    position: absolute; inset: 0; z-index: -1;
+    pointer-events: none;
+  }
+  :root[data-theme="light"] #hero-sky { display: none; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) #hero-sky { display: none; }
+  }
+  #hero-sky circle { fill: var(--soft); }
+  /* First-magnitude stars take the accent, so the sky sits on the same
+     dial as the rest of the page. This alpha multiplies the per-star
+     magnitude opacity set inline. */
+  #hero-sky circle[data-b] { fill: rgb(var(--accent-rgb) / .9); }
+  #hero-sky line { stroke: var(--dim); stroke-width: 1; opacity: .12; stroke-linecap: round; }
+
   /* The ISS globe: click the satellite's nameplate and a small dark
      Earth opens — orthographic, centred on the station, coastlines in
      line-work, Delhi marked, the orbit drawn an hour each way. Pure
@@ -2281,7 +2303,7 @@
      prints as nothing at all. */
   @media print {
     nav, .theme, .progress, .smeter, .seismo, .tuner, #voyager, #term, .grain, #shader, #motes,
-    .cue, .wf-write, .scene, .vig, .grad, .marquee, #wf-layer, #glow, #hero-rain,
+    .cue, .wf-write, .scene, .vig, .grad, .marquee, #wf-layer, #glow, #hero-rain, #hero-sky,
     .pipe, .constellation, .sky-day, .sky-night,
     #wf-close-layer, .scene-card, .scene-open { display: none !important; }
     html, body { background: #fff !important; color: #111 !important; }
@@ -2393,6 +2415,13 @@
 <header class="hero" id="top">
   <div id="wf-layer" aria-hidden="true"><canvas id="waterfall"></canvas></div>
   <div id="glow" aria-hidden="true"></div>
+<!-- The computed sky: the brightest stars actually over New Delhi at
+       this moment, drawn where they are — startStars() fills it. Fixed
+       viewBox + slice keeps star coordinates viewport-independent (and
+       testable) and stars round; narrow screens crop to a south-facing
+       window, and the azimuth wrap seam sits at due north where the
+       crop most often hides it. -->
+  <svg id="hero-sky" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
 
   <div class="wrap hero-inner">
     <h1>
@@ -4441,6 +4470,155 @@
   }
 
   /* ==================================================================
+     DELHI STAR CHART
+     In dark theme the hero sky is the actual sky: the brightest stars
+     over New Delhi right now, computed from the clock — sidereal time
+     to hour angle to alt/az, no feed to fail. A visitor at 2am sees
+     Orion where Orion actually is. Deliberately still: real stars do
+     not twinkle on a page, they drift — one repaint every few minutes
+     is the entire animation.
+     ================================================================== */
+
+  function startStars() {
+    var svg = document.getElementById("hero-sky");
+    if (!svg) return;
+    var NS = "http://www.w3.org/2000/svg";
+    var LAT = 28.61 * Math.PI / 180, LON = 77.21;
+    /* viewBox sky-window; below 10° altitude Delhi haze wins anyway */
+    var W = 1000, H = 560, MIN = 10;
+
+    /* 81 stars, Yale Bright Star Catalog values (J2000, rounded):
+       RA hours, Dec degrees, Vmag — stride 3. Southern stars that
+       never clear 10° at this latitude are left out. Order is
+       load-bearing, LINES indexes into it:
+        0-7   Betelgeuse Rigel Bellatrix Mintaka Alnilam Alnitak Saiph Meissa
+        8-19  Sirius Mirzam Adhara Wezen Procyon Capella Menkalinan
+              Pollux Castor Alhena Aldebaran Elnath
+        20-23 zetaTau gammaTau Ain Alcyone
+        24-29 Regulus Algieba Zosma Denebola Chertan epsLeo
+        30-32 Arcturus Spica Alphard
+        33-39 Dubhe Merak Phecda Megrez Alioth Mizar Alkaid
+        40-41 Polaris Kochab
+        42-51 Antares Dschubba Acrab piSco tauSco epsSco muSco Sargas
+              kappaSco Shaula
+        52-61 Vega Altair Deneb Sadr epsCyg deltaCyg Albireo Rasalhague
+              Nunki KausAustralis
+        62-71 Fomalhaut Alpheratz Scheat Markab Algenib Enif Mirach
+              Almach Hamal Diphda
+        72-76 Caph Schedar gammaCas Ruchbah Segin
+        77-80 Mirfak Algol Menkar Alderamin */
+    var CAT = [
+      5.919,7.41,.5, 5.242,-8.2,.13, 5.418,6.35,1.64, 5.533,-.3,2.23,
+      5.604,-1.2,1.69, 5.679,-1.94,1.74, 5.796,-9.67,2.06, 5.586,9.93,3.39,
+      6.752,-16.72,-1.46, 6.378,-17.96,1.98, 6.977,-28.97,1.5, 7.14,-26.39,1.84,
+      7.655,5.22,.34, 5.278,46,.08, 5.992,44.95,1.9, 7.755,28.03,1.14,
+      7.577,31.89,1.58, 6.629,16.4,1.92, 4.599,16.51,.85, 5.438,28.61,1.65,
+      5.627,21.14,3.03, 4.33,15.63,3.65, 4.477,19.18,3.53, 3.791,24.11,2.87,
+      10.139,11.97,1.35, 10.333,19.84,2.2, 11.235,20.52,2.56, 11.818,14.57,2.14,
+      11.237,15.43,3.32, 9.764,23.77,2.98, 14.261,19.18,-.05, 13.42,-11.16,.97,
+      9.46,-8.66,1.98, 11.062,61.75,1.79, 11.031,56.38,2.37, 11.897,53.69,2.44,
+      12.257,57.03,3.31, 12.9,55.96,1.77, 13.399,54.93,2.23, 13.792,49.31,1.86,
+      2.53,89.26,1.98, 14.845,74.16,2.08, 16.49,-26.43,.96, 16.006,-22.62,2.32,
+      16.091,-19.81,2.56, 15.981,-26.11,2.89, 16.598,-28.22,2.82, 16.836,-34.29,2.29,
+      16.864,-38.05,3, 17.622,-43,1.87, 17.708,-39.03,2.39, 17.56,-37.1,1.63,
+      18.616,38.78,.03, 19.846,8.87,.77, 20.69,45.28,1.25, 20.371,40.26,2.23,
+      20.77,33.97,2.48, 19.75,45.13,2.87, 19.512,27.96,3.08, 17.582,12.56,2.07,
+      18.921,-26.3,2.05, 18.403,-34.38,1.85, 22.961,-29.62,1.16, .14,29.09,2.06,
+      23.063,28.08,2.42, 23.079,15.21,2.49, .221,15.18,2.83, 21.736,9.88,2.39,
+      1.162,35.62,2.06, 2.065,42.33,2.26, 2.12,23.46,2, .726,-17.99,2.04,
+      .153,59.15,2.27, .675,56.54,2.24, .945,60.72,2.47, 1.43,60.24,2.68,
+      1.907,63.67,3.38, 3.405,49.86,1.79, 3.136,40.96,2.12, 3.038,4.09,2.53,
+      21.31,62.59,2.46
+    ];
+
+    /* Nine figures a visitor might actually recognise, as index pairs.
+       Scorpius skips two faint tail stars; the hook still reads. */
+    var LINES = [
+      0,2, 2,7, 7,0, 2,3, 0,5, 3,4, 4,5, 3,1, 5,6, 1,6,             /* Orion */
+      8,9, 8,11, 11,10,                                             /* Canis Major */
+      18,21, 21,22, 22,19, 18,20,                                   /* Taurus */
+      24,25, 25,29, 25,26, 26,27, 27,28, 28,24,                     /* Leo */
+      33,34, 34,35, 35,36, 36,33, 36,37, 37,38, 38,39,              /* Ursa Major */
+      44,43, 43,45, 43,42, 42,46, 46,47, 47,48, 48,49, 49,50, 50,51, /* Scorpius */
+      54,55, 55,58, 57,55, 55,56,                                   /* Cygnus */
+      63,64, 64,65, 65,66, 66,63, 65,67,                            /* Pegasus */
+      72,73, 73,74, 74,75, 75,76                                    /* Cassiopeia */
+    ];
+
+    /* Projection: linear sky-dome strip — azimuth across x with due
+       south at centre (the wrap seam falls at due north, where the
+       slice-crop usually hides it), altitude up y from 10° at the
+       bottom edge to zenith at the top. Cylindrical, so the zenith
+       smears sideways — a fair trade for a sky that reads left-to-
+       right like a rooftop view. */
+    function draw(ms) {
+      /* USNO linear GMST fit: within a second of the full series for
+         decades either side of J2000 — sub-pixel here. Precession
+         (~0.4° since J2000) and refraction are ignored for the same
+         reason. */
+      var d = ms / 86400000 - 10957.5;
+      var lst = ((18.697374558 + 24.06570982441908 * d) % 24 + 24) % 24 + LON / 15;
+      var pts = [], out = [], i, ha, dec, alt, az, a, b, p, m, el;
+      for (i = 0; i < CAT.length; i += 3) {
+        ha = (lst - CAT[i]) * 15 * Math.PI / 180;
+        dec = CAT[i + 1] * Math.PI / 180;
+        alt = Math.asin(Math.sin(dec) * Math.sin(LAT) +
+                        Math.cos(dec) * Math.cos(LAT) * Math.cos(ha)) * 180 / Math.PI;
+        if (alt < MIN) { pts.push(null); continue; }
+        az = Math.atan2(-Math.cos(dec) * Math.sin(ha),
+          Math.sin(dec) * Math.cos(LAT) - Math.sin(LAT) * Math.cos(dec) * Math.cos(ha)) * 180 / Math.PI;
+        az = (az + 360) % 360;
+        pts.push([+(az / 360 * W).toFixed(1),
+                  +((1 - (alt - MIN) / (90 - MIN)) * H).toFixed(1)]);
+      }
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      for (i = 0; i < LINES.length; i += 2) {
+        a = pts[LINES[i]]; b = pts[LINES[i + 1]];
+        /* both ends up, and not straddling the north seam */
+        if (!a || !b || Math.abs(a[0] - b[0]) > W / 2) continue;
+        el = document.createElementNS(NS, "line");
+        el.setAttribute("x1", a[0]); el.setAttribute("y1", a[1]);
+        el.setAttribute("x2", b[0]); el.setAttribute("y2", b[1]);
+        svg.appendChild(el);
+      }
+      for (i = 0; i < pts.length; i++) {
+        p = pts[i];
+        if (!p) continue;
+        m = CAT[i * 3 + 2];
+        el = document.createElementNS(NS, "circle");
+        el.setAttribute("cx", p[0]); el.setAttribute("cy", p[1]);
+        el.setAttribute("r", Math.max(.6, 1.6 - (m + 1.5) * .22).toFixed(2));
+        el.setAttribute("opacity", Math.max(.22, .58 - m * .09).toFixed(2));
+        if (m <= .5) el.setAttribute("data-b", "1"); /* first magnitude: accent */
+        el.setAttribute("data-i", i);
+        svg.appendChild(el);
+        out.push([i, p[0], p[1]]);
+      }
+      return { t: ms, lst: lst % 24, up: out };
+    }
+
+    /* __stars() repaints now; __stars(ms) paints that instant. The sky
+       is a pure function of the clock, so a fixed date is assertable. */
+    window.__stars = function (ms) {
+      return draw(typeof ms === "number" && isFinite(ms) ? ms : Date.now());
+    };
+
+    draw(Date.now());
+    /* Three minutes is ~0.75° of sky — a couple of pixels of drift. */
+    if (!reduced) setInterval(function () {
+      if (!document.hidden) draw(Date.now());
+    }, 180000);
+    /* A tab shown again after hours gets its sky corrected once — a
+       discrete fix, not motion, so it runs under reduced motion too. */
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) draw(Date.now());
+    });
+  }
+
+  /* --- init call: one line, see placement_notes for the anchor --- */
+  startStars();      /* the hero's real sky, from the same clock as the moon */
+
+  /* ==================================================================
      SFERICS
      Lightning is natural radio: every strike on Earth radiates a
      broadband crackle that real receivers hear. Blitzortung's volunteer
@@ -6313,6 +6491,7 @@
   startCloser();
   startScene();      /* after startCloser: it reads that canvas */
   startMoon();       /* after startScene: it draws into that svg */
+  startStars();      /* the hero's real sky, from the same clock as the moon */
   startHello();
   startWeather();
   startSferics();
