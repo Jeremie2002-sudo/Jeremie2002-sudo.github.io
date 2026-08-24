@@ -2125,6 +2125,49 @@
   }
   @keyframes seismo-pen { 50% { opacity: .3; } }
 
+  /* The wavelength tuner. The ribbon is the visible spectrum itself —
+     the one place literal colours are the honest choice, because these
+     ARE the wavelengths; painting them with theme tokens would be a
+     colour chart drawn in the wrong colours. The chrome around it stays
+     on tokens, so the instrument retunes along with the site it tunes. */
+  .tuner { display: inline-flex; align-items: center; gap: 10px; }
+  .tuner input {
+    -webkit-appearance: none; appearance: none;
+    width: 132px; height: 10px; margin: 0; padding: 0;
+    border: 0; border-radius: 2px;
+    cursor: ew-resize;
+    opacity: .75; transition: opacity .25s ease;
+    /* stops at the Bruton landmark wavelengths, percent = (nm-380)/320 */
+    background: linear-gradient(90deg,
+      #610061 0,          /* 380 */
+      #6A00FF 12.5%,      /* 420 */
+      #0000FF 18.8%,      /* 440 */
+      #00FFFF 34.4%,      /* 490 */
+      #00FF00 40.6%,      /* 510 */
+      #FFFF00 62.5%,      /* 580 */
+      #FF7700 75%,        /* 620 — home */
+      #FF0000 82.8%,      /* 645 */
+      #FF0000 100%);      /* 700 */
+  }
+  .tuner input:hover, .tuner input:focus-visible { opacity: 1; }
+  .tuner input::-webkit-slider-runnable-track { height: 10px; background: transparent; }
+  .tuner input::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 5px; height: 16px; margin-top: -3px;
+    border-radius: 2px; box-sizing: border-box;
+    background: var(--ink);
+    /* a sliver of ground around the detent so it reads on every band colour */
+    border: 1px solid rgb(var(--ground-rgb));
+  }
+  .tuner input::-moz-range-track { height: 10px; background: transparent; }
+  .tuner input::-moz-range-thumb {
+    width: 5px; height: 16px;
+    border-radius: 2px; box-sizing: border-box;
+    background: var(--ink);
+    border: 1px solid rgb(var(--ground-rgb));
+  }
+  .tuner output { white-space: nowrap; }
+
   /* Phones. The desktop rhythm is built on vh-based clamps, which resolve
      generously on a tall narrow screen — and every two-column grid here
      collapses to one, stacking its own gap on top. Left alone that reads
@@ -2237,7 +2280,7 @@
      back to solid ink: background-clip text with a transparent color
      prints as nothing at all. */
   @media print {
-    nav, .theme, .progress, .smeter, .seismo, #voyager, #term, .grain, #shader, #motes,
+    nav, .theme, .progress, .smeter, .seismo, .tuner, #voyager, #term, .grain, #shader, #motes,
     .cue, .wf-write, .scene, .vig, .grad, .marquee, #wf-layer, #glow, #hero-rain,
     .pipe, .constellation, .sky-day, .sky-night,
     #wf-close-layer, .scene-card, .scene-open { display: none !important; }
@@ -3151,6 +3194,15 @@
        above to back it. -->
   <span>Zero hallucinations — everything here really happened</span>
   <span class="thint">` opens the terminal</span>
+<!-- The amber this site wears is light at ~620nm. This retunes the
+       whole page to any visible wavelength — drag the detent; a
+       double-click comes home to 620. -->
+  <span class="tuner">
+    <input id="tune" type="range" min="380" max="700" step="1" value="620"
+           aria-label="Site accent wavelength in nanometres, 380 to 700. Double-click to reset to 620."
+           title="retune the site · double-click resets">
+    <output id="tune-nm" for="tune">λ 620nm</output>
+  </span>
   <!-- Filled by the GitHub events API: proof the repos breathe. -->
   <span id="fresh" hidden></span>
 </footer>
@@ -3919,6 +3971,10 @@
     }
 
     window.__paintPalette = function (p) {
+      /* Under reduced motion the journey holds at its first stop — the
+         palette runs anyway so the wavelength tuner can retint a page
+         that is not otherwise moving. */
+      if (reduced) p = 0;
       var stops = JOURNEY[isDark() ? "dark" : "light"];
       var span = stops.length - 1;
       var pos = Math.min(Math.max(p, 0), 1) * span;
@@ -3926,9 +3982,12 @@
       var k = pos - i;
       var a = stops[i], b = stops[i + 1];
 
-      var ember = mix(a.ember, b.ember, k);
-      var blush = mix(a.blush, b.blush, k);
-      var plasma = mix(a.plasma, b.plasma, k);
+      /* The tuner lives inside the paint path on purpose: this function
+         re-runs on every scroll and theme change, so a tune applied
+         anywhere else would be overwritten within a frame. */
+      var ember = retune(mix(a.ember, b.ember, k));
+      var blush = retune(mix(a.blush, b.blush, k));
+      var plasma = retune(mix(a.plasma, b.plasma, k));
 
       root.style.setProperty("--ember", hex(ember));
       root.style.setProperty("--blush", hex(blush));
@@ -3937,6 +3996,126 @@
     };
 
     window.__paintPalette(0);
+  }
+
+  /* ==================================================================
+     WAVELENGTH TUNER
+     The amber running through this site is not a mood — it is light at
+     roughly 620nm. The instrument in the footer makes that literal:
+     pick any visible wavelength and every colour the scroll palette
+     writes is rotated, in HSL, by the hue distance between your
+     wavelength and the native 620.
+
+     Rotation rather than replacement, because lightness and saturation
+     are where the design lives — contrast on paper, glow on black —
+     and because the ember/blush/plasma trio keeps its internal spacing,
+     the journey gradient and both themes survive any retune.
+     ================================================================== */
+
+  var NATIVE_NM = 620;
+
+  /* Wavelength -> hue, piecewise linear after Bruton's classic fit of
+     the spectrum to RGB. An approximation — true spectral colour sits
+     outside sRGB entirely — but it is continuous, monotone (300° violet
+     at 380nm down to 0° red at 645nm+), and hits the landmarks: 440
+     blue, 490 cyan, 510 green, 580 yellow. Hue is all the tuner needs. */
+  function nmHue(nm) {
+    if (nm < 440) return 240 + 60 * (440 - nm) / 60;
+    if (nm < 490) return 240 - 60 * (nm - 440) / 50;
+    if (nm < 510) return 120 + 60 * (510 - nm) / 20;
+    if (nm < 580) return 60 + 60 * (580 - nm) / 70;
+    if (nm < 645) return 60 * (645 - nm) / 65;
+    return 0;
+  }
+
+  /* Initialised here, before the boot calls at the bottom, so the very
+     first __paintPalette(0) already carries a saved tune — no flash. */
+  var tuneNm = NATIVE_NM;
+  try {
+    var savedNm = parseInt(localStorage.getItem("dja-nm"), 10);
+    if (savedNm >= 380 && savedNm <= 700) tuneNm = savedNm;
+  } catch (e) { /* storage blocked; native amber */ }
+  var tuneDelta = nmHue(tuneNm) - nmHue(NATIVE_NM);
+  var tunerSync = null;   /* wired by startTuner once the instrument exists */
+
+  /* Rotate one [r,g,b] by tuneDelta degrees in HSL. At the native
+     wavelength the delta is zero and the input passes through untouched
+     — bit-for-bit, so the default site is identical, not merely close. */
+  function retune(c) {
+    if (!tuneDelta) return c;
+    var r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var d = max - min;
+    if (!d) return c;                    /* grey has no hue to move */
+    var l = (max + min) / 2;
+    var s = d / (l > .5 ? 2 - max - min : max + min);
+    var h;
+    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h = ((h * 60 + tuneDelta) % 360 + 360) % 360 / 360;
+    var q = l < .5 ? l * (1 + s) : l + s - l * s;
+    var p = 2 * l - q;
+    function ch(t) {
+      if (t < 0) t += 1; else if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    }
+    return [Math.round(ch(h + 1 / 3) * 255),
+            Math.round(ch(h) * 255),
+            Math.round(ch(h - 1 / 3) * 255)];
+  }
+
+  function applyTune(nm) {
+    tuneNm = nm;
+    tuneDelta = nmHue(nm) - nmHue(NATIVE_NM);
+    /* Same refresh set the scroll handler uses: repaint the tokens at
+       the current position, then nudge whichever ambient layer is up. */
+    if (window.__paintPalette) {
+      var max = document.documentElement.scrollHeight - innerHeight;
+      window.__paintPalette(max > 0 ? scrollY / max : 0);
+      if (window.__refreshMotes) window.__refreshMotes();
+      if (window.__shaderTint) window.__shaderTint();
+    }
+    if (tunerSync) tunerSync();
+  }
+
+  /* The shared contract: the footer slider, the terminal, and anyone
+     poking a console all go through this one door. */
+  window.__tune = function (nm) {
+    if (arguments.length === 0) return tuneNm;
+    if (nm === null) {
+      applyTune(NATIVE_NM);
+      try { localStorage.removeItem("dja-nm"); } catch (e) {}
+      return NATIVE_NM;
+    }
+    if (typeof nm !== "number" || !isFinite(nm)) return null;
+    nm = Math.round(nm);
+    if (nm < 380 || nm > 700) return null;
+    applyTune(nm);
+    try { localStorage.setItem("dja-nm", String(nm)); } catch (e) {}
+    return nm;
+  };
+
+  function startTuner() {
+    var band = document.getElementById("tune");
+    var out = document.getElementById("tune-nm");
+    if (!band) return;
+
+    tunerSync = function () {
+      band.value = tuneNm;
+      band.setAttribute("aria-valuetext", tuneNm + " nanometres");
+      if (out) out.textContent = "λ " + tuneNm + "nm";
+    };
+    tunerSync();   /* a saved tune arrives with the detent already set */
+
+    band.addEventListener("input", function () {
+      window.__tune(Number(band.value));
+    });
+    /* the way home */
+    band.addEventListener("dblclick", function () { window.__tune(null); });
   }
 
   /* ==================================================================
@@ -6050,7 +6229,8 @@
   }
 
   startTheme();
-  if (!reduced) startPalette();
+  startPalette();    /* unconditional: reduced motion still deserves its wavelength */
+  startTuner();      /* after startPalette — a saved tune was already in that first paint */
   startWaterfall();
   startNameFill();   /* after startWaterfall: it reads that canvas */
   startCloser();
