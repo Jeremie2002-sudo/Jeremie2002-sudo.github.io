@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day 46, a case study — David Jeremie Anand</title>
+<meta name="description" content="A late-payment case builder for freelancers: a WhatsApp chat and an invoice become a dated case, with the AI kept to pointing at messages and every date and figure left to tested code.">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://davidjeremieanand.com/day46.html">
+<meta property="og:title" content="Day 46 — a late-payment case builder">
+<meta property="og:description" content="The AI only points at messages; code decides every date and figure. On 12 unseen synthetic chats it found 99% of the events, with 0 hallucinated quotes.">
+<meta property="og:image" content="https://davidjeremieanand.com/og.jpg">
+<meta property="og:url" content="https://davidjeremieanand.com/day46.html">
+<meta property="og:type" content="article">
+
+<!-- Same no-flash theme trick as the front page: apply the saved choice
+     before first paint. -->
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("theme");
+      if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
+    } catch (e) { /* storage blocked; fall back to the OS preference */ }
+  })();
+</script>
+
+<style>
+  /* Pages glide into each other where the browser supports it. */
+  @view-transition { navigation: auto; }
+
+  /* Tokens lifted from the front page so this reads as the same site. */
+  :root {
+    --void: #F6F4F1; --deep: #EEEAE5; --raised: #E6E1DA;
+    --ink: #14171C; --soft: #4B5563; --dim: #656C78; --line: #DCD6CE;
+    --ember: #A55C08; --flare: #B8401D; --wine: #7A1F3D;
+    --display: system-ui, -apple-system, "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+    --measure: 62ch;
+    --edge: clamp(20px, 5vw, 68px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --void: #05070B; --deep: #0A0E16; --raised: #10151F;
+      --ink: #F2F5FA; --soft: #C3CEDD; --dim: #7C8B9E; --line: #1A2231;
+      --ember: #FFB454; --flare: #FF7A4A; --wine: #8E2F52;
+    }
+  }
+  :root[data-theme="dark"] {
+    --void: #05070B; --deep: #0A0E16; --raised: #10151F;
+    --ink: #F2F5FA; --soft: #C3CEDD; --dim: #7C8B9E; --line: #1A2231;
+    --ember: #FFB454; --flare: #FF7A4A; --wine: #8E2F52;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--void); color: var(--ink);
+    font-family: var(--serif); font-size: 17px; line-height: 1.65;
+    padding: 0 var(--edge) 90px;
+  }
+  .col { max-width: var(--measure); margin: 0 auto; }
+
+  .crumbs {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em;
+    text-transform: uppercase; padding: 26px 0 60px;
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .crumbs a { color: var(--dim); text-decoration: none; }
+  .crumbs a:hover { color: var(--ember); }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--ember); margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 800; letter-spacing: -.02em;
+    font-size: clamp(34px, 6vw, 54px); line-height: 1.04; text-wrap: balance;
+    margin-bottom: 18px;
+  }
+  .stand { color: var(--soft); font-size: 19px; margin-bottom: 10px; }
+  .byline { font-family: var(--mono); font-size: 11.5px; color: var(--dim); margin-bottom: 54px; }
+
+  h2 {
+    font-family: var(--display); font-weight: 700; letter-spacing: -.01em;
+    font-size: 24px; margin: 52px 0 14px; text-wrap: balance;
+  }
+  p { margin-bottom: 14px; }
+  strong { color: var(--ink); }
+  a { color: var(--ember); }
+
+  ul { margin: 0 0 14px 20px; }
+  li { margin-bottom: 8px; }
+  li::marker { color: var(--ember); }
+
+  /* Terminal captures. Lines are blocks with white-space: pre, as on the
+     front page, so the columns line up and the source stays indented. */
+  .panel {
+    background: var(--deep); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; margin: 22px 0; font-family: var(--mono);
+    font-size: 12.5px; line-height: 1.8; overflow-x: auto; color: var(--soft);
+  }
+  .panel .l { display: block; white-space: pre; }
+  .panel .q { color: var(--dim); }
+  .panel .k { color: var(--ember); }
+  .panel .ok { color: var(--ember); font-weight: 700; }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 22px 0;
+    font-family: var(--mono); font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+  td.hot { color: var(--ember); font-weight: 700; }
+  td.who { color: var(--soft); }
+  .tablewrap { overflow-x: auto; }
+
+  .pull {
+    border-left: 2px solid var(--ember); padding: 4px 0 4px 20px;
+    margin: 26px 0; color: var(--soft); font-style: italic; font-size: 18px;
+  }
+  /* The one sentence that explains the name is fixed wording from the
+     project's legal truth sheet, so it is set as a quotation, not prose. */
+  blockquote {
+    border-left: 2px solid var(--line); padding: 4px 0 4px 20px;
+    margin: 22px 0; color: var(--soft);
+  }
+
+  .cta {
+    display: flex; gap: 26px; flex-wrap: wrap; margin-top: 56px;
+    padding-top: 26px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  }
+  .cta a { text-decoration: none; }
+  .foot { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-top: 60px; }
+
+  /* The longest line is the real command (51 characters); at 9.5px it
+     fits a 360px screen without a sideways swipe. */
+  @media (max-width: 680px) {
+    .panel { font-size: 9.5px; padding: 14px 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="col">
+
+  <nav class="crumbs">
+    <a href="/">&#8592; davidjeremieanand.com</a>
+    <a href="/notes.html">field notes</a>
+  </nav>
+
+  <p class="eyebrow">Case study</p>
+  <h1>Day 46 — from a WhatsApp chat to a payment claim</h1>
+  <p class="stand">Freelancers get paid late, and the deal usually lives in a chat. I
+  built the tool that turns that chat into a dated case, and kept the AI on a short
+  leash, because in a document someone signs, a confident mistake is worse than no
+  help at all.</p>
+  <p class="byline">Built and shipped September 2026 · Python · FastAPI · Claude API ·
+  1,707 tests · <a href="https://day46.onrender.com">live</a></p>
+
+  <h2>The problem</h2>
+  <p>A designer delivers the logo, sends the invoice, and waits. The order, the
+  delivery, the invoice, the "will pay by Friday" are all in a WhatsApp chat, spread over
+  weeks. India's MSMED Act gives a registered micro or small supplier a hard deadline
+  and compound interest at three times the RBI Bank Rate after it, but using that
+  means knowing the day the work was accepted, the rate for each stretch of time, and
+  how to write it all down without overstating anything.</p>
+  <p>The project takes its name from that deadline. The sentence that explains it is
+  fixed wording, used the same way everywhere:</p>
+  <blockquote>Day 46 is the first day on which a payment to a registered micro or small
+  supplier is late under section 15 of the MSMED Act whatever the contract says, because
+  no written credit period may run beyond 45 days from acceptance. Where nothing was
+  agreed in writing, the payment was already late on day 16.</blockquote>
+  <p>A small survey (nine freelancers) changed the design early: <strong>none of them
+  were registered on Udyam</strong>, the registration that route depends on. So the
+  ordinary contract-law route had to be built as an equal, not a footnote. Six
+  eligibility questions sort each case onto a route, or say they cannot tell, with the
+  reasons printed in the check's own words.</p>
+
+  <h2>The rule I built around: the AI only points</h2>
+  <p>A model that writes a date will one day write the wrong one, confidently, into a
+  letter someone signs. So the AI in Day 46 has exactly one job, and every other step
+  belongs to code or to the person:</p>
+  <div class="tablewrap">
+  <table>
+    <tr><th>step</th><th>who does the work</th></tr>
+    <tr><td>Read the export: every message gets an id, a time, a sender</td><td class="who">code, tested</td></tr>
+    <tr><td>Show exactly what the AI will see, masked, before anything is sent</td><td class="who">code, tested</td></tr>
+    <tr><td>Point at the messages that record an order, a delivery, an invoice, a promise to pay</td><td class="hot">the AI, and only this</td></tr>
+    <tr><td>Confirm, correct or reject every event; type what a chat cannot say</td><td class="who">the person; checked again by code</td></tr>
+    <tr><td>Due date, interest, part-payments</td><td class="who">code, tested</td></tr>
+    <tr><td>Reminder, demand letter, case file for an advocate</td><td class="who">fixed templates</td></tr>
+  </table>
+  </div>
+  <p>The AI step is one request to Claude under a fixed JSON schema. Its reply can only
+  be a list of <em>type, message, quote, confidence</em> across twelve event types: no
+  dates, no figures, no sentences. Code keeps an entry only if its quote is <strong>word
+  for word inside the message it cites</strong>, then takes the date and the speaker
+  from that message and reads any amount from the quoted words itself. A buyer's "sent
+  10,000" is recorded as the buyer saying so, never as money that arrived.</p>
+  <p>Two smaller guards matter as much. The chat goes in as evidence inside a fence
+  named after its own hash, so text in the chat cannot close the fence and start
+  giving instructions. And the server rebuilds the masked text and compares its SHA-256
+  with what the page showed, so what is sent is byte for byte what the person read.</p>
+
+  <h2>Masking, on screen first</h2>
+  <p>Before any request, the page shows the exact text the AI would receive. The names
+  of the people in the chat become SUPPLIER and BUYER; phone numbers, e-mail and UPI
+  addresses, PAN, GSTIN, Aadhaar, bank and card numbers and links become tokens. Amounts,
+  dates and invoice numbers stay, because the events cannot be recognised without them.
+  The person can leave out any message or hide any word. A leak test plants 1,200
+  private details in a chat and fails the build if a single one survives into what the
+  AI would see. Masking is still a best effort, and the page says so.</p>
+  <p>The server has no database and no accounts, writes no upload to disk and logs no
+  chat text. The masked excerpt the person approves is sent to the AI provider, and the
+  page says so beside the button.</p>
+
+  <h2>Measuring the AI step</h2>
+  <p>Twelve synthetic Hinglish chats, 362 messages, 262 events. The answers came first:
+  for every message the events it records were fixed as labels, then the words were
+  written, then the export files were rendered in three phone formats from the same
+  list. Four of the chats were labelled a second time, blind (115 of 119 pairs agreed;
+  the four disagreements were ruled on before the run). No model saw the chats before
+  it was measured, and the prompt was not tuned on them.</p>
+  <div class="tablewrap">
+  <table>
+    <tr><th>model</th><th>found</th><th>right</th><th>hallucinated</th><th>per chat</th><th>median</th></tr>
+    <tr><td>opus-5 (the app's)</td><td class="hot">99%</td><td>94%</td><td>0 of 276</td><td>USD 0.054</td><td>16.6 s</td></tr>
+    <tr><td>sonnet-5</td><td>97%</td><td>95%</td><td>0 of 266</td><td>USD 0.029</td><td>17.8 s</td></tr>
+    <tr><td>haiku-4.5</td><td>78%</td><td>95%</td><td>0 of 215</td><td>USD 0.006</td><td>5.0 s</td></tr>
+    <tr><td>sonnet-5, one-line prompt</td><td>92%</td><td>85%</td><td>0 of 286</td><td>USD 0.028</td><td>17.7 s</td></tr>
+  </table>
+  </div>
+  <p><em>Found</em> is the share of labelled events the model pointed at with the right
+  type; <em>right</em> is the share of what it pointed at that is in the labels;
+  <em>hallucinated</em> counts entries whose quote is not in the message they cite, which
+  code drops before anyone sees them.</p>
+  <p class="pull">Same model, same chats: the one-sentence prompt was right 85% of the
+  time, the app's prompt 95%. The instructions are worth ten points.</p>
+  <ul>
+    <li><strong>Opus-5's errors cluster at the edges of the definitions.</strong> Five of
+    its sixteen wrong entries read the buyer's opening request as the order, which the
+    prompt's own definition allows, where the labels put the order on the go-ahead; two
+    more read a fix after a complaint as a delivery. Its only two misses were a supplier's
+    "fixed" message that the labels count as an objection resolved.</li>
+    <li><strong>The cheap model misses the soft events.</strong> Haiku found fewer than
+    half of the promises to pay, which are exactly the messages a late-payment case leans
+    on. It is fast and cheap and not good enough here.</li>
+    <li><strong>Sonnet-5 is within two points at half the price.</strong> The app stays on
+    opus-5 for now; the table is what a switch would be decided on.</li>
+  </ul>
+  <p>The caveat, stated before anyone asks: these chats are synthetic. An AI assistant
+  wrote them, not any of the models that read them, and no real chat is in the set. Real
+  exports, with consent, are the next test.</p>
+
+  <h2>Getting the arithmetic right without a person checking it</h2>
+  <p>With no one to check the sums by hand, every figure is checked three ways. The
+  interest engine must agree <strong>to the paisa</strong> with a second implementation
+  written from the spec alone, without sight of the engine, on 2,500 random cases, and
+  on a set of golden cases with an Excel workbook of live formulas recalculated by Excel
+  itself. The same idea runs elsewhere: a blind second reading of the confirmation rules
+  is compared on 3,000 generated cases, and the chat reader on 3,000 generated chats
+  every run. Every finding from the adversarial reviews stays in the suite as a test,
+  and the whole suite, 1,707 tests, runs on every push.</p>
+  <p>Where the law is silent, the engine takes the reading that <strong>lowers the
+  claim</strong>, prints it, and shows the other reading once as an upper figure. The RBI
+  Bank Rate lives in a dated table with a source for every row; a table not checked for
+  75 days refuses to produce a figure at all. And wording that overstates the law, from
+  "eligible" to a promised outcome, fails the build.</p>
+
+  <h2>Shipping it</h2>
+  <p>It runs on Render. The server checks itself before it starts (page files,
+  templates, the saved sample answer), so a broken deploy never answers its health
+  check. Every reply carries a content security policy and no-framing headers;
+  requests from other sites are refused before their body is read; heavy work is
+  counted so that slow uploads cannot shut others out. One command checks the live site
+  end to end, including a whole sample case calculated there and compared with the same
+  code run locally:</p>
+  <!-- A real run, captured 29 Sep 2026 against the live free-tier
+       instance (the 22 s is its cold start). Condensed for width: the
+       four page lines are folded into one, and two lines are left out
+       (the sample file's byte check and the send button's mode, both
+       PASS); every value shown is from the actual output. -->
+  <div class="panel">
+    <span class="l"><span class="q">$</span> python -m day46.check https://day46.onrender.com</span>
+    <span class="l">PASS  the site answers: after 22 s, AI live</span>
+    <span class="l">PASS  the RBI rate table is fresh</span>
+    <span class="l">PASS  the law check is fresh</span>
+    <span class="l">PASS  the security headers are on</span>
+    <span class="l">PASS  /, /chat, /accuracy open: status 200</span>
+    <span class="l">PASS  the sample chat replays: 21 events</span>
+    <span class="l">PASS  the sample case is calculated:</span>
+    <span class="l">      MSME Act route, interest Rs 2626,</span>
+    <span class="l">      the same as this code computes</span>
+    <span class="l"><span class="ok">READY</span>: all 12 checks passed.</span>
+  </div>
+
+  <h2>Decisions I'd defend</h2>
+  <ul>
+    <li><strong>The AI points; code decides.</strong> Pointing can be checked, since the
+    quote is in the message or it is not. A generated date or amount cannot be checked
+    without redoing the work.</li>
+    <li><strong>Templates, not generated letters.</strong> The documents are fixed
+    wording filled with facts the person confirmed, and the page says under each one
+    that it comes from a self-help document tool, that it is not legal advice, and that
+    no advocate has reviewed it.</li>
+    <li><strong>Two routes as equals.</strong> The survey said the statutory route would
+    miss most freelancers, so the contract-law route was never an afterthought.</li>
+    <li><strong>The lower claim by default.</strong> A figure that can be defended beats a
+    bigger one that cannot, and showing both readings lets the person and their advocate
+    choose.</li>
+    <li><strong>No database.</strong> The case lives in the browser tab and leaves as a
+    file the person downloads. The server has no case records to lose; the one thing that
+    leaves the browser for the AI is the masked excerpt the person approved.</li>
+  </ul>
+
+  <h2>What's next</h2>
+  <p>Real chat exports with consent, measured the same way; reading screenshots, for
+  chats that cannot be exported, with a clear line that the images go to the provider
+  unmasked; opening a saved case file again; and a cheaper model once the table says it
+  can be trusted with the promises to pay. Each is one more row in a measurement that
+  already exists.</p>
+
+  <div class="cta">
+    <a href="https://day46.onrender.com/chat?sample=1">Try the sample case &#8599;</a>
+    <a href="https://day46.onrender.com/accuracy">The accuracy page &#8599;</a>
+    <a href="/">Back to the site &#8594;</a>
+  </div>
+
+  <p class="foot">David Jeremie Anand · New Delhi · every figure on this page comes from
+  the live accuracy page, the committed test suite or a real run of the check above.
+  Day 46 is not a law firm, and nothing it produces is legal advice.</p>
+
+</div>
+</body>
+</html>

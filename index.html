@@ -2730,9 +2730,61 @@
         </div>
       </article>
 
+      <!-- Wide, so the grid keeps no gaps: 01 and 02 each take a full row,
+           then 03-06 sit in pairs. The repository is private, so the card
+           links the case study and the live app only. -->
+      <article class="cell wide rise" data-tilt>
+        <div class="cell-in">
+          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M20 16h40a8 8 0 0 1 8 8v24a8 8 0 0 1-8 8H36l-12 10V56h-4a8 8 0 0 1-8-8V24a8 8 0 0 1 8-8z" stroke-width="3"/><path d="M24 30h32M24 42h20" stroke-width="3.4"/><rect x="62" y="62" width="44" height="42" rx="6" stroke-width="3"/><path d="M62 75h44" stroke-width="3"/><path d="M74 56v11M94 56v11" stroke-width="4"/><path d="M47 42C61 48 71 68 81 86" stroke-width="2.4" stroke-dasharray="1 6"/></g><circle cx="84" cy="90" r="5" fill="currentColor"/></svg><div class="cell-top"><span class="num">02</span><span class="stack">Python · FastAPI · Claude API · pytest</span></div>
+          <h3>Day 46 <em>— A Late-Payment Case Builder</em></h3>
+          <p>
+            A client pays late, and the whole deal lives in a WhatsApp chat. Day 46 reads
+            the chat and the invoice, builds a timeline where every date opens the message
+            behind it, and fills a payment reminder, a demand letter and a case file for an
+            advocate, which the freelancer checks, signs and sends themselves.
+          </p>
+          <p>
+            The AI only <b>points</b>: it marks the messages that record an order, a
+            delivery or a promise to pay, and an entry survives only if its quote is word
+            for word in the message it cites. It supplies no dates, no amounts and no
+            wording. Code reads those from the messages, and the interest comes from an
+            engine that matches a blind rewrite <b>to the paisa</b> on 2,500 cases.
+          </p>
+          <!-- The real accuracy run of 24 Sep 2026, as the live /accuracy
+               page publishes it: 12 synthetic Hinglish chats whose answers
+               were fixed before the words were written, no prompt tuning on
+               them. Every value is from day46/eval/results.json. 1,043 is
+               every entry the four runs returned (276 + 266 + 215 + 286);
+               none quoted words that are not in the message it cites. -->
+          <figure class="evi rise">
+            <figcaption><b></b> day46 · accuracy <em>real run · 24 Sep</em></figcaption>
+            <div class="evi-body">
+              <span class="l" style="--i:0"><span class="q">GET</span> /accuracy · 12 unseen chats</span>
+              <span class="l" style="--i:1"><span class="q">262 events, answers fixed first</span></span>
+              <span class="l sp" style="--i:2"></span>
+              <span class="l" style="--i:3">  opus-5     found <span class="ok">99%</span> · right 94%</span>
+              <span class="l" style="--i:4">  sonnet-5   found 97% · right 95%</span>
+              <span class="l" style="--i:5">  haiku-4.5  found <span class="hl">78%</span> · right 95%</span>
+              <span class="l sp" style="--i:6"></span>
+              <span class="l" style="--i:7">  sonnet-5 · one-line prompt</span>
+              <span class="l" style="--i:8">             found 92% · right <span class="no">85%</span></span>
+              <span class="l sp" style="--i:9"></span>
+              <span class="l" style="--i:10">  <span class="k">0 of 1,043 quotes hallucinated</span></span>
+            </div>
+          </figure>
+
+          <div class="chips">
+            <span class="chip hot">1,707-test CI</span>
+            <span class="chip">Blind rewrite, to the paisa</span>
+            <span class="chip">Masked before the AI sees it</span>
+          </div>
+          <a class="visit" href="/day46.html">Case study <i>&#8594;</i></a><a class="visit" href="https://day46.onrender.com" target="_blank" rel="noopener">Live demo <i>&#8599;</i></a>
+        </div>
+      </article>
+
       <article class="cell rise" data-tilt>
         <div class="cell-in">
-          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M12 54h96" stroke-width="3"/><path d="M50 54c15 3 26 17 45 38" stroke-width="5"/><path d="M100 58h6v30h-6" stroke-width="2.4"/><path d="M21 32l5 6 10-14" stroke-width="3.5"/><path d="M24 84l12 12M36 84l-12 12" stroke-width="3.5"/></g><circle cx="50" cy="54" r="4.5" fill="currentColor"/></svg><div class="cell-top"><span class="num">02</span><span class="stack">Python · asyncio · pytest · GitHub Actions</span></div>
+          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M12 54h96" stroke-width="3"/><path d="M50 54c15 3 26 17 45 38" stroke-width="5"/><path d="M100 58h6v30h-6" stroke-width="2.4"/><path d="M21 32l5 6 10-14" stroke-width="3.5"/><path d="M24 84l12 12M36 84l-12 12" stroke-width="3.5"/></g><circle cx="50" cy="54" r="4.5" fill="currentColor"/></svg><div class="cell-top"><span class="num">03</span><span class="stack">Python · asyncio · pytest · GitHub Actions</span></div>
           <h3>PromptDrift <em>— Prompt Regression Testing</em></h3>
           <p>
             You tweak a prompt to fix one bad case, it works, you ship it — and three other
@@ -2776,7 +2828,7 @@
 
       <article class="cell rise" data-tilt>
         <div class="cell-in">
-          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M28 20h44l20 20v60H28Z" stroke-width="3"/><path d="M72 20v20h20" stroke-width="3"/><path d="M39 52h28M39 63h20" stroke-width="3"/><path d="M39 76h26" stroke-width="7"/><circle cx="66" cy="72" r="23" stroke-width="5"/><path d="M83 89l16 16" stroke-width="8"/></g></svg><div class="cell-top"><span class="num">03</span><span class="stack">FastAPI · FAISS</span></div>
+          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M28 20h44l20 20v60H28Z" stroke-width="3"/><path d="M72 20v20h20" stroke-width="3"/><path d="M39 52h28M39 63h20" stroke-width="3"/><path d="M39 76h26" stroke-width="7"/><circle cx="66" cy="72" r="23" stroke-width="5"/><path d="M83 89l16 16" stroke-width="8"/></g></svg><div class="cell-top"><span class="num">04</span><span class="stack">FastAPI · FAISS</span></div>
           <h3>Synapse <em>— Agentic RAG Assistant</em></h3>
           <p>
             BM25 and FAISS fused through Reciprocal Rank Fusion with LLM listwise reranking,
@@ -2838,7 +2890,7 @@
 
       <article class="cell rise" data-tilt id="work-more">
         <div class="cell-in">
-          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M22 18h44v74l-7.3-6-7.3 6-7.4-6-7.3 6-7.4-6-7.3 6z" stroke-width="3"/><path d="M32 36h24M32 48h24M32 60h15" stroke-width="3.4"/><path d="M78 96V72M92 96V54M106 96V82" stroke-width="7"/><path d="M70 103h44" stroke-width="3"/></g></svg><div class="cell-top"><span class="num">04</span><span class="stack">Flask · SQLite · Docker</span></div>
+          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M22 18h44v74l-7.3-6-7.3 6-7.4-6-7.3 6-7.4-6-7.3 6z" stroke-width="3"/><path d="M32 36h24M32 48h24M32 60h15" stroke-width="3.4"/><path d="M78 96V72M92 96V54M106 96V82" stroke-width="7"/><path d="M70 103h44" stroke-width="3"/></g></svg><div class="cell-top"><span class="num">05</span><span class="stack">Flask · SQLite · Docker</span></div>
           <h3>Ledgr <em>— AI Finance Manager</em></h3>
           <p>
             A full-stack finance tracker with dashboards, budgets and CSV import/export, plus
@@ -2879,7 +2931,7 @@
 
       <article class="cell rise" data-tilt>
         <div class="cell-in">
-          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="24" y="80" width="62" height="24" rx="5" fill="currentColor"/><path d="M54 80V40" stroke-width="5"/><circle cx="54" cy="38" r="4" fill="currentColor"/><path d="M44.8 30.8a13 13 0 0 1 18.4 0" stroke-width="3.5"/><path d="M39.2 25.2a21 21 0 0 1 29.6 0" stroke-width="3.5"/><path d="M33.5 19.5a29 29 0 0 1 41 0" stroke-width="3.5"/><path d="M36 113q4-7 8 0t8 0t8 0t8 0" stroke-width="3"/></svg><div class="cell-top"><span class="num">05</span><span class="stack">SDR · RF and wireless systems</span></div>
+          <svg class="mark" viewBox="0 0 120 120" fill="none" aria-hidden="true" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="24" y="80" width="62" height="24" rx="5" fill="currentColor"/><path d="M54 80V40" stroke-width="5"/><circle cx="54" cy="38" r="4" fill="currentColor"/><path d="M44.8 30.8a13 13 0 0 1 18.4 0" stroke-width="3.5"/><path d="M39.2 25.2a21 21 0 0 1 29.6 0" stroke-width="3.5"/><path d="M33.5 19.5a29 29 0 0 1 41 0" stroke-width="3.5"/><path d="M36 113q4-7 8 0t8 0t8 0t8 0" stroke-width="3"/></svg><div class="cell-top"><span class="num">06</span><span class="stack">SDR · RF and wireless systems</span></div>
           <h3>Wireless Temperature Detection <em>— HackRF One</em></h3>
           <p>
             An RF prototype that pulls remotely transmitted temperature signals out of the air
