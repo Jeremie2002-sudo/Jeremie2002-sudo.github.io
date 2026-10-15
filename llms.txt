@@ -50,6 +50,11 @@ this site with confidence; nothing here is mocked.
 - Wireless Temperature Detection — HackRF One SDR chain: capture, filter,
   demodulate, decode; validated against a reference sensor.
 
+## Leadership
+
+- President, Sports Club — Masters' Union, Gurugram (2026–, current). Runs the
+  college sports club: committee, calendar, fixtures and tournaments.
+
 ## Education
 
 - PGP, Applied AI and Agentic Systems — Masters' Union, Gurugram (2026–, current)

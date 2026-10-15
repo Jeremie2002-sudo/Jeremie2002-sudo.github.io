@@ -1582,7 +1582,7 @@
      building (work), interning (internships) and studying (skills),
      completing the arc that ends at the desk scene. Shared vocabulary;
      each block below is independently deletable. */
-  #about, #work, #experience, #internships, #skills { position: relative; }
+  #about, #work, #experience, #internships, #leadership, #skills { position: relative; }
   .vig {
     position: absolute; right: 2%; top: 6px;
     width: clamp(110px, 12vw, 150px);
@@ -1659,11 +1659,13 @@
   #internships .vig .cloth { fill: #6b7f6e; }    /* smart casual */
   #internships .vig .pant { stroke: #4a4f5c; }
   #skills .vig .cloth { fill: #7a5f6d; }         /* tee */
+  #leadership .vig .cloth { fill: #6a7d9c; }     /* club jersey */
+  #leadership .vig .pant { stroke: #4a4f5c; }
 
   /* Idle life: the stationary figures breathe like the desk one does.
      The walkers don't — an animation on .vfig would override the .walk
      transform their stride depends on, and striding is their life sign. */
-  #about .vig .vfig, #work .vig .vfig, #skills .vig .vfig, .grad .gfig {
+  #about .vig .vfig, #work .vig .vfig, #leadership .vig .vfig, #skills .vig .vfig, .grad .gfig {
     animation: scene-breathe 4.6s ease-in-out infinite alternate;
   }
 
@@ -1673,6 +1675,16 @@
   #work .vig svg:hover .bnode { animation-duration: 1.1s; }
   #experience .vig svg:hover .door { fill: rgb(var(--accent-rgb) / .4); }
   #internships .vig svg:hover .case { animation-duration: .9s; }
+  /* The ball sits still until found, then drops to the ground line and
+     bounces back up; the seams spin with it. */
+  #leadership .vig .ball {
+    transform-box: fill-box; transform-origin: center;
+  }
+  #leadership .vig svg:hover .ball { animation: vig-bounce 1.1s ease-in-out infinite; }
+  @keyframes vig-bounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(42px) rotate(180deg); }
+  }
   #skills .vig svg:hover .dot { animation: vig-think .9s ease-in-out infinite; }
   #skills .vig svg:hover .dot2 { animation-delay: .15s; }
   #skills .vig svg:hover .dot3 { animation-delay: .3s; }
@@ -3048,6 +3060,52 @@
           <h3>AGIXURY</h3>
           <div class="meta">Web Development Intern · Remote</div>
           <p>Built responsive interfaces from business requirements and improved usability across desktop and mobile.</p>
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="wrap" id="leadership">
+    <!-- Journey vignette: the club president, ball under one arm,
+         the other hand up — calling the next fixture. Same vocabulary
+         as the rest of the set; the ball is the only round thing he
+         has carried so far that is not a cap. -->
+    <div class="vig rise d2" aria-hidden="true">
+      <svg viewBox="0 0 160 190">
+        <path class="set" d="M20 176H140"/>
+        <g class="sky-day" aria-hidden="true"><circle cx="24" cy="22" r="5"/><path d="M24 13v-3M24 31v3M15 22h-3M33 22h3M18 16l-2-2M30 28l2 2M30 16l2-2M18 28l-2 2"/></g>
+        <g class="sky-night" aria-hidden="true"><path d="M28 15a6.5 6.5 0 1 0 5 11 6 6 0 1 1-5-11z"/><circle class="star" cx="14" cy="18" r="1.1"/></g>
+        <g class="vfig">
+          <path class="limb pant" d="M70 120L66 170"/>
+          <path class="limb pant" d="M82 120L88 170"/>
+          <path class="vneck" d="M75 65l1 8"/>
+          <path class="vfill cloth" d="M76 74c8 1 12 7 13 16 1 10 0 19-2 27l-2 5-18 1c-2-12-2-25 1-36 2-7 4-10 8-13z"/>
+          <circle class="vfill" cx="75" cy="55" r="11"/>
+          <!-- Raised arm: the call. -->
+          <path class="limb" d="M86 86C95 76 100 64 104 50"/>
+          <circle class="vhand" cx="105" cy="48" r="3"/>
+          <!-- Other arm, holding the ball at the hip. -->
+          <path class="limb" d="M66 88C60 98 58 108 60 116"/>
+          <circle class="vhand" cx="60" cy="118" r="3"/>
+        </g>
+        <!-- The ball: a circle with the panel seams, parked against the
+             hip. On hover it drops and bounces — the one trick he knows. -->
+        <g class="ball">
+          <circle cx="52" cy="124" r="9"/>
+          <path d="M52 115v6M46 121l4 3M58 121l-4 3M47 131l3-5M57 131l-3-5"/>
+        </g>
+      </svg>
+    </div>
+    <p class="eyebrow rise">Leadership</p>
+    <h2 class="rise d1">The one thing I run with no eval harness.</h2>
+
+    <dl class="rows">
+      <div class="row rise">
+        <dt><b>2026</b><span>Present</span></dt>
+        <dd>
+          <h3>President, Sports Club <span class="now"><i aria-hidden="true"></i>Current</span></h3>
+          <div class="meta">Masters&rsquo; Union · Gurugram</div>
+          <p>Elected to run the college&rsquo;s sports club: the committee, the calendar, the fixtures and tournaments, and the case for sport to the people who sign off on it.</p>
         </dd>
       </div>
     </dl>
@@ -7338,7 +7396,7 @@
                 "resume", "hire", "iss", "wx", "quakes", "moon", "sun", "events", "tune",
                 "qsl", "log", "source", "73", "sudo", "clear", "exit"];
     var SECS = ["top", "about", "work", "experience", "internships",
-                "education", "skills", "contact"];
+                "leadership", "education", "skills", "contact"];
     /* The tour's own stops: same as goto's targets, plus a waypoint halfway
        down the project shelf so all five cards glide past instead of the
        autopilot skipping from the flagship straight to Experience. */
